@@ -27,7 +27,7 @@
     </div>
 
     <footer>
-        &copy; <?php echo date('Y'); ?> MVP tailwind
+        &copy; <?php echo date('Y'); ?> UbiLabs
     </footer>
 </body>
 </html>

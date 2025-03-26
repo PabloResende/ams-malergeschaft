@@ -16,7 +16,6 @@ return [
     'address' => 'Address',
     'about_me' => 'About Me',
     'phone' => 'Phone',
-    'cpf' => 'CPF',
     'save_changes' => 'Save Changes',
 
     // Buttons

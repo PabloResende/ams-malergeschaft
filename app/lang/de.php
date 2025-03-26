@@ -16,7 +16,6 @@ return [
     'address' => 'Adresse',
     'about_me' => 'Über mich',
     'phone' => 'Telefon',
-    'cpf' => 'CPF',
     'save_changes' => 'Änderungen speichern',
 
     // Schaltflächen

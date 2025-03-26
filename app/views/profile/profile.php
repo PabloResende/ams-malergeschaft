@@ -23,12 +23,6 @@
                 <label class="block text-left text-gray-700 font-medium"><?= $langText['phone'] ?></label>
                 <input type="text" name="phone" class="border rounded p-2 w-full focus:ring focus:ring-blue-300" id="phone" value="<?= htmlspecialchars($_SESSION['user']['phone'] ?? ''); ?>">
             </div>
-
-            <div>
-                <label class="block text-left text-gray-700 font-medium"><?= $langText['cpf'] ?></label>
-                <input type="text" name="cpf" class="border rounded p-2 w-full focus:ring focus:ring-blue-300" id="cpf" value="<?= htmlspecialchars($_SESSION['user']['cpf'] ?? ''); ?>">
-            </div>
-
             <div>
                 <label class="block text-left text-gray-700 font-medium"><?= $langText['profile_picture'] ?></label>
                 <input type="file" name="profile_picture" class="border rounded p-2 w-full focus:ring focus:ring-blue-300">

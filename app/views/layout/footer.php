@@ -9,11 +9,11 @@
 
         .content {
             min-height: 100%;
-            padding-bottom: 50px; /* Garantir espaço para o footer */
+            padding-bottom: 50px;
         }
 
         footer {
-            position: fixed; /* Fixar no final da tela */
+            position: fixed;
             bottom: 0;
             width: 100%;
             text-align: center;
@@ -24,7 +24,6 @@
 </head>
 <body>
     <div class="content">
-        <!-- Seu conteúdo aqui -->
     </div>
 
     <footer>

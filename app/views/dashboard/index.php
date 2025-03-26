@@ -7,4 +7,3 @@
     <p class="mt-4"></p>
 </div>
 
-<?php require __DIR__ . '/../layout/footer.php'; ?>

@@ -31,5 +31,4 @@
     </div>  
 </body>  
 </html>  
-
-<?php require __DIR__ . '/../layout/footer.php'; ?>  
+  

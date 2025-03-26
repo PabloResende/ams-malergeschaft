@@ -56,4 +56,3 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 
-<?php require __DIR__ . '/../layout/footer.php'; ?>

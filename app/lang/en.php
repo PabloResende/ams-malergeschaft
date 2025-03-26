@@ -21,4 +21,7 @@ return [
     // Buttons
     'update_profile' => 'Update Profile',
     'logout_button' => 'Logout',
+
+    // Header
+    'Malergeschäft' => 'Painting shops',
 ];

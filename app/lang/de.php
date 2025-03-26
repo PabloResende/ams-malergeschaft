@@ -21,4 +21,7 @@ return [
     // Schaltflächen
     'update_profile' => 'Profil aktualisieren',
     'logout_button' => 'Abmelden',
+
+    // Kopfzeile
+    'Malergeschäft' => 'Malergeschäft',
 ];

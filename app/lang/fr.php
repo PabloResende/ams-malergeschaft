@@ -21,4 +21,7 @@ return [
     // Boutons
     'update_profile' => 'Mettre à jour le profil',
     'logout_button' => 'Déconnexion',
+
+    // En-tete
+    'Malergeschften' => 'Ateliers de peinture',
 ];

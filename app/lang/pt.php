@@ -21,4 +21,7 @@ return [
     // Botões
     'update_profile' => 'Atualizar Perfil',
     'logout_button' => 'Sair',
+
+    // header
+    'Malergeschften' => 'Lojas de pintura',
 ];

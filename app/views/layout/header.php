@@ -17,7 +17,7 @@ $flags = [
 ];
 
 // Verifica se a linguagem existe no array antes de definir a bandeira
-$currentFlag = isset($flags[$lang]) ? '<img src="' . $flags[$lang]['flag'] . '" class="w-5 h-5 object-contain">' : '🌎';
+$currentFlag = isset($flags[$lang]) ? '<img src="' . $flags[$lang]['flag'] . '" class="w-5 h-5 object-fit">' : '🌎';
 ?>  
 
 <!DOCTYPE html>  
@@ -25,12 +25,20 @@ $currentFlag = isset($flags[$lang]) ? '<img src="' . $flags[$lang]['flag'] . '" 
 <head>  
     <meta charset="UTF-8">  
     <meta name="viewport" content="width=device-width, initial-scale=1.0">  
-    <title>MVP tailwind</title>  
+    <title>Ams Malergeschäft</title>  
     <script src="https://cdn.tailwindcss.com"></script>  
+    <head>
+    <link rel="icon" href="/ams-malergeschaft/public/assets/logo/ams-malergeschaft_icon.png" type="image/png">
+</head>
+
 </head>  
 <body class="bg-gray-100 text-gray-900">  
     <nav class="bg-blue-600 p-4 text-white flex justify-between items-center">  
-        <a href="/ams-malergeschaft/public/" class="font-bold">MVP</a>  
+    <a href="/ams-malergeschaft/public/" class="font-bold flex items-center space-x-2">
+    <img src="/ams-malergeschaft/public/assets/logo/ams-malergeschaft_icon.png" alt="Ams Malergeschäft Logo" class="h-8 w-10 h-10 object-contain mt-0 p-0 ">
+    <span>Ams Malergeschäft</span>
+</a>
+
         <div class="flex items-center gap-4">  
             <?php if (isset($_SESSION['user'])): ?>  
                 <a href="/ams-malergeschaft/public/profile" class="px-4"><?= $langText['profile'] ?></a>  

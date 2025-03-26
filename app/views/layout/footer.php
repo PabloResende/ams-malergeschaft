@@ -1,4 +1,33 @@
-<footer class="text-center p-4 mt-6 bg-gray-300">
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        .content {
+            min-height: 100%;
+            padding-bottom: 50px; /* Garantir espaço para o footer */
+        }
+
+        footer {
+            position: fixed; /* Fixar no final da tela */
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            background-color: #e2e8f0;
+            padding: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <!-- Seu conteúdo aqui -->
+    </div>
+
+    <footer>
         &copy; <?php echo date('Y'); ?> MVP tailwind
     </footer>
 </body>

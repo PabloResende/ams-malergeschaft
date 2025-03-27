@@ -77,11 +77,17 @@ return [
     // Página dos Funcionários
     // ---------------------------
     'employees_list' => 'Lista de Funcionários',
-    'create_employee' => 'Criar Novo Funcionário',
+    'create_employee' => 'Criar Funcionário',
     'edit_employee' => 'Editar Funcionário',
     'delete_employee' => 'Excluir Funcionário',
-    'employee_name' => 'Nome do Funcionário',
-    'employee_email' => 'E-mail do Funcionário',
+    'name' => 'Nome',
+    'role' => 'Função',
+    'birth_date' => 'Data de Nascimento',
+    'start_date' => 'Data de Início',
+    'address' => 'Endereço',
+    'about_me' => 'Sobre Mim',
+    'phone' => 'Telefone',
+    'profile_picture' => 'Foto de Perfil',
 
     // ---------------------------
     // Genérico

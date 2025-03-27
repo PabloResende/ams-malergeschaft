@@ -79,13 +79,19 @@ return [
     // ---------------------------
     // Page des employés
     // ---------------------------
-    'employees_list' => 'Liste des employés',
-    'create_employee' => 'Créer un nouvel employé',
-    'edit_employee' => 'Modifier l\'employé',
-    'delete_employee' => 'Supprimer l\'employé',
-    'employee_name' => 'Nom de l\'employé',
-    'employee_email' => 'E-mail de l\'employé',
-
+    'employees_list' => 'Liste des Employés',
+    'create_employee' => 'Créer un Employé',
+    'edit_employee' => 'Modifier un Employé',
+    'delete_employee' => 'Supprimer un Employé',
+    'name' => 'Nom',
+    'role' => 'Poste',
+    'birth_date' => 'Date de Naissance',
+    'start_date' => 'Date de Début',
+    'address' => 'Adresse',
+    'about_me' => 'À propos de moi',
+    'phone' => 'Téléphone',
+    'profile_picture' => 'Photo de Profil',
+    
     // ---------------------------
     // Générique
     // ---------------------------

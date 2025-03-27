@@ -25,15 +25,18 @@ return [
     // ---------------------------
     // Profilseite
     // ---------------------------
-    'profile_picture' => 'Profilbild',
+    'employees_list' => 'Mitarbeiterliste',
+    'create_employee' => 'Mitarbeiter erstellen',
+    'edit_employee' => 'Mitarbeiter bearbeiten',
+    'delete_employee' => 'Mitarbeiter löschen',
     'name' => 'Name',
-    'email' => 'E-Mail',
+    'role' => 'Position',
+    'birth_date' => 'Geburtsdatum',
+    'start_date' => 'Startdatum',
     'address' => 'Adresse',
     'about_me' => 'Über mich',
     'phone' => 'Telefon',
-    'cpf' => 'CPF',
-    'save_changes' => 'Änderungen speichern',
-    'update_profile' => 'Profil aktualisieren',
+    'profile_picture' => 'Profilbild',
 
     // ---------------------------
     // Dashboard-Seite

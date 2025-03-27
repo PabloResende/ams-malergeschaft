@@ -81,11 +81,17 @@ return [
     // Employees Page
     // ---------------------------
     'employees_list' => 'Employees List',
-    'create_employee' => 'Create New Employee',
+    'create_employee' => 'Create Employee',
     'edit_employee' => 'Edit Employee',
     'delete_employee' => 'Delete Employee',
-    'employee_name' => 'Employee Name',
-    'employee_email' => 'Employee Email',
+    'name' => 'Name',
+    'role' => 'Role',
+    'birth_date' => 'Birth Date',
+    'start_date' => 'Start Date',
+    'address' => 'Address',
+    'about_me' => 'About Me',
+    'phone' => 'Phone',
+    'profile_picture' => 'Profile Picture',
 
     // ---------------------------
     // Generic

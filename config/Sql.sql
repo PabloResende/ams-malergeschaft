@@ -27,8 +27,15 @@ CREATE TABLE employees (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     role VARCHAR(255) NOT NULL,
+    birth_date DATE,
+    start_date DATE,
+    address VARCHAR(255),
+    about TEXT,
+    phone VARCHAR(20),
+    profile_picture VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
 
 -- ProjectEmployees
 CREATE TABLE project_employees (

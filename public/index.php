@@ -1,50 +1,67 @@
 <?php
+ob_start(); // Inicia o buffer de saída
+
 require_once __DIR__ . '/../app/controllers/UserController.php';
+require_once __DIR__ . '/../app/controllers/ProjectController.php';
+require_once __DIR__ . '/../app/lang/lang.php'; 
 
 $uri = $_SERVER['REQUEST_URI'];
 $basePath = '/ams-malergeschaft/public';
 $route = str_replace($basePath, '', $uri);
 
-// Verifica se há um parâmetro de idioma e salva na sessão/cookie
 if (isset($_GET['lang'])) {
-    $lang = $_GET['lang'];
-    $_SESSION['lang'] = $lang;
-    setcookie('lang', $lang, time() + (86400 * 30), "/");
+    $_SESSION['lang'] = $_GET['lang'];
+
+    if (!headers_sent()) {
+        setcookie('lang', $_GET['lang'], time() + (86400 * 30), "/");
+    }
 }
 
-// Remove parâmetros GET da URL antes de processar as rotas
 $route = strtok($route, '?'); 
 
-$controller = new UserController();
+$userController = new UserController();
+$projectController = new ProjectController();
 
 switch ($route) {
     case '/':
     case '/login':
-        $controller->login();
+        $userController->login();
         break;
     
     case '/auth':
-        $controller->authenticate();
+        $userController->authenticate();
         break;
     
     case '/register':
-        $controller->register();
+        $userController->register();
         break;
     
     case '/store':
-        $controller->store();
+        $userController->store();
         break;
     
     case '/dashboard':
-        $controller->dashboard();
+        $userController->dashboard();
         break;
     
     case '/logout':
-        $controller->logout();
+        $userController->logout();
         break;
     
     case '/profile':
-        $controller->profile();
+        $userController->profile();
+        break;
+
+    case '/projects':
+        $projectController->index();
+        break;
+
+    case '/projects/create':
+        $projectController->create();
+        break;
+
+    case '/projects/store':
+        $projectController->store();
         break;
     
     default:
@@ -52,3 +69,6 @@ switch ($route) {
         echo "404 - Page not found.";
         break;
 }
+
+ob_end_flush();
+?>

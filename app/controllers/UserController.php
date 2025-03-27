@@ -47,9 +47,14 @@ class UserController {
         if (!isset($_SESSION['user'])) {
             $this->redirect('/login');
         }
+    
+        require_once __DIR__ . '/../models/Project.php';
+        $projectModel = new Project();
+        $projects = $projectModel->getAll();
+    
         require __DIR__ . '/../views/dashboard/index.php';
     }
-
+    
     public function profile() {
         if (!isset($_SESSION['user'])) {
             $this->redirect('/login');

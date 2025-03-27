@@ -4,51 +4,6 @@ require_once __DIR__ . '/../../../config/Database.php';
 
 $pdo = Database::connect();
 
-// Se for solicitado um projeto específico, exibe os detalhes
-if (isset($_GET['id'])) {
-    $stmt = $pdo->prepare("SELECT * FROM projects WHERE id = ?");
-    $stmt->execute([$_GET['id']]);
-    $project = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if (!$project) {
-        echo "<div class='ml-56 pt-20 p-8'><p>" . ($langText['project_not_found'] ?? 'Project not found.') . "</p></div>";
-        exit;
-    }
-    
-    $employees = [
-        ['name' => 'John Doe', 'role' => 'Engineer'],
-        ['name' => 'Jane Smith', 'role' => 'Architect'],
-    ];
-    $materials = [
-        ['name' => 'Cement', 'quantity' => '20 bags'],
-        ['name' => 'Bricks', 'quantity' => '500 units'],
-    ];
-    ?>
-    <div class="ml-56 pt-20 p-8">
-        <a href="<?= $baseUrl ?>/projects" class="text-blue-500 underline">&larr; <?= $langText['back'] ?? 'Back' ?></a>
-        <h1 class="text-2xl font-bold mt-4"><?= htmlspecialchars($project['name']) ?></h1>
-        <p class="mt-2 text-gray-600"><?= $langText['status'] ?? 'Status' ?>: <strong><?= ucfirst($project['status']) ?></strong></p>
-        <p class="mt-2 text-gray-600"><?= $langText['progress'] ?? 'Progress' ?>: <strong><?= $project['progress'] ?>%</strong></p>
-        <p class="mt-2 text-gray-600"><?= $langText['delivery_date'] ?? 'Delivery Date' ?>: <strong><?= htmlspecialchars($project['end_date']) ?></strong></p>
-        
-        <h3 class="mt-6 text-xl font-semibold"><?= $langText['team_members'] ?? 'Team Members' ?></h3>
-        <ul class="mt-2 list-disc list-inside">
-            <?php foreach ($employees as $emp): ?>
-                <li><?= $emp['name'] ?> (<?= $emp['role'] ?>)</li>
-            <?php endforeach; ?>
-        </ul>
-        
-        <h3 class="mt-6 text-xl font-semibold"><?= $langText['materials'] ?? 'Materials' ?></h3>
-        <ul class="mt-2 list-disc list-inside">
-            <?php foreach ($materials as $mat): ?>
-                <li><?= $mat['name'] ?> (<?= $mat['quantity'] ?>)</li>
-            <?php endforeach; ?>
-        </ul>
-    </div>
-    <?php
-    exit;
-}
-
 $filter = $_GET['filter'] ?? '';
 
 $query = "SELECT * FROM projects";
@@ -72,10 +27,10 @@ $stmt = $pdo->prepare($query);
 $stmt->execute($params);
 $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
+
 <div class="ml-56 pt-20 p-8">
     <h1 class="text-2xl font-bold mb-4"><?= $langText['projects'] ?? 'Projects' ?></h1>
-    
-    <!-- Filtros -->
+
     <div class="mb-6">
         <span class="mr-4 font-semibold"><?= $langText['filter_by_status'] ?? 'Filter by status:' ?></span>
         <a href="<?= $baseUrl ?>/projects" class="mr-2 px-3 py-1 rounded-full border <?= $filter=='' ? 'bg-gray-300' : 'bg-white' ?>"><?= $langText['all'] ?? 'All' ?></a>
@@ -83,9 +38,8 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <a href="<?= $baseUrl ?>/projects?filter=pending" class="mr-2 px-3 py-1 rounded-full border <?= $filter=='pending' ? 'bg-yellow-200 text-yellow-800' : 'bg-white' ?>"><?= $langText['pending'] ?? 'Pending' ?></a>
         <a href="<?= $baseUrl ?>/projects?filter=completed" class="mr-2 px-3 py-1 rounded-full border <?= $filter=='completed' ? 'bg-green-200 text-green-800' : 'bg-white' ?>"><?= $langText['completed'] ?? 'Completed' ?></a>
     </div>
-    
-    <!-- Grid de Projetos -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         <?php if (empty($projects)): ?>
             <p><?= $langText['no_projects_available'] ?? 'No projects available.' ?></p>
         <?php else: ?>
@@ -93,26 +47,35 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <?php
                 $status = $project['status'];
                 if ($status === 'in_progress') {
-                    $tag = '<span class="bg-blue-200 text-blue-800 px-2 py-1 rounded-full text-xs">' . ($langText['active'] ?? 'Active') . '</span>';
+                    $tag = '<span class="bg-blue-500 text-white px-3 py-1 rounded-full text-[12px] font-semibold">'.($langText['active'] ?? 'Active').'</span>';
                 } elseif ($status === 'pending') {
-                    $tag = '<span class="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full text-xs">' . ($langText['pending'] ?? 'Pending') . '</span>';
+                    $tag = '<span class="bg-yellow-500 text-white px-3 py-1 rounded-full text-[12px] font-semibold">'.($langText['pending'] ?? 'Pending').'</span>';
                 } else {
-                    $tag = '<span class="bg-green-200 text-green-800 px-2 py-1 rounded-full text-xs">' . ($langText['completed'] ?? 'Completed') . '</span>';
+                    $tag = '<span class="bg-green-500 text-white px-3 py-1 rounded-full text-[12px] font-semibold">'.($langText['completed'] ?? 'Completed').'</span>';
                 }
                 $progress = $project['progress'] ?? 0;
                 ?>
                 <a href="<?= $baseUrl ?>/projects?id=<?= $project['id'] ?>" class="block">
-                  <div class="bg-white p-4 rounded-lg shadow flex flex-col">
-                    <h4 class="text-lg font-semibold"><?= htmlspecialchars($project['name']) ?></h4>
-                    <p class="text-sm text-gray-600 mt-1"><?= $langText['start_date'] ?? 'Start Date' ?>: <?= htmlspecialchars($project['start_date']) ?></p>
-                    <p class="text-sm text-gray-600 mt-1"><?= $langText['delivery_date'] ?? 'Delivery' ?>: <?= htmlspecialchars($project['end_date']) ?></p> 
-                    <div class="mt-2"><?= $tag ?>
-                </div>
-                    <div class="w-full bg-gray-200 rounded-full h-1 mt-2">
-                      <div class="bg-blue-500 h-1 rounded-full" style="width: <?= $progress ?>%;"></div>
+                    <div class="bg-white p-6 rounded-xl shadow flex flex-col hover:shadow-md transition-all">
+
+                        <!-- Cabeçalho -->
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-xl font-bold flex-1"><?= htmlspecialchars($project['name']) ?></h4>
+                            <?= $tag ?>
+                        </div>
+
+                        <!-- Cliente -->
+                        <span>
+                            <h1 class="text-[13px] text-gray-600"><?= $langText['client'] ?? 'Client' ?></h1>
+                            <p class="text-sm font-semibold -mt-1"><?= htmlspecialchars($project['client_name']) ?></p>
+                        </span>
+
+                        <!-- Barra de progresso -->
+                        <div class="w-full bg-gray-200 rounded-full h-2 mt-3">
+                            <div class="bg-blue-500 h-2 rounded-full" style="width: <?= $progress ?>%;"></div>
+                        </div>
+                        <p class="mt-1 text-sm text-gray-600"><?= $langText['progress'] ?? 'Progress' ?>: <?= $progress ?>%</p>
                     </div>
-                    <p class="mt-1 text-sm text-gray-600"><?= $langText['progress'] ?? 'Progress' ?>: <?= $progress ?>%</p>
-                  </div>
                 </a>
             <?php endforeach; ?>
         <?php endif; ?>

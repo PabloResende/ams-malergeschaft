@@ -8,6 +8,10 @@
             <input type="text" name="name" required class="w-full border p-2 rounded focus:outline-none focus:ring focus:ring-blue-300">
         </div>
         <div>
+            <label class="block mb-2 font-medium">Nome do Cliente:</label>
+            <input type="text" name="client_name" required class="w-full border p-2 rounded focus:outline-none focus:ring focus:ring-blue-300">
+        </div>
+        <div>
             <label class="block mb-2 font-medium">Descrição:</label>
             <textarea name="description" required class="w-full border p-2 rounded focus:outline-none focus:ring focus:ring-blue-300"></textarea>
         </div>

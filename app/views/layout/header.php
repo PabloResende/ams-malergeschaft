@@ -41,7 +41,7 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
   <!-- Sidebar fixa -->
   <aside class="w-56 bg-gray-900 text-white h-screen fixed left-0 top-0 p-4 flex flex-col justify-between">
       <div>
-          <h1 class="text-xl font-bold mb-6">Ams <a href="<?= $baseUrl ?>/dashboard"><?= $langText['Malergeschäft'] ?? 'AMS Malergeschäft' ?></a></h1>
+          <h1 class="text-xl font-bold mb-6"><a href="<?= $baseUrl ?>/dashboard">Ams Malergeschäft</a></h1>
           <nav>
               <ul>
                   <li class="mb-4">
@@ -88,8 +88,8 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
   <nav class="bg-white shadow p-4 fixed top-0 left-56 right-0 z-10 flex items-center justify-between">
       <div class="flex items-center">
           <div class="flex items-center">
-              <span class="text-4xl font-bold text-blue-600"><a href="<?= $baseUrl ?>/dashboard"><?= $langText['Ams'] ?? 'Ams' ?></a></span>
-              <span class="ml-2 text-xl text-gray-600"><?= $langText['Malergeschäft'] ?? 'Lojas de Pintura' ?></span>
+              <span class="text-4xl font-bold text-blue-600"><a href="<?= $baseUrl ?>/dashboard">Ams </a></span>
+              <span class="ml-2 text-xl text-gray-600">Malergeschäft</span>
           </div>
       </div>
       <div class="flex items-center space-x-6">

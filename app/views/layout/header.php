@@ -88,14 +88,12 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
   <!-- Navbar fixa -->
   <nav class="bg-white shadow p-4 fixed top-0 left-56 right-0 z-10 flex items-center justify-between">
       <div class="flex items-center">
-          <img src="/ams-malergeschaft/public/assets/logo/ams-malergeschaft_icon.png" alt="Logo" class="h-10 w-auto mr-4">
           <div class="flex items-center">
               <span class="text-4xl font-bold text-blue-600">Ams</span>
               <span class="ml-2 text-xl text-gray-600"><?= $langText['Malergeschften'] ?? 'Malergeschäft' ?></span>
           </div>
       </div>
       <div class="flex items-center space-x-6">
-          <a href="/dashboard" class="text-gray-800 hover:text-blue-600">Dashboard</a>
           <a href="/create_project" class="bg-green-500 text-white px-3 py-2 rounded hover:bg-green-600">Novo Projeto +</a>
           <div class="relative group">
               <button id="language-button" class="flex items-center gap-2 bg-white text-gray-900">
@@ -113,4 +111,3 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
       </div>
   </nav>
 <?php endif; ?>
-<!-- O conteúdo específico da página será renderizado na view (ex: dashboard, projects, etc.) -->

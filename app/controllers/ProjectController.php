@@ -14,6 +14,7 @@ class ProjectController {
             $name = $_POST['name'] ?? '';
             $description = $_POST['description'] ?? '';
             $end_date = $_POST['end_date'] ?? '';
+            $start_date = $_POST['start_date'] ?? '';
             $total_hours = $_POST['total_hours'] ?? 0;
             $status = $_POST['status'] ?? 'in_progress';
             $progress = $_POST['progress'] ?? 0;
@@ -26,8 +27,8 @@ class ProjectController {
             require_once __DIR__ . '/../../config/Database.php';
             $pdo = Database::connect();
 
-            $stmt = $pdo->prepare("INSERT INTO projects (name, description, end_date, total_hours, status, progress, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
-            if ($stmt->execute([$name, $description, $end_date, $total_hours, $status, $progress])) {
+            $stmt = $pdo->prepare("INSERT INTO projects (name, description, end_date, start_date, total_hours, status, progress, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+            if ($stmt->execute([$name, $description, $end_date, $start_date, $total_hours, $status, $progress])) {
                 header("Location: /ams-malergeschaft/public/projects");
                 exit;
             } else {
@@ -61,6 +62,6 @@ class ProjectController {
             exit;
         }
 
-        require_once __DIR__ . '/../views/projects/show.php';
+        require_once __DIR__ . '/../views/projects/index.php';
     }
 }

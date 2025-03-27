@@ -41,7 +41,7 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
   <!-- Sidebar fixa -->
   <aside class="w-56 bg-gray-900 text-white h-screen fixed left-0 top-0 p-4 flex flex-col justify-between">
       <div>
-          <h1 class="text-xl font-bold mb-6"><a href="<?= $baseUrl ?>/dashboard"><?= $langText['Malergeschäft'] ?? 'AMS Malergeschäft' ?></a></h1>
+          <h1 class="text-xl font-bold mb-6">Ams <a href="<?= $baseUrl ?>/dashboard"><?= $langText['Malergeschäft'] ?? 'AMS Malergeschäft' ?></a></h1>
           <nav>
               <ul>
                   <li class="mb-4">

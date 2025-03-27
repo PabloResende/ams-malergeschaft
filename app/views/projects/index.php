@@ -2,9 +2,6 @@
 require_once __DIR__ . '/../layout/header.php';
 require_once __DIR__ . '/../../../config/Database.php';
 
-// Supondo que você tenha a variável $langText que carrega as traduções do arquivo correto
-// Exemplo: $langText = require __DIR__ . '/../../../lang/' . $lang . '.php';
-
 $pdo = Database::connect();
 
 // Se for solicitado um projeto específico, exibe os detalhes
@@ -18,7 +15,6 @@ if (isset($_GET['id'])) {
         exit;
     }
     
-    // Dados fictícios para funcionários e materiais (substitua por consultas reais, se necessário)
     $employees = [
         ['name' => 'John Doe', 'role' => 'Engineer'],
         ['name' => 'Jane Smith', 'role' => 'Architect'],
@@ -53,7 +49,6 @@ if (isset($_GET['id'])) {
     exit;
 }
 
-// Caso não haja um 'id', exibe a lista de projetos com filtros
 $filter = $_GET['filter'] ?? '';
 
 $query = "SELECT * FROM projects";
@@ -109,8 +104,10 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <a href="<?= $baseUrl ?>/projects?id=<?= $project['id'] ?>" class="block">
                   <div class="bg-white p-4 rounded-lg shadow flex flex-col">
                     <h4 class="text-lg font-semibold"><?= htmlspecialchars($project['name']) ?></h4>
-                    <p class="text-sm text-gray-600 mt-1"><?= $langText['delivery_date'] ?? 'Delivery' ?>: <?= htmlspecialchars($project['end_date']) ?></p>
-                    <div class="mt-2"><?= $tag ?></div>
+                    <p class="text-sm text-gray-600 mt-1"><?= $langText['start_date'] ?? 'Start Date' ?>: <?= htmlspecialchars($project['start_date']) ?></p>
+                    <p class="text-sm text-gray-600 mt-1"><?= $langText['delivery_date'] ?? 'Delivery' ?>: <?= htmlspecialchars($project['end_date']) ?></p> 
+                    <div class="mt-2"><?= $tag ?>
+                </div>
                     <div class="w-full bg-gray-200 rounded-full h-1 mt-2">
                       <div class="bg-blue-500 h-1 rounded-full" style="width: <?= $progress ?>%;"></div>
                     </div>

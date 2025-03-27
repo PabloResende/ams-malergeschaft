@@ -18,7 +18,7 @@ return [
     // ---------------------------
     // Kopfzeile
     // ---------------------------
-    'Malergeschäft' => 'Malerbetriebe',
+    'Malergeschäft' => 'Malergeschäft',
     'new_project' => 'Neues Projekt +',
     'logout_button' => 'Abmelden',
 

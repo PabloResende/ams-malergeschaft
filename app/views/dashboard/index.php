@@ -57,22 +57,37 @@ $activeProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
   </div>
 
   <!-- Grid de Projetos Ativos -->
-  <div class="mt-12">
+<!-- Grid de Projetos Ativos -->
+<div class="mt-12">
     <h3 class="text-xl font-semibold mb-6"><?= $langText['active_projects'] ?? 'Active Projects' ?></h3>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <?php foreach ($activeProjects as $project): ?>
-        <?php $progress = $project['progress'] ?? 0; ?>
-        <a href="<?= $baseUrl ?>/projects/details?id=<?= $project['id'] ?>" class="block">
-          <div class="bg-white p-4 rounded-lg shadow flex flex-col">
-            <h4 class="text-lg font-semibold"><?= htmlspecialchars($project['name']) ?></h4>
-            <p class="text-sm text-gray-600 mt-1"><?= $langText['delivery'] ?? 'Delivery' ?>: <?= htmlspecialchars($project['end_date']) ?></p>
-            <div class="w-full bg-gray-200 rounded-full h-1 mt-2">
-              <div class="bg-blue-500 h-1 rounded-full" style="width: <?= $progress ?>%;"></div>
-            </div>
-            <p class="mt-1 text-sm text-gray-600"><?= $langText['progress'] ?? 'Progress' ?>: <?= $progress ?>%</p>
-          </div>
-        </a>
-      <?php endforeach; ?>
+        <?php foreach ($activeProjects as $project): ?>
+            <?php
+                $progress = $project['progress'] ?? 0;
+                $status = $project['status'];
+
+                // Definindo as tags de status com cores
+                if ($status === 'in_progress') {
+                    $tag = '<span class="bg-blue-200 text-blue-800 px-2 py-1 rounded-full text-xs">' . ($langText['active'] ?? 'Active') . '</span>';
+                } elseif ($status === 'pending') {
+                    $tag = '<span class="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full text-xs">' . ($langText['pending'] ?? 'Pending') . '</span>';
+                } else {
+                    $tag = '<span class="bg-green-200 text-green-800 px-2 py-1 rounded-full text-xs">' . ($langText['completed'] ?? 'Completed') . '</span>';
+                }
+            ?>
+            <a href="<?= $baseUrl ?>/projects/details?id=<?= $project['id'] ?>" class="block">
+                <div class="bg-white p-4 rounded-lg shadow flex flex-col">
+                    <h4 class="text-lg font-semibold"><?= htmlspecialchars($project['name']) ?></h4>
+                    <p class="text-sm text-gray-600 mt-1"><?= $langText['delivery'] ?? 'Delivery' ?>: <?= htmlspecialchars($project['end_date']) ?></p>
+                    <div class="mt-2"><?= $tag ?></div> <!-- Exibindo a tag de status com cores -->
+                    <div class="w-full bg-gray-200 rounded-full h-1 mt-2">
+                        <div class="bg-blue-500 h-1 rounded-full" style="width: <?= $progress ?>%;"></div>
+                    </div>
+                    <p class="mt-1 text-sm text-gray-600"><?= $langText['progress'] ?? 'Progress' ?>: <?= $progress ?>%</p>
+                </div>
+            </a>
+        <?php endforeach; ?>
     </div>
-  </div>
+</div>
+
 </div>

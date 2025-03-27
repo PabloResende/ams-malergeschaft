@@ -25,7 +25,6 @@ $teamMembers = $team['team_members'] ?? 0;
 $stmt = $pdo->query("SELECT * FROM projects WHERE status = 'in_progress' ORDER BY created_at DESC LIMIT 9");
 $activeProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
-
 <div class="ml-56 pt-20 p-8">
   <h2 class="text-2xl font-bold mb-4">Projects Overview</h2>
   <p class="text-lg text-gray-600 mb-8">Track and manage your renovation projects efficiently</p>
@@ -59,10 +58,8 @@ $activeProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <h3 class="text-xl font-semibold mb-6">Active Projects</h3>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       <?php foreach ($activeProjects as $project): ?>
-        <?php
-          $progress = $project['progress'] ?? 0;
-        ?>
-        <a href="/ams-malergeschaft/app/views/projects/index.php?id=<?= $project['id'] ?>" class="block">
+        <?php $progress = $project['progress'] ?? 0; ?>
+        <a href="<?= $baseUrl ?>/projects/details?id=<?= $project['id'] ?>" class="block">
           <div class="bg-white p-4 rounded-lg shadow flex flex-col">
             <h4 class="text-lg font-semibold"><?= htmlspecialchars($project['name']) ?></h4>
             <p class="text-sm text-gray-600 mt-1">Delivery: <?= htmlspecialchars($project['end_date']) ?></p>

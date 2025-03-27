@@ -1,14 +1,18 @@
 <?php
 ob_start();
 
+session_start();
+
 require_once __DIR__ . '/../app/controllers/UserController.php';
 require_once __DIR__ . '/../app/controllers/ProjectController.php';
+
 require_once __DIR__ . '/../app/lang/lang.php';
 
 $uri = $_SERVER['REQUEST_URI'];
 $basePath = '/ams-malergeschaft/public';
 $route = str_replace($basePath, '', $uri);
 
+// Gerencia o idioma
 if (isset($_GET['lang'])) {
     $_SESSION['lang'] = $_GET['lang'];
     if (!headers_sent()) {
@@ -51,6 +55,12 @@ switch ($route) {
         break;
     case '/projects/store':
         $projectController->store();
+        break;
+    case '/projects/details':
+        $projectController->show();
+        break;
+    case '/employees':
+        require_once __DIR__ . '/../app/views/employees/index.php';
         break;
     default:
         http_response_code(404);

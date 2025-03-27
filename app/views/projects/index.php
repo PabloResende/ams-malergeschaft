@@ -4,7 +4,7 @@ require_once __DIR__ . '/../../../config/Database.php';
 
 $pdo = Database::connect();
 
-// Verifica se há um parâmetro 'id' para exibir os detalhes do projeto
+// Se for solicitado um projeto específico, exibe os detalhes
 if (isset($_GET['id'])) {
     $stmt = $pdo->prepare("SELECT * FROM projects WHERE id = ?");
     $stmt->execute([$_GET['id']]);
@@ -15,7 +15,7 @@ if (isset($_GET['id'])) {
         exit;
     }
     
-    // Dados fictícios para funcionários e materiais (substitua por consultas se necessário)
+    // Dados fictícios para funcionários e materiais (substitua por consultas reais, se necessário)
     $employees = [
         ['name' => 'John Doe', 'role' => 'Engineer'],
         ['name' => 'Jane Smith', 'role' => 'Architect'],
@@ -26,7 +26,7 @@ if (isset($_GET['id'])) {
     ];
     ?>
     <div class="ml-56 pt-20 p-8">
-        <a href="/projects" class="text-blue-500 underline">&larr; Voltar</a>
+        <a href="<?= $baseUrl ?>/projects" class="text-blue-500 underline">&larr; Voltar</a>
         <h1 class="text-2xl font-bold mt-4"><?= htmlspecialchars($project['name']) ?></h1>
         <p class="mt-2 text-gray-600">Status: <strong><?= ucfirst($project['status']) ?></strong></p>
         <p class="mt-2 text-gray-600">Progress: <strong><?= $project['progress'] ?>%</strong></p>
@@ -50,9 +50,7 @@ if (isset($_GET['id'])) {
     exit;
 }
 
-// Caso não haja 'id', exibe a lista de projetos com filtros
-
-// Verifica filtro (all, active, pending, completed)
+// Caso não haja um 'id', exibe a lista de projetos com filtros
 $filter = $_GET['filter'] ?? '';
 
 $query = "SELECT * FROM projects";
@@ -66,11 +64,9 @@ if ($filter === 'active') {
     $query .= " WHERE status = 'completed'";
 }
 
-// Para o filtro 'active', ordena pela data de entrega (mais próxima primeiro)
 if ($filter === 'active') {
     $query .= " ORDER BY end_date ASC";
 } else {
-    // Caso contrário, ordena por data de criação (mais recentes primeiro)
     $query .= " ORDER BY created_at DESC";
 }
 
@@ -84,10 +80,10 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <!-- Filtros -->
     <div class="mb-6">
         <span class="mr-4 font-semibold">Filter by status:</span>
-        <a href="/projects" class="mr-2 px-3 py-1 rounded-full border <?= $filter=='' ? 'bg-gray-300' : 'bg-white' ?>">All</a>
-        <a href="/projects?filter=active" class="mr-2 px-3 py-1 rounded-full border <?= $filter=='active' ? 'bg-blue-200 text-blue-800' : 'bg-white' ?>">Active</a>
-        <a href="/projects?filter=pending" class="mr-2 px-3 py-1 rounded-full border <?= $filter=='pending' ? 'bg-yellow-200 text-yellow-800' : 'bg-white' ?>">Pending</a>
-        <a href="/projects?filter=completed" class="mr-2 px-3 py-1 rounded-full border <?= $filter=='completed' ? 'bg-green-200 text-green-800' : 'bg-white' ?>">Completed</a>
+        <a href="<?= $baseUrl ?>/projects" class="mr-2 px-3 py-1 rounded-full border <?= $filter=='' ? 'bg-gray-300' : 'bg-white' ?>">All</a>
+        <a href="<?= $baseUrl ?>/projects?filter=active" class="mr-2 px-3 py-1 rounded-full border <?= $filter=='active' ? 'bg-blue-200 text-blue-800' : 'bg-white' ?>">Active</a>
+        <a href="<?= $baseUrl ?>/projects?filter=pending" class="mr-2 px-3 py-1 rounded-full border <?= $filter=='pending' ? 'bg-yellow-200 text-yellow-800' : 'bg-white' ?>">Pending</a>
+        <a href="<?= $baseUrl ?>/projects?filter=completed" class="mr-2 px-3 py-1 rounded-full border <?= $filter=='completed' ? 'bg-green-200 text-green-800' : 'bg-white' ?>">Completed</a>
     </div>
     
     <!-- Grid de Projetos -->
@@ -97,7 +93,6 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php else: ?>
             <?php foreach ($projects as $project): ?>
                 <?php
-                // Define tag de status dinâmica
                 $status = $project['status'];
                 if ($status === 'in_progress') {
                     $tag = '<span class="bg-blue-200 text-blue-800 px-2 py-1 rounded-full text-xs">Active</span>';
@@ -108,7 +103,7 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 }
                 $progress = $project['progress'] ?? 0;
                 ?>
-                <a href="/projects?id=<?= $project['id'] ?>" class="block">
+                <a href="<?= $baseUrl ?>/projects?id=<?= $project['id'] ?>" class="block">
                   <div class="bg-white p-4 rounded-lg shadow flex flex-col">
                     <h4 class="text-lg font-semibold"><?= htmlspecialchars($project['name']) ?></h4>
                     <p class="text-sm text-gray-600 mt-1">Delivery: <?= htmlspecialchars($project['end_date']) ?></p>
@@ -123,3 +118,4 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php endif; ?>
     </div>
 </div>
+

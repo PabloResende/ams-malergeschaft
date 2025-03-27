@@ -2,9 +2,6 @@
 require_once __DIR__ . '/../layout/header.php';
 require_once __DIR__ . '/../../../config/Database.php';
 
-// Supondo que você tenha a variável $langText que carrega as traduções do arquivo correto
-// Exemplo: $langText = require __DIR__ . '/../../../lang/' . $lang . '.php';
-
 $pdo = Database::connect();
 
 // Métricas gerais
@@ -28,6 +25,7 @@ $teamMembers = $team['team_members'] ?? 0;
 $stmt = $pdo->query("SELECT * FROM projects WHERE status = 'in_progress' ORDER BY created_at DESC LIMIT 9");
 $activeProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
+
 <div class="ml-56 pt-20 p-8">
   <h2 class="text-2xl font-bold mb-4"><?= $langText['projects_overview'] ?? 'Projects Overview' ?></h2>
   <p class="text-lg text-gray-600 mb-8"><?= $langText['track_and_manage'] ?? 'Track and manage your renovation projects efficiently' ?></p>
@@ -57,8 +55,7 @@ $activeProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
   </div>
 
   <!-- Grid de Projetos Ativos -->
-<!-- Grid de Projetos Ativos -->
-<div class="mt-12">
+  <div class="mt-12">
     <h3 class="text-xl font-semibold mb-6"><?= $langText['active_projects'] ?? 'Active Projects' ?></h3>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <?php foreach ($activeProjects as $project): ?>
@@ -76,18 +73,23 @@ $activeProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 }
             ?>
             <a href="<?= $baseUrl ?>/projects/details?id=<?= $project['id'] ?>" class="block">
-                <div class="bg-white p-4 rounded-lg shadow flex flex-col">
-                    <h4 class="text-lg font-semibold"><?= htmlspecialchars($project['name']) ?></h4>
-                    <p class="text-sm text-gray-600 mt-1"><?= $langText['delivery'] ?? 'Delivery' ?>: <?= htmlspecialchars($project['end_date']) ?></p>
-                    <div class="mt-2"><?= $tag ?></div> <!-- Exibindo a tag de status com cores -->
-                    <div class="w-full bg-gray-200 rounded-full h-1 mt-2">
-                        <div class="bg-blue-500 h-1 rounded-full" style="width: <?= $progress ?>%;"></div>
+                <div class="bg-white p-6 rounded-xl shadow flex flex-col hover:shadow-md transition-all">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-xl font-bold flex-1"><?= htmlspecialchars($project['name']) ?></h4>
+                        <?= $tag ?>
+                    </div>
+                    <span>
+                        <h1 class="text-[13px] text-gray-600"><?= $langText['client'] ?? 'Client' ?></h1>
+                        <p class="text-sm font-semibold -mt-1"><?= htmlspecialchars($project['client_name']) ?></p>
+                    </span>
+
+                    <div class="w-full bg-gray-200 rounded-full h-2 mt-3">
+                        <div class="bg-blue-500 h-2 rounded-full" style="width: <?= $progress ?>%;"></div>
                     </div>
                     <p class="mt-1 text-sm text-gray-600"><?= $langText['progress'] ?? 'Progress' ?>: <?= $progress ?>%</p>
                 </div>
             </a>
         <?php endforeach; ?>
     </div>
-</div>
-
+  </div>
 </div>

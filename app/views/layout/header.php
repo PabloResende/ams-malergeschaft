@@ -41,7 +41,7 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
   <!-- Sidebar fixa -->
   <aside class="w-56 bg-gray-900 text-white h-screen fixed left-0 top-0 p-4 flex flex-col justify-between">
       <div>
-          <h1 class="text-xl font-bold mb-6"><a href="<?= $baseUrl ?>/dashboard">AMS Malergeschäft</h1>
+          <h1 class="text-xl font-bold mb-6"><a href="<?= $baseUrl ?>/dashboard"><?= $langText['Malergeschäft'] ?? 'AMS Malergeschäft' ?></a></h1>
           <nav>
               <ul>
                   <li class="mb-4">
@@ -49,7 +49,7 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
                           <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                               <path d="M3 10h11M9 21V6M21 16H9M15 3h6v6"></path>
                           </svg>
-                          <span>Dashboard</span>
+                          <span><?= $langText['dashboard'] ?? 'Painel de Controle' ?></span>
                       </a>
                   </li>
                   <li class="mb-4">
@@ -57,7 +57,7 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
                           <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                               <path d="M9 12h6M12 9v6M4 21h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z"></path>
                           </svg>
-                          <span>Projetos</span>
+                          <span><?= $langText['projects'] ?? 'Projetos' ?></span>
                       </a>
                   </li>
                   <li class="mb-4">
@@ -65,7 +65,7 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
                           <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                               <path d="M8 7a4 4 0 1 1 8 0 4 4 0 0 1-8 0zM4 21V12h16v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path>
                           </svg>
-                          <span>Funcionários</span>
+                          <span><?= $langText['employees'] ?? 'Funcionários' ?></span>
                       </a>
                   </li>
                   <li class="mb-4">
@@ -73,7 +73,7 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
                           <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                               <path d="M15 12H3M21 16l-4-4 4-4M21 12h-8"></path>
                           </svg>
-                          <span>Sair</span>
+                          <span><?= $langText['logout_button'] ?? 'Sair' ?></span>
                       </a>
                   </li>
               </ul>
@@ -88,12 +88,12 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
   <nav class="bg-white shadow p-4 fixed top-0 left-56 right-0 z-10 flex items-center justify-between">
       <div class="flex items-center">
           <div class="flex items-center">
-              <span class="text-4xl font-bold text-blue-600"><a href="<?= $baseUrl ?>/dashboard">Ams</span>
-              <span class="ml-2 text-xl text-gray-600"><?= $langText['Malergeschften'] ?? 'Malergeschäft' ?></span>
+              <span class="text-4xl font-bold text-blue-600"><a href="<?= $baseUrl ?>/dashboard"><?= $langText['Ams'] ?? 'Ams' ?></a></span>
+              <span class="ml-2 text-xl text-gray-600"><?= $langText['Malergeschäft'] ?? 'Lojas de Pintura' ?></span>
           </div>
       </div>
       <div class="flex items-center space-x-6">
-          <a href="<?= $baseUrl ?>/create_project" class="bg-green-500 text-white px-3 py-2 rounded hover:bg-green-600">Novo Projeto +</a>
+          <a href="<?= $baseUrl ?>/create_project" class="bg-green-500 text-white px-3 py-2 rounded hover:bg-green-600"><?= $langText['new_project'] ?? 'Novo Projeto +' ?></a>
           <div class="relative group">
               <button id="language-button" class="flex items-center gap-2 bg-white text-gray-900">
                   <?= $currentFlag ?>
@@ -110,3 +110,20 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
       </div>
   </nav>
 <?php endif; ?>
+<script>
+        const langButton = document.getElementById("language-button");
+        const langMenu = document.getElementById("language-menu");
+
+        if (langButton) {
+            langButton.addEventListener("click", (event) => {
+                event.stopPropagation();
+                langMenu.classList.toggle("hidden");
+            });
+        }
+
+        document.addEventListener("click", (event) => {
+            if (langButton && !langButton.contains(event.target) && !langMenu.contains(event.target)) {
+                langMenu.classList.add("hidden");
+            }
+        });
+    </script>

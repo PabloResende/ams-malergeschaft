@@ -1,6 +1,6 @@
 <?php require __DIR__ . '/../layout/header.php'; ?>
 
-<div class="p-6 max-w-lg mx-auto">
+<div class="ml-56 pt-20 p-8 max-w-lg mx-auto">
     <h1 class="text-2xl font-bold mb-4">Novo Projeto</h1>
     <form action="<?= $baseUrl ?>/projects/store" method="POST" class="space-y-4">
         <div>

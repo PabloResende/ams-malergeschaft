@@ -115,4 +115,21 @@ return [
     'submit' => 'Enviar',
     'cancel' => 'Cancelar',
     'back' => 'Voltar',
+
+    // ---------------------------
+    // inventório
+    // ---------------------------
+    'inventory'           => 'Estoque',
+    'manage_inventory'    => 'Gerencie seus itens de estoque',
+    'filter_by'           => 'Filtrar por',
+    'material'            => 'Material',
+    'equipment'           => 'Equipamento',
+    'rented'              => 'Alugados',
+    'no_inventory'        => 'Nenhum item de estoque encontrado.',
+    'quantity'            => 'Quantidade',
+    'add_inventory_item'  => 'Adicionar Item ao Estoque',
+    'type'                => 'Tipo',
+    'name'                => 'Nome',
+    'cancel'              => 'Cancelar',
+    'submit'              => 'Enviar',
 ];

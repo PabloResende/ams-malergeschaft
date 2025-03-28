@@ -47,6 +47,7 @@ class EmployeeController {
             $address = $_POST['address'] ?? '';
             $about = $_POST['about'] ?? '';
             $phone = $_POST['phone'] ?? '';
+            $active = isset($_POST['active']) ? 1 : 0;
 
             if (empty($id) || empty($name) || empty($role)) {
                 echo "Required fields missing.";
@@ -55,8 +56,8 @@ class EmployeeController {
 
             require_once __DIR__ . '/../../config/Database.php';
             $pdo = Database::connect();
-            $stmt = $pdo->prepare("UPDATE employees SET name = ?, role = ?, birth_date = ?, start_date = ?, address = ?, about = ?, phone = ? WHERE id = ?");
-            if ($stmt->execute([$name, $role, $birth_date, $start_date, $address, $about, $phone, $id])) {
+            $stmt = $pdo->prepare("UPDATE employees SET name = ?, role = ?, birth_date = ?, start_date = ?, address = ?, about = ?, phone = ?, active = ? WHERE id = ?");
+            if ($stmt->execute([$name, $role, $birth_date, $start_date, $address, $about, $phone, $active, $id])) {
                 header("Location: /ams-malergeschaft/public/employees");
                 exit;
             } else {

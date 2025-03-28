@@ -112,7 +112,7 @@ $inventoryItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <input type="number" name="quantity" class="w-full p-2 border rounded" required>
                 </div>
                 <div class="flex justify-end">
-                    <button type="button" id="closeModal" class="mr-2 px-4 py-2 border rounded"><?= $langText['cancel'] ?? 'Cancel' ?></button>
+                    <button type="button" id="closeInventoryModal" class="mr-2 px-4 py-2 border rounded"><?= $langText['cancel'] ?? 'Cancel' ?></button>
                     <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded"><?= $langText['submit'] ?? 'Submit' ?></button>
                 </div>
             </form>
@@ -154,12 +154,12 @@ $inventoryItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
     // Inventory - Create Modal
     const addInventoryBtn = document.getElementById('addInventoryBtn');
     const inventoryModal = document.getElementById('inventoryModal');
-    const closeModal = document.getElementById('closeModal');
+    const closeInventoryModal = document.getElementById('closeInventoryModal');
 
     addInventoryBtn.addEventListener('click', function() {
         inventoryModal.classList.remove('hidden');
     });
-    closeModal.addEventListener('click', function() {
+    closeInventoryModal.addEventListener('click', function() {
         inventoryModal.classList.add('hidden');
     });
     window.addEventListener('click', function(event) {

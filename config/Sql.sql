@@ -34,18 +34,9 @@ CREATE TABLE employees (
     phone VARCHAR(20),
     profile_picture VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    status ENUM('active', 'inactive') DEFAULT 'active'
 );
 
-
--- ProjectEmployees
-CREATE TABLE project_employees (
-    project_id INT,
-    employee_id INT,
-    role VARCHAR(255),
-    PRIMARY KEY (project_id, employee_id),
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-    FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
-);
 
 -- Inventory
 CREATE TABLE inventory (
@@ -54,5 +45,16 @@ CREATE TABLE inventory (
   name VARCHAR(255) NOT NULL,
   quantity INT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- project_resources
+CREATE TABLE project_resources (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    project_id INT NOT NULL,
+    resource_type ENUM('employee', 'inventory') NOT NULL,
+    resource_id INT NOT NULL,
+    quantity INT DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 );
 

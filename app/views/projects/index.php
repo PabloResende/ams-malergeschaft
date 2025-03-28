@@ -135,16 +135,34 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <input type="number" name="total_hours" class="w-full p-2 border rounded" required>
                 </div>
                 <div class="mb-4">
-                    <label class="block text-gray-700"><?= $langText['status'] ?? 'Status' ?></label>
-                    <select name="status" class="w-full p-2 border rounded">
-                        <option value="in_progress"><?= $langText['in_progress'] ?? 'In Progress' ?></option>
-                        <option value="pending"><?= $langText['pending'] ?? 'Pending' ?></option>
-                        <option value="completed"><?= $langText['completed'] ?? 'Completed' ?></option>
+                <div class="mb-4">
+                    <label class="block text-gray-700"><?= $langText['assign_employees'] ?? 'Assign Employees' ?></label>
+                    <select name="employees[]" multiple class="w-full p-2 border rounded employee-select">
+                        <?php 
+                        $stmt = $pdo->query("SELECT id, name FROM employees WHERE active = 1");
+                        foreach ($stmt->fetchAll() as $employee): 
+                        ?>
+                            <option value="<?= $employee['id'] ?>"><?= htmlspecialchars($employee['name']) ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
+
                 <div class="mb-4">
-                    <label class="block text-gray-700"><?= $langText['progress'] ?? 'Progress' ?> (%)</label>
-                    <input type="number" name="progress" min="0" max="100" class="w-full p-2 border rounded" required>
+                    <label class="block text-gray-700"><?= $langText['assign_inventory'] ?? 'Assign Inventory Items' ?></label>
+                    <div class="inventory-items-container">
+                        <?php 
+                        $stmt = $pdo->query("SELECT id, name, type, quantity FROM inventory");
+                        foreach ($stmt->fetchAll() as $item): 
+                        ?>
+                            <div class="flex items-center mb-2 inventory-item" data-type="<?= $item['type'] ?>" data-quantity="<?= $item['quantity'] ?>">
+                                <input type="checkbox" name="inventory_items[<?= $item['id'] ?>]" class="inventory-checkbox mr-2">
+                                <span><?= htmlspecialchars($item['name']) ?> (<?= $item['type'] ?>)</span>
+                                <input type="number" name="quantity[<?= $item['id'] ?>]" min="1" max="<?= $item['quantity'] ?>" 
+                                    class="ml-2 p-1 border rounded quantity-input hidden" disabled>
+                                <span class="text-xs text-gray-500 ml-2 available-quantity">Available: <?= $item['quantity'] ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
                 <div class="flex justify-end">
                     <button type="button" id="closeModal" class="mr-2 px-4 py-2 border rounded"><?= $langText['cancel'] ?? 'Cancel' ?></button>

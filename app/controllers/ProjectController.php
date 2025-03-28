@@ -16,6 +16,21 @@ class ProjectController {
             $status = $_POST['status'] ?? 'in_progress';
             $progress = $_POST['progress'] ?? 0;
 
+            if (!empty($_POST['employees'])) {
+                foreach ($_POST['employees'] as $employeeId) {
+                    $stmt = $pdo->prepare("INSERT INTO project_resources (project_id, resource_type, resource_id) VALUES (?, 'employee', ?)");
+                    $stmt->execute([$projectId, $employeeId]);
+                }
+            }
+            
+            // Processar alocação de itens do inventário
+            if (!empty($_POST['inventory_items'])) {
+                foreach ($_POST['inventory_items'] as $inventoryId => $quantity) {
+                    $stmt = $pdo->prepare("INSERT INTO project_resources (project_id, resource_type, resource_id, quantity) VALUES (?, 'inventory', ?, ?)");
+                    $stmt->execute([$projectId, $inventoryId, $quantity]);
+                }
+            }
+
             if (empty($name)) {
                 echo "O nome do projeto é obrigatório.";
                 return;
@@ -68,6 +83,40 @@ class ProjectController {
             header("Location: /ams-malergeschaft/public/projects");
             exit;
         }
+    }
+
+    public function checkEmployee() {
+        $employeeId = $_GET['employee_id'] ?? 0;
+        $pdo = Database::connect();
+        
+        $stmt = $pdo->prepare("SELECT p.name FROM project_resources pr 
+                              JOIN projects p ON pr.project_id = p.id 
+                              WHERE pr.resource_type = 'employee' AND pr.resource_id = ?");
+        $stmt->execute([$employeeId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        echo json_encode([
+            'assigned' => $result !== false,
+            'project_name' => $result['name'] ?? ''
+        ]);
+        exit;
+    }
+    
+    public function checkInventory() {
+        $inventoryId = $_GET['inventory_id'] ?? 0;
+        $pdo = Database::connect();
+        
+        $stmt = $pdo->prepare("SELECT p.name FROM project_resources pr 
+                              JOIN projects p ON pr.project_id = p.id 
+                              WHERE pr.resource_type = 'inventory' AND pr.resource_id = ?");
+        $stmt->execute([$inventoryId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        echo json_encode([
+            'assigned' => $result !== false,
+            'project_name' => $result['name'] ?? ''
+        ]);
+        exit;
     }
 
     public function delete() {

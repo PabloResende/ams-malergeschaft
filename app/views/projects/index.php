@@ -63,10 +63,12 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
 
                     <!-- Cliente -->
+                    <?php if(!empty($project['client_name'])): ?>
                     <span>
                         <h1 class="text-[13px] text-gray-600"><?= $langText['client'] ?? 'Client' ?></h1>
                         <p class="text-sm font-semibold -mt-1"><?= htmlspecialchars($project['client_name']) ?></p>
                     </span>
+                    <?php endif; ?>
 
                     <!-- Barra de progresso -->
                     <div class="w-full bg-gray-200 rounded-full h-2 mt-3">
@@ -184,7 +186,8 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700"><?= $langText['client_name'] ?? 'Client Name' ?></label>
-                    <input type="text" name="client_name" id="editProjectClientName" class="w-full p-2 border rounded" required>
+                    <input type="text" name="client_name" id="editProjectClientName" 
+                        class="w-full p-2 border rounded" required>
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700"><?= $langText['description'] ?? 'Description' ?></label>

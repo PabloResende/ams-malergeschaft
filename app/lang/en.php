@@ -120,4 +120,21 @@ return [
     'submit' => 'Submit',
     'cancel' => 'Cancel',
     'back' => 'Back',
+
+    // ---------------------------
+    // Inventory
+    // ---------------------------
+    'inventory'           => 'Inventory',
+    'manage_inventory'    => 'Manage your inventory items',
+    'filter_by'           => 'Filter by',
+    'material'            => 'Material',
+    'equipment'           => 'Equipment',
+    'rented'              => 'Rented',
+    'no_inventory'        => 'No inventory items found.',
+    'quantity'            => 'Quantity',
+    'add_inventory_item'  => 'Add Inventory Item',
+    'type'                => 'Type',
+    'name'                => 'Name',
+    'cancel'              => 'Cancel',
+    'submit'              => 'Submit',
 ];

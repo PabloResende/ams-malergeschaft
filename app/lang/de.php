@@ -115,4 +115,21 @@ return [
     'submit' => 'Absenden',
     'cancel' => 'Abbrechen',
     'back' => 'Zurück',
+
+    // ---------------------------
+    // Inventar
+    // ---------------------------
+    'inventory'           => 'Inventar',
+    'manage_inventory'    => 'Verwalten Sie Ihre Inventarartikel',
+    'filter_by'           => 'Filtern nach',
+    'material'            => 'Material',
+    'equipment'           => 'Ausrüstung',
+    'rented'              => 'Gemietet',
+    'no_inventory'        => 'Keine Inventarartikel gefunden.',
+    'quantity'            => 'Menge',
+    'add_inventory_item'  => 'Inventarartikel hinzufügen',
+    'type'                => 'Typ',
+    'name'                => 'Name',
+    'cancel'              => 'Abbrechen',
+    'submit'              => 'Absenden',
 ];

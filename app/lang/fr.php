@@ -117,4 +117,21 @@ return [
     'submit' => 'Soumettre',
     'cancel' => 'Annuler',
     'back' => 'Retour',
+
+    // ---------------------------
+    // stock
+    // ---------------------------
+    'inventory'           => 'Stock',
+    'manage_inventory'    => 'Gérez vos articles de stock',
+    'filter_by'           => 'Filtrer par',
+    'material'            => 'Matériel',
+    'equipment'           => 'Équipement',
+    'rented'              => 'Loué',
+    'no_inventory'        => 'Aucun article de stock trouvé.',
+    'quantity'            => 'Quantité',
+    'add_inventory_item'  => 'Ajouter un article au stock',
+    'type'                => 'Type',
+    'name'                => 'Nom',
+    'cancel'              => 'Annuler',
+    'submit'              => 'Envoyer',
 ];

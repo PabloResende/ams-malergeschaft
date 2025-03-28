@@ -47,20 +47,12 @@ CREATE TABLE project_employees (
     FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
 );
 
--- Materials
-CREATE TABLE materials (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    quantity INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- Inventory
+CREATE TABLE inventory (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  type ENUM('material', 'equipment', 'rented') NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  quantity INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ProjectMaterials
-CREATE TABLE project_materials (
-    project_id INT,
-    material_id INT,
-    quantity_used INT NOT NULL,
-    PRIMARY KEY (project_id, material_id),
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-    FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE CASCADE
-);

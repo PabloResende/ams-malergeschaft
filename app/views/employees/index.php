@@ -52,11 +52,4 @@
     </form>
 </div>
 
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    const phone = document.getElementById('phone');
-    phone.addEventListener("input", function() {
-        this.value = this.value.replace(/\D/g, "").replace(/^(\d{2})(\d)/g, "($1) $2").replace(/(\d{5})(\d)/, "$1-$2");
-    });
-});
-</script>
+

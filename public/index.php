@@ -62,6 +62,19 @@ switch ($route) {
     case '/employees':
         require_once __DIR__ . '/../app/views/employees/index.php';
         break;
+    case '/employees':
+        require_once __DIR__ . '/../app/views/employees/index.php';
+        break;
+    case '/employees/create':
+        require_once __DIR__ . '/../app/controllers/EmployeeController.php';
+        $employeeController = new EmployeeController();
+        $employeeController->create();
+        break;
+    case '/employees/store':
+        require_once __DIR__ . '/../app/controllers/EmployeeController.php';
+        $employeeController = new EmployeeController();
+        $employeeController->store();
+        break;
     default:
         http_response_code(404);
         echo "404 - Page not found.";

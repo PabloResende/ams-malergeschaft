@@ -3,7 +3,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$lang = 'pt'; 
+$lang = 'en'; 
 if (isset($_GET['lang'])) {
     $lang = $_GET['lang'];
     $_SESSION['lang'] = $lang;
@@ -19,7 +19,7 @@ if (isset($_GET['lang'])) {
 
 $langFile = __DIR__ . "/{$lang}.php";
 if (!file_exists($langFile)) {
-    $langFile = __DIR__ . "/pt.php"; 
+    $langFile = __DIR__ . "/en.php"; 
 }
 
 $langText = require $langFile;

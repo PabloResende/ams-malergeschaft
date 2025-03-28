@@ -52,14 +52,14 @@ switch ($route) {
     case '/projects':
         $projectController->index();
         break;
-    case '/create_project':
-        $projectController->create();
-        break;
     case '/projects/store':
         $projectController->store();
         break;
-    case '/projects/details':
-        $projectController->show();
+    case '/projects/update':
+        $projectController->update();
+        break;
+    case '/projects/delete':
+        $projectController->delete();
         break;
     case '/employees':
         $employeeController->list();

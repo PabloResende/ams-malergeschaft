@@ -69,27 +69,15 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
                       </a>
                   </li>
                   <li class="mb-4">
-                    <a href="<?= $baseUrl ?>/employees/list" class="flex items-center space-x-2 hover:text-gray-300">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <circle cx="12" cy="8" r="4"></circle>
-                        <path d="M6 20v-2a6 6 0 0 1 12 0v2"></path>
-                        <circle cx="6" cy="6" r="3"></circle>
-                        <path d="M3 16v-2a5 5 0 0 1 5-5"></path>
-                    </svg>
-                    <span><?= $langText['team'] ?? 'Times' ?></span>
-                    </a>
+                        <a href="<?= $baseUrl ?>/inventory" class="flex items-center space-x-2 hover:text-gray-300">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="3" y1="9" x2="21" y2="9"></line>
+                                <line x1="3" y1="15" x2="21" y2="15"></line>
+                            </svg>
+                            <span><?= $langText['inventory'] ?? 'Inventory' ?></span>
+                        </a>
                   </li>
-                  <li class="mb-4">
-    <a href="<?= $baseUrl ?>/inventory" class="flex items-center space-x-2 hover:text-gray-300">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="3" y1="9" x2="21" y2="9"></line>
-            <line x1="3" y1="15" x2="21" y2="15"></line>
-        </svg>
-        <span><?= $langText['inventory'] ?? 'Inventory' ?></span>
-    </a>
-</li>
-
                   <li class="mb-4">
                       <a href="<?= $baseUrl ?>/logout" class="flex items-center space-x-2 hover:text-red-400">
                           <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

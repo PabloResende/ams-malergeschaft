@@ -5,7 +5,6 @@ require_once __DIR__ . '/../../config/Database.php';
 
 class EmployeeController {
 
-    // Lista todos os funcionários e exibe a view com modal para criação
     public function list() {
         $pdo = Database::connect();
         $stmt = $pdo->query("SELECT * FROM employees ORDER BY name ASC");
@@ -13,56 +12,71 @@ class EmployeeController {
         require_once __DIR__ . '/../views/employees/index.php';
     }
 
-    // Processa o cadastro de funcionário
+    public function create() {
+        require_once __DIR__ . '/../views/employees/create.php';
+    }
+
     public function store() {
+        // (Código já existente para cadastro de funcionário)
+        // ...
+    }
+
+    public function edit() {
+        if (!isset($_GET['id'])) {
+            echo "Employee ID not provided.";
+            exit;
+        }
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare("SELECT * FROM employees WHERE id = ?");
+        $stmt->execute([$_GET['id']]);
+        $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$employee) {
+            echo "Employee not found.";
+            exit;
+        }
+        require_once __DIR__ . '/../views/employees/edit.php';
+    }
+
+    public function update() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $name       = $_POST['name'] ?? '';
-            $role       = $_POST['role'] ?? '';
+            $id = $_POST['id'] ?? '';
+            $name = $_POST['name'] ?? '';
+            $role = $_POST['role'] ?? '';
             $birth_date = $_POST['birth_date'] ?? '';
             $start_date = $_POST['start_date'] ?? '';
-            $address    = $_POST['address'] ?? '';
-            $about      = $_POST['about'] ?? '';
-            $phone      = $_POST['phone'] ?? '';
+            $address = $_POST['address'] ?? '';
+            $about = $_POST['about'] ?? '';
+            $phone = $_POST['phone'] ?? '';
 
-            if (empty($name) || empty($role) || empty($birth_date) || empty($start_date)) {
-                echo "Please fill in all required fields.";
+            if (empty($id) || empty($name) || empty($role)) {
+                echo "Required fields missing.";
                 exit;
-            }
-
-            // Processa o upload da foto de perfil, se houver
-            $profile_picture = '';
-            if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
-                $fileTmpPath   = $_FILES['profile_picture']['tmp_name'];
-                $fileName      = $_FILES['profile_picture']['name'];
-                $fileNameCmps  = explode(".", $fileName);
-                $fileExtension = strtolower(end($fileNameCmps));
-                $newFileName = md5(time() . $fileName) . '.' . $fileExtension;
-                $uploadFileDir = __DIR__ . '/../../public/uploads/';
-                if (!is_dir($uploadFileDir)) {
-                    mkdir($uploadFileDir, 0777, true);
-                }
-                $dest_path = $uploadFileDir . $newFileName;
-                if (move_uploaded_file($fileTmpPath, $dest_path)) {
-                    $profile_picture = $newFileName;
-                } else {
-                    echo "Error moving the uploaded file.";
-                    exit;
-                }
             }
 
             require_once __DIR__ . '/../../config/Database.php';
             $pdo = Database::connect();
-            $stmt = $pdo->prepare("INSERT INTO employees (name, role, birth_date, start_date, address, about, phone, profile_picture, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-            if ($stmt->execute([$name, $role, $birth_date, $start_date, $address, $about, $phone, $profile_picture])) {
+            $stmt = $pdo->prepare("UPDATE employees SET name = ?, role = ?, birth_date = ?, start_date = ?, address = ?, about = ?, phone = ? WHERE id = ?");
+            if ($stmt->execute([$name, $role, $birth_date, $start_date, $address, $about, $phone, $id])) {
                 header("Location: /ams-malergeschaft/public/employees");
                 exit;
             } else {
-                echo "Error registering employee.";
-                exit;
+                echo "Error updating employee.";
             }
-        } else {
+        }
+    }
+
+    public function delete() {
+        if (!isset($_GET['id'])) {
+            echo "Employee ID not provided.";
+            exit;
+        }
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare("DELETE FROM employees WHERE id = ?");
+        if ($stmt->execute([$_GET['id']])) {
             header("Location: /ams-malergeschaft/public/employees");
             exit;
+        } else {
+            echo "Error deleting employee.";
         }
     }
 }

@@ -92,6 +92,25 @@ return [
     'about_me' => 'About Me',
     'phone' => 'Phone',
     'profile_picture' => 'Profile Picture',
+    'employees_list'    => 'Employees List',
+    'create_employee'   => 'Create Employee',
+    'edit_employee'     => 'Edit Employee',
+    'delete_employee'   => 'Delete Employee',
+    'no_employees_available' => 'No employees available.',
+    'role'              => 'Role',
+    'birth_date'        => 'Birth Date',
+    'start_date'        => 'Start Date',
+    'address'           => 'Address',
+    'about_me'          => 'About Me',
+    'phone'             => 'Phone',
+    'profile_picture'   => 'Profile Picture',
+    'time_in_company'   => 'Time in Company',
+    'year'              => 'year',
+    'years'             => 'years',
+    'month'             => 'month',
+    'months'            => 'months',
+    'no_employees_found' => 'No employees found.',
+
 
     // ---------------------------
     // Generic

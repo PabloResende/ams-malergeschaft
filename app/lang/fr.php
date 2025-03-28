@@ -91,7 +91,24 @@ return [
     'about_me' => 'À propos de moi',
     'phone' => 'Téléphone',
     'profile_picture' => 'Photo de Profil',
-    
+    'employees_list'    => 'Liste des Employés',
+    'create_employee'   => 'Créer un Employé',
+    'edit_employee'     => 'Modifier un Employé',
+    'delete_employee'   => 'Supprimer un Employé',
+    'no_employees_available' => 'Aucun employé disponible.',
+    'role'              => 'Poste',
+    'birth_date'        => 'Date de Naissance',
+    'start_date'        => 'Date de Début',
+    'address'           => 'Adresse',
+    'about_me'          => 'À propos de moi',
+    'phone'             => 'Téléphone',
+    'profile_picture'   => 'Photo de Profil',
+    'time_in_company'   => 'Ancienneté',
+    'year'              => 'an',
+    'years'             => 'ans',
+    'month'             => 'mois',
+    'months'            => 'mois',
+    'no_employees_found' => 'Aucun employé trouvé.',    
     // ---------------------------
     // Générique
     // ---------------------------

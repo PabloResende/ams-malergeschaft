@@ -75,6 +75,11 @@ switch ($route) {
         $employeeController = new EmployeeController();
         $employeeController->store();
         break;
+    case '/employees/list':
+        require_once __DIR__ . '/../app/controllers/EmployeeController.php';
+        $employeeController = new EmployeeController();
+        $employeeController->list();
+        break;    
     default:
         http_response_code(404);
         echo "404 - Page not found.";

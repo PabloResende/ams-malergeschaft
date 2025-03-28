@@ -62,11 +62,26 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
                   </li>
                   <li class="mb-4">
                       <a href="<?= $baseUrl ?>/employees" class="flex items-center space-x-2 hover:text-gray-300">
-                          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                              <path d="M8 7a4 4 0 1 1 8 0 4 4 0 0 1-8 0zM4 21V12h16v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"></path>
-                          </svg>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M8 7a4 4 0 1 1 8 0 4 4 0 0 1-8 0zM4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"></path>
+                        </svg>
                           <span><?= $langText['employees'] ?? 'Funcionários' ?></span>
                       </a>
+                  </li>
+                  <li class="mb-4">
+                    <a href="<?= $baseUrl ?>/employees/list" class="flex items-center space-x-2 hover:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    <!-- Boneco principal no centro -->
+    <circle cx="12" cy="8" r="4"></circle>
+    <path d="M6 20v-2a6 6 0 0 1 12 0v2"></path>
+    
+    <!-- Boneco atrás à esquerda -->
+    <circle cx="6" cy="6" r="3"></circle>
+    <path d="M3 16v-2a5 5 0 0 1 5-5"></path>
+</svg>
+
+                        <span><?= $langText['team'] ?? 'Times' ?></span>
+                    </a>
                   </li>
                   <li class="mb-4">
                       <a href="<?= $baseUrl ?>/logout" class="flex items-center space-x-2 hover:text-red-400">

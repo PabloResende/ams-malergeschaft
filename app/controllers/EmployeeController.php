@@ -3,6 +3,16 @@
 
 class EmployeeController {
 
+    public function list() {
+        require_once __DIR__ . '/../../config/Database.php';
+        $pdo = Database::connect();
+
+        $stmt = $pdo->query("SELECT * FROM employees ORDER BY name ASC");
+        $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        require_once __DIR__ . '/../views/employees/list.php';
+    }
+
     // Displays the create employee form
     public function create() {
         require_once __DIR__ . '/../views/employees/create.php';

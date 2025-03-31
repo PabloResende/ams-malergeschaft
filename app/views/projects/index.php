@@ -251,4 +251,5 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
             projectEditModal.classList.add('hidden');
         }
     });
+    
 </script>

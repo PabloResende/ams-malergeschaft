@@ -103,7 +103,11 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
           </div>
       </div>
       <div class="flex items-center space-x-6">
-          <a href="<?= $baseUrl ?>/projects" class="bg-green-500 text-white px-3 py-2 rounded hover:bg-green-600"><?= $langText['new_project'] ?? 'Novo Projeto +' ?></a>
+      <div class="flex items-center space-x-6">
+      <a href="<?= $baseUrl ?>/projects?openModal=true" class="bg-green-500 text-white px-3 py-2 rounded hover:bg-green-600">
+        <?= $langText['new_project'] ?? 'Novo Projeto +' ?>
+    </a>
+            </div>
           <div class="relative group">
               <button id="language-button" class="flex items-center gap-2 bg-white text-gray-900">
                   <?= $currentFlag ?>

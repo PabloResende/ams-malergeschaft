@@ -54,7 +54,7 @@ $completedProjects = $metrics['completed_projects'] ?? 0;
 $totalHours = $metrics['total_hours'] ?? 0;
 
 // Comparação com período anterior
-$stmt = $pdo->prepare("
+$stmt = $pdo->prepare(" 
     SELECT 
         SUM(total_hours) AS previous_total_hours,
         SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS previous_active_projects,
@@ -110,21 +110,44 @@ $previousCompleted = $previousMetrics['previous_completed_projects'] ?? 0;
   <!-- Gráfico de Pizza -->
   <div class="bg-white p-6 rounded-lg shadow mt-8">
     <h3 class="text-xl font-semibold mb-4">Distribuição de Projetos</h3>
-    <canvas id="projectsPieChart"></canvas>
+    <canvas id="projectsPieChart" style="max-width: 400px;"></canvas>
+  </div>
+
+  <!-- Gráfico de Linha -->
+  <div class="bg-white p-6 rounded-lg shadow mt-8">
+    <h3 class="text-xl font-semibold mb-4">Horas Totais ao Longo do Período</h3>
+    <canvas id="projectsLineChart"></canvas>
   </div>
 </div>
 
 <!-- Scripts do Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  const ctx = document.getElementById('projectsPieChart').getContext('2d');
-  new Chart(ctx, {
+  // Gráfico de Pizza
+  const pieCtx = document.getElementById('projectsPieChart').getContext('2d');
+  new Chart(pieCtx, {
     type: 'pie',
     data: {
       labels: ['Ativos', 'Concluídos'],
       datasets: [{
         data: [<?= $activeProjects ?>, <?= $completedProjects ?>],
         backgroundColor: ['#3B82F6', '#10B981']
+      }]
+    }
+  });
+
+  // Gráfico de Linha (com dados fictícios para exemplificação)
+  const lineCtx = document.getElementById('projectsLineChart').getContext('2d');
+  new Chart(lineCtx, {
+    type: 'line',
+    data: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], // Exemplo de meses
+      datasets: [{
+        label: 'Total de Horas',
+        data: [150, 200, 175, 220, 180, 210], // Dados fictícios de exemplo
+        borderColor: '#3B82F6',
+        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+        fill: true
       }]
     }
   });

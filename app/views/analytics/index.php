@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../layout/header.php';
 require_once __DIR__ . '/../../../config/Database.php';
 
+
 $pdo = Database::connect();
 
 // Definição do período padrão (mês atual)
@@ -54,8 +55,7 @@ $completedProjects = $metrics['completed_projects'] ?? 0;
 $totalHours = $metrics['total_hours'] ?? 0;
 
 // Comparação com período anterior
-$stmt = $pdo->prepare(" 
-    SELECT 
+$stmt = $pdo->prepare("SELECT 
         SUM(total_hours) AS previous_total_hours,
         SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS previous_active_projects,
         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS previous_completed_projects
@@ -68,6 +68,34 @@ $previousMetrics = $stmt->fetch(PDO::FETCH_ASSOC);
 $previousHours = $previousMetrics['previous_total_hours'] ?? 0;
 $previousActive = $previousMetrics['previous_active_projects'] ?? 0;
 $previousCompleted = $previousMetrics['previous_completed_projects'] ?? 0;
+
+// Puxando dados para gráfico de linha
+// Para pegar o histórico de cada mês (ou trimestre, semestre, etc.) do ano
+$historyStmt = $pdo->prepare("
+    SELECT 
+        MONTH(created_at) AS month,
+        SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS active_projects,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_projects,
+        SUM(total_hours) AS total_hours
+    FROM projects
+    WHERE YEAR(created_at) = YEAR(CURRENT_DATE) 
+    GROUP BY month
+    ORDER BY month
+");
+$historyStmt->execute();
+$history = $historyStmt->fetchAll(PDO::FETCH_ASSOC);
+
+$months = [];
+$activeProjectsHistory = [];
+$completedProjectsHistory = [];
+$totalHoursHistory = [];
+
+foreach ($history as $entry) {
+    $months[] = $entry['month'];
+    $activeProjectsHistory[] = $entry['active_projects'];
+    $completedProjectsHistory[] = $entry['completed_projects'];
+    $totalHoursHistory[] = $entry['total_hours'];
+}
 ?>
 
 <div class="ml-56 pt-20 p-8">
@@ -107,23 +135,26 @@ $previousCompleted = $previousMetrics['previous_completed_projects'] ?? 0;
     </div>
   </div>
 
-  <!-- Gráfico de Pizza -->
-  <div class="bg-white p-6 rounded-lg shadow mt-8">
-    <h3 class="text-xl font-semibold mb-4">Distribuição de Projetos</h3>
-    <canvas id="projectsPieChart" style="max-width: 400px;"></canvas>
-  </div>
+  <!-- Gráficos lado a lado -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Gráfico de Pizza -->
+    <div class="bg-white p-6 rounded-lg shadow">
+      <h3 class="text-xl font-semibold mb-4">Distribuição de Projetos</h3>
+      <canvas id="projectsPieChart" width="300" height="300"></canvas>
+    </div>
 
-  <!-- Gráfico de Linha -->
-  <div class="bg-white p-6 rounded-lg shadow mt-8">
-    <h3 class="text-xl font-semibold mb-4">Horas Totais ao Longo do Período</h3>
-    <canvas id="projectsLineChart"></canvas>
+    <!-- Gráfico de Linha -->
+    <div class="bg-white p-6 rounded-lg shadow">
+      <h3 class="text-xl font-semibold mb-4">Evolução de Projetos</h3>
+      <canvas id="projectsLineChart"></canvas>
+    </div>
   </div>
 </div>
 
 <!-- Scripts do Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
-  // Gráfico de Pizza
   const pieCtx = document.getElementById('projectsPieChart').getContext('2d');
   new Chart(pieCtx, {
     type: 'pie',
@@ -136,19 +167,51 @@ $previousCompleted = $previousMetrics['previous_completed_projects'] ?? 0;
     }
   });
 
-  // Gráfico de Linha (com dados fictícios para exemplificação)
   const lineCtx = document.getElementById('projectsLineChart').getContext('2d');
   new Chart(lineCtx, {
     type: 'line',
     data: {
-      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'], // Exemplo de meses
-      datasets: [{
-        label: 'Total de Horas',
-        data: [150, 200, 175, 220, 180, 210], // Dados fictícios de exemplo
-        borderColor: '#3B82F6',
-        backgroundColor: 'rgba(59, 130, 246, 0.2)',
-        fill: true
-      }]
+      labels: <?= json_encode($months) ?>,
+      datasets: [
+        {
+          label: 'Projetos Ativos',
+          data: <?= json_encode($activeProjectsHistory) ?>,
+          borderColor: '#3B82F6',
+          fill: false
+        },
+        {
+          label: 'Projetos Concluídos',
+          data: <?= json_encode($completedProjectsHistory) ?>,
+          borderColor: '#10B981',
+          fill: false
+        },
+        {
+          label: 'Total de Horas',
+          data: <?= json_encode($totalHoursHistory) ?>,
+          borderColor: '#FFDD00',
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'Mês'
+          }
+        },
+        y: {
+          title: {
+            display: true,
+            text: 'Quantidade'
+          },
+          ticks: {
+            beginAtZero: true
+          }
+        }
+      }
     }
   });
 </script>

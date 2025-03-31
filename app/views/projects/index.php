@@ -63,12 +63,10 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     </div>
 
                     <!-- Cliente -->
-                    <?php if(!empty($project['client_name'])): ?>
                     <span>
                         <h1 class="text-[13px] text-gray-600"><?= $langText['client'] ?? 'Client' ?></h1>
                         <p class="text-sm font-semibold -mt-1"><?= htmlspecialchars($project['client_name']) ?></p>
                     </span>
-                    <?php endif; ?>
 
                     <!-- Barra de progresso -->
                     <div class="w-full bg-gray-200 rounded-full h-2 mt-3">
@@ -137,34 +135,16 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <input type="number" name="total_hours" class="w-full p-2 border rounded" required>
                 </div>
                 <div class="mb-4">
-                <div class="mb-4">
-                    <label class="block text-gray-700"><?= $langText['assign_employees'] ?? 'Assign Employees' ?></label>
-                    <select name="employees[]" multiple class="w-full p-2 border rounded employee-select">
-                        <?php 
-                        $stmt = $pdo->query("SELECT id, name FROM employees WHERE active = 1");
-                        foreach ($stmt->fetchAll() as $employee): 
-                        ?>
-                            <option value="<?= $employee['id'] ?>"><?= htmlspecialchars($employee['name']) ?></option>
-                        <?php endforeach; ?>
+                    <label class="block text-gray-700"><?= $langText['status'] ?? 'Status' ?></label>
+                    <select name="status" class="w-full p-2 border rounded">
+                        <option value="in_progress"><?= $langText['in_progress'] ?? 'In Progress' ?></option>
+                        <option value="pending"><?= $langText['pending'] ?? 'Pending' ?></option>
+                        <option value="completed"><?= $langText['completed'] ?? 'Completed' ?></option>
                     </select>
                 </div>
-
                 <div class="mb-4">
-                    <label class="block text-gray-700"><?= $langText['assign_inventory'] ?? 'Assign Inventory Items' ?></label>
-                    <div class="inventory-items-container">
-                        <?php 
-                        $stmt = $pdo->query("SELECT id, name, type, quantity FROM inventory");
-                        foreach ($stmt->fetchAll() as $item): 
-                        ?>
-                            <div class="flex items-center mb-2 inventory-item" data-type="<?= $item['type'] ?>" data-quantity="<?= $item['quantity'] ?>">
-                                <input type="checkbox" name="inventory_items[<?= $item['id'] ?>]" class="inventory-checkbox mr-2">
-                                <span><?= htmlspecialchars($item['name']) ?> (<?= $item['type'] ?>)</span>
-                                <input type="number" name="quantity[<?= $item['id'] ?>]" min="1" max="<?= $item['quantity'] ?>" 
-                                    class="ml-2 p-1 border rounded quantity-input hidden" disabled>
-                                <span class="text-xs text-gray-500 ml-2 available-quantity">Available: <?= $item['quantity'] ?></span>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
+                    <label class="block text-gray-700"><?= $langText['progress'] ?? 'Progress' ?> (%)</label>
+                    <input type="number" name="progress" min="0" max="100" class="w-full p-2 border rounded" required>
                 </div>
                 <div class="flex justify-end">
                     <button type="button" id="closeModal" class="mr-2 px-4 py-2 border rounded"><?= $langText['cancel'] ?? 'Cancel' ?></button>
@@ -186,8 +166,7 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700"><?= $langText['client_name'] ?? 'Client Name' ?></label>
-                    <input type="text" name="client_name" id="editProjectClientName" 
-                        class="w-full p-2 border rounded" required>
+                    <input type="text" name="client_name" id="editProjectClientName" class="w-full p-2 border rounded" required>
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700"><?= $langText['description'] ?? 'Description' ?></label>

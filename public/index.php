@@ -61,12 +61,6 @@ switch ($route) {
     case '/projects/delete':
         $projectController->delete();
         break;
-    case '/projects/check-employee':
-        $projectController->checkEmployee();
-        break;
-    case '/projects/check-inventory':
-        $projectController->checkInventory();
-        break;
     case '/employees':
         $employeeController->list();
         break;

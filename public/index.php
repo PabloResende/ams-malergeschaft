@@ -8,6 +8,7 @@ require_once __DIR__ . '/../app/controllers/UserController.php';
 require_once __DIR__ . '/../app/controllers/ProjectController.php';
 require_once __DIR__ . '/../app/controllers/InventoryController.php';
 require_once __DIR__ . '/../app/controllers/EmployeeController.php';
+require_once __DIR__ . '/../app/controllers/AnalyticsController.php';
 require_once __DIR__ . '/../app/lang/lang.php';
 
 $uri = $_SERVER['REQUEST_URI'];
@@ -101,6 +102,12 @@ switch ($route) {
         http_response_code(404);
         echo "404 - Page not found.";
         break;
+    case '/analytics':
+        require_once __DIR__ . '/../app/controllers/AnalyticsController.php';
+        $analyticsController = new AnalyticsController();
+        $analyticsController->index();
+        break;
+
 }
 
 ob_end_flush();

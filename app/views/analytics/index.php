@@ -107,18 +107,34 @@ $previousCompleted = $previousMetrics['previous_completed_projects'] ?? 0;
     </div>
   </div>
 
-  <!-- Gráfico de Pizza -->
   <div class="bg-white p-6 rounded-lg shadow mt-8">
-    <h3 class="text-xl font-semibold mb-4">Distribuição de Projetos</h3>
-    <canvas id="projectsPieChart"></canvas>
+  <h3 class="text-xl font-semibold mb-4">📊 Comparação de Dados</h3>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Gráfico de Pizza -->
+    <div class="flex flex-col items-center">
+      <h4 class="text-lg font-semibold mb-2">Projetos Ativos x Concluídos</h4>
+      <canvas id="projectsPieChart" class="max-w-[200px]"></canvas>
+    </div>
+
+    <!-- Gráfico de Barras com Filtros -->
+    <div class="flex flex-col">
+      <h4 class="text-lg font-semibold mb-2">Selecione o Dado para Comparação</h4>
+      <select id="dataFilter" class="p-2 border rounded">
+        <option value="active">Projetos Ativos</option>
+        <option value="completed">Projetos Concluídos</option>
+        <option value="hours">Horas Trabalhadas</option>
+      </select>
+      <canvas id="comparisonChart" class="mt-4"></canvas>
+    </div>
   </div>
 </div>
-
-<!-- Scripts do Chart.js -->
+<!-- Scripts Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  const ctx = document.getElementById('projectsPieChart').getContext('2d');
-  new Chart(ctx, {
+  // Gráfico de Pizza
+  const pieCtx = document.getElementById('projectsPieChart').getContext('2d');
+  new Chart(pieCtx, {
     type: 'pie',
     data: {
       labels: ['Ativos', 'Concluídos'],
@@ -126,6 +142,60 @@ $previousCompleted = $previousMetrics['previous_completed_projects'] ?? 0;
         data: [<?= $activeProjects ?>, <?= $completedProjects ?>],
         backgroundColor: ['#3B82F6', '#10B981']
       }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false
     }
+  });
+
+  // Gráfico de Barras Dinâmico
+  const barCtx = document.getElementById('comparisonChart').getContext('2d');
+  let comparisonChart = new Chart(barCtx, {
+    type: 'bar',
+    data: {
+      labels: ['Atual', 'Anterior'],
+      datasets: [{
+        label: 'Projetos Ativos',
+        data: [<?= $activeProjects ?>, <?= $previousActive ?>],
+        backgroundColor: '#3B82F6'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+
+  // Atualizar gráfico ao mudar filtro
+  document.getElementById('dataFilter').addEventListener('change', function () {
+    let newData;
+    let newLabel;
+    let newColor;
+
+    switch (this.value) {
+      case 'completed':
+        newLabel = 'Projetos Concluídos';
+        newData = [<?= $completedProjects ?>, <?= $previousCompleted ?>];
+        newColor = '#10B981';
+        break;
+      case 'hours':
+        newLabel = 'Horas Trabalhadas';
+        newData = [<?= $totalHours ?>, <?= $previousHours ?>];
+        newColor = '#F59E0B';
+        break;
+      default:
+        newLabel = 'Projetos Ativos';
+        newData = [<?= $activeProjects ?>, <?= $previousActive ?>];
+        newColor = '#3B82F6';
+    }
+
+    comparisonChart.data.datasets[0].label = newLabel;
+    comparisonChart.data.datasets[0].data = newData;
+    comparisonChart.data.datasets[0].backgroundColor = newColor;
+    comparisonChart.update();
   });
 </script>

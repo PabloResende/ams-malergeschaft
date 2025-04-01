@@ -107,7 +107,7 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- Modal de Adição de Projeto -->
     <div id="projectModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-        <div class="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-md p-8 w-90 max-h-[80vh] overflow-y-auto mt-10">
             <h3 class="text-xl font-bold mb-4"><?= $langText['add_project'] ?? 'Add Project' ?></h3>
             <form id="projectForm" action="<?= $baseUrl ?>/projects/store" method="POST">
                 <div class="mb-4">
@@ -152,7 +152,7 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- Modal de Edição de Projeto -->
     <div id="projectEditModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-        <div class="bg-white rounded-lg p-6 w-96 max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-md p-8 w-90 max-h-[80vh] overflow-y-auto mt-10">
             <h3 class="text-xl font-bold mb-4"><?= $langText['edit_project'] ?? 'Edit Project' ?></h3>
             <form id="projectEditForm" action="<?= $baseUrl ?>/projects/update" method="POST">
                 <input type="hidden" name="id" id="editProjectId">

@@ -92,7 +92,7 @@ $inventoryItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- Modal de Adição de Item (igual ao anterior) -->
     <div id="inventoryModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-        <div class="bg-white rounded-lg p-6 w-80 max-h-[80vh] overflow-y-auto">
+        <div class="bg-white rounded-md p-8 w-90 max-h-[80vh] overflow-y-auto mt-10">
             <h3 class="text-xl font-bold mb-4"><?= $langText['add_inventory_item'] ?? 'Add Inventory Item' ?></h3>
             <form id="inventoryForm" action="<?= $baseUrl ?>/inventory/store" method="POST">
                 <div class="mb-4">
@@ -121,7 +121,7 @@ $inventoryItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <!-- Modal de Edição de Item do Estoque -->
     <div id="inventoryEditModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-        <div class="bg-white rounded-lg p-6 w-80 max-h-[80vh] overflow-y-auto">
+        <div class="bg-white rounded-md p-8 w-90 max-h-[80vh] overflow-y-auto mt-10">
             <h3 class="text-xl font-bold mb-4"><?= $langText['edit_inventory_item'] ?? 'Edit Inventory Item' ?></h3>
             <form id="inventoryEditForm" action="<?= $baseUrl ?>/inventory/update" method="POST">
                 <input type="hidden" name="id" id="editInventoryId">

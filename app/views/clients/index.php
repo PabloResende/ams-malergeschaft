@@ -58,7 +58,7 @@ $clients = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <!-- Modal para Cadastrar Funcionário -->
 <div id="clientModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-    <div class="bg-white rounded-lg p-6 w-80 max-h-[80vh] overflow-y-auto">
+    <div class="bg-white rounded-md p-8 w-90 max-h-[80vh] overflow-y-auto mt-10">
         <h2 class="text-2xl font-bold mb-4"><?= $langText['create_client'] ?? 'Create Client' ?></h2>
         <form action="<?= $baseUrl ?>/clients/store" method="POST" enctype="multipart/form-data" class="space-y-4">
             <div>
@@ -111,7 +111,7 @@ $clients = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <!-- Modal de Edição de Funcionário -->
 <div id="clientEditModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-    <div class="bg-white rounded-lg p-6 w-80 max-h-[80vh] overflow-y-auto">
+    <div class="bg-white rounded-md p-8 w-90 max-h-[80vh] overflow-y-auto mt-10">
         <h2 class="text-2xl font-bold mb-4"><?= $langText['edit_client'] ?? 'Edit Client' ?></h2>
         <form id="clientEditForm" action="<?= $baseUrl ?>/clients/update" method="POST" enctype="multipart/form-data" class="space-y-4">
             <input type="hidden" name="id" id="editClientId">

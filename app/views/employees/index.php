@@ -72,7 +72,7 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <!-- Modal para Cadastrar Funcionário -->
 <div id="employeeModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-    <div class="bg-white rounded-lg p-6 w-80 max-h-[80vh] overflow-y-auto">
+    <div class="bg-white rounded-md p-8 w-90 max-h-[80vh] overflow-y-auto mt-10">
         <h2 class="text-2xl font-bold mb-4"><?= $langText['create_employee'] ?? 'Create Employee' ?></h2>
         <form action="<?= $baseUrl ?>/employees/store" method="POST" enctype="multipart/form-data" class="space-y-4">
             <div>
@@ -137,7 +137,7 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 <!-- Modal de Edição de Funcionário -->
 <div id="employeeEditModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-    <div class="bg-white rounded-lg p-6 w-80 max-h-[80vh] overflow-y-auto">
+    <div class="bg-white rounded-md p-8 w-90 max-h-[80vh] overflow-y-auto mt-10">
         <h2 class="text-2xl font-bold mb-4"><?= $langText['edit_employee'] ?? 'Edit Employee' ?></h2>
         <form id="employeeEditForm" action="<?= $baseUrl ?>/employees/update" method="POST" enctype="multipart/form-data" class="space-y-4">
             <input type="hidden" name="id" id="editEmployeeId">

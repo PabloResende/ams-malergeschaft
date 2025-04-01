@@ -3,8 +3,7 @@ require_once __DIR__ . '/../layout/header.php';
 require_once __DIR__ . '/../../../config/Database.php';
 
 $pdo = Database::connect();
-
-// Métricas gerais
+// Métricas gerais (mês atual)
 $stmt = $pdo->query("SELECT 
   SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS active_projects,
   SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_projects,
@@ -16,10 +15,35 @@ $activeProjectsCount = $metrics['active_projects'] ?? 0;
 $completedProjects = $metrics['completed_projects'] ?? 0;
 $totalHours = $metrics['total_hours'] ?? 0;
 
+// Métricas do mês anterior
+$stmt = $pdo->query("SELECT 
+  SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS active_projects_last_month,
+  SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_projects_last_month,
+  SUM(total_hours) AS total_hours_last_month
+FROM projects 
+WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)");
+$lastMonthMetrics = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$activeProjectsLastMonth = $lastMonthMetrics['active_projects_last_month'] ?? 0;
+$completedProjectsLastMonth = $lastMonthMetrics['completed_projects_last_month'] ?? 0;
+$totalHoursLastMonth = $lastMonthMetrics['total_hours_last_month'] ?? 0;
+
 // Membros da equipe
 $stmt = $pdo->query("SELECT COUNT(DISTINCT id) AS team_members FROM employees");
 $team = $stmt->fetch(PDO::FETCH_ASSOC);
 $teamMembers = $team['team_members'] ?? 0;
+
+// Função para calcular a variação percentual
+function calculatePercentageChange($current, $previous) {
+    if ($previous == 0) {
+        return $current > 0 ? 100 : 0;
+    }
+    return round((($current - $previous) / $previous) * 100, 1);
+}
+
+$activeProjectsChange = calculatePercentageChange($activeProjectsCount, $activeProjectsLastMonth);
+$completedProjectsChange = calculatePercentageChange($completedProjects, $completedProjectsLastMonth);
+$totalHoursChange = calculatePercentageChange($totalHours, $totalHoursLastMonth);
 
 // Projetos ativos (limite de 9)
 $stmt = $pdo->query("SELECT * FROM projects WHERE status = 'in_progress' ORDER BY created_at DESC LIMIT 9");
@@ -35,12 +59,12 @@ $activeProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <div class="bg-white p-4 rounded-lg shadow flex flex-col items-center">
       <h3 class="text-lg font-semibold mb-2"><?= $langText['active_projects'] ?? 'Active Projects' ?></h3>
       <p class="text-3xl font-bold"><?= $activeProjectsCount ?></p>
-      <p class="mt-1 text-sm text-green-500">+2.5% <?= $langText['vs_last_month'] ?? 'vs last month' ?></p>
+      <p class="mt-1 text-sm text-green-500"><?= $activeProjectsChange ?>% <?= $langText['vs_last_month'] ?? 'vs last month' ?></p>
     </div>
     <div class="bg-white p-4 rounded-lg shadow flex flex-col items-center">
       <h3 class="text-lg font-semibold mb-2"><?= $langText['total_hours'] ?? 'Total Hours' ?></h3>
       <p class="text-3xl font-bold"><?= $totalHours ?>h</p>
-      <p class="mt-1 text-sm text-green-500">+12.3% <?= $langText['vs_last_month'] ?? 'vs last month' ?></p>
+      <p class="mt-1 text-sm text-green-500"><?= $totalHoursChange ?>% <?= $langText['vs_last_month'] ?? 'vs last month' ?></p>
     </div>
     <div class="bg-white p-4 rounded-lg shadow flex flex-col items-center">
       <h3 class="text-lg font-semibold mb-2"><?= $langText['team_members'] ?? 'Team Members' ?></h3>
@@ -50,7 +74,7 @@ $activeProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <div class="bg-white p-4 rounded-lg shadow flex flex-col items-center">
       <h3 class="text-lg font-semibold mb-2"><?= $langText['completed_projects'] ?? 'Completed Projects' ?></h3>
       <p class="text-3xl font-bold"><?= $completedProjects ?></p>
-      <p class="mt-1 text-sm text-green-500">+10% <?= $langText['vs_last_month'] ?? 'vs last month' ?></p>
+      <p class="mt-1 text-sm text-green-500"><?= $completedProjectsChange ?>% <?= $langText['vs_last_month'] ?? 'vs last month' ?></p>
     </div>
   </div>
 

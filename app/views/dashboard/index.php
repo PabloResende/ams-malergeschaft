@@ -59,22 +59,30 @@ $activeProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <div class="bg-white p-4 rounded-lg shadow flex flex-col items-center">
       <h3 class="text-lg font-semibold mb-2"><?= $langText['active_projects'] ?? 'Active Projects' ?></h3>
       <p class="text-3xl font-bold"><?= $activeProjectsCount ?></p>
-      <p class="mt-1 text-sm text-green-500"><?= $activeProjectsChange ?>% <?= $langText['vs_last_month'] ?? 'vs last month' ?></p>
+      <p class="mt-1 text-sm <?= $activeProjectsChange >= 0 ? 'text-green-500' : 'text-red-500' ?>">
+        <?= $activeProjectsChange >= 0 ? '+' : '' ?><?= $activeProjectsChange ?>% <?= $langText['vs_last_month'] ?? 'vs last month' ?>
+      </p>
     </div>
     <div class="bg-white p-4 rounded-lg shadow flex flex-col items-center">
       <h3 class="text-lg font-semibold mb-2"><?= $langText['total_hours'] ?? 'Total Hours' ?></h3>
       <p class="text-3xl font-bold"><?= $totalHours ?>h</p>
-      <p class="mt-1 text-sm text-green-500"><?= $totalHoursChange ?>% <?= $langText['vs_last_month'] ?? 'vs last month' ?></p>
+      <p class="mt-1 text-sm <?= $totalHoursChange >= 0 ? 'text-green-500' : 'text-red-500' ?>">
+        <?= $totalHoursChange >= 0 ? '+' : '' ?><?= $totalHoursChange ?>% <?= $langText['vs_last_month'] ?? 'vs last month' ?>
+      </p>
     </div>
     <div class="bg-white p-4 rounded-lg shadow flex flex-col items-center">
       <h3 class="text-lg font-semibold mb-2"><?= $langText['team_members'] ?? 'Team Members' ?></h3>
       <p class="text-3xl font-bold"><?= $teamMembers ?></p>
-      <p class="mt-1 text-sm text-green-500">+1 <?= $langText['vs_last_month'] ?? 'vs last month' ?></p>
+      <p class="mt-1 text-sm <?= $activeProjectsChange >= 0 ? 'text-green-500' : 'text-red-500' ?>">
+        <?= $activeProjectsChange >= 0 ? '+' : '' ?><?= $activeProjectsChange ?> <?= $langText['vs_last_month'] ?? 'vs last month' ?>
+      </p>
     </div>
     <div class="bg-white p-4 rounded-lg shadow flex flex-col items-center">
       <h3 class="text-lg font-semibold mb-2"><?= $langText['completed_projects'] ?? 'Completed Projects' ?></h3>
       <p class="text-3xl font-bold"><?= $completedProjects ?></p>
-      <p class="mt-1 text-sm text-green-500"><?= $completedProjectsChange ?>% <?= $langText['vs_last_month'] ?? 'vs last month' ?></p>
+      <p class="mt-1 text-sm <?= $completedProjectsChange >= 0 ? 'text-green-500' : 'text-red-500' ?>">
+        <?= $completedProjectsChange >= 0 ? '+' : '' ?><?= $completedProjectsChange ?>% <?= $langText['vs_last_month'] ?? 'vs last month' ?>
+      </p>
     </div>
   </div>
 

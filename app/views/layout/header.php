@@ -1,4 +1,7 @@
 <?php
+
+include __DIR__ . "/partials/notification.php";
+
 // Verifica se a sessão já está ativa para evitar múltiplos session_start()
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
@@ -112,6 +115,37 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
 
   <!-- Navbar fixa -->
   <nav class="bg-white shadow p-4 fixed top-0 left-56 right-0 z-10 flex items-center justify-between">
+     <!-- Botão de Notificação -->
+     <div class="relative">
+    <button id="notificationBtn" class="relative bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M15 17h5l-1.5-4M4 17h5l1.5-4M5 10c0-3.866 2.686-7 6-7s6 3.134 6 7v3a3 3 0 003 3v2H2v-2a3 3 0 003-3v-3z"></path>
+        </svg>
+        
+        <!-- Indicador de notificação -->
+        <span id="notificationDot" class="absolute top-0 right-0 bg-red-600 w-3 h-3 rounded-full animate-ping hidden"></span>
+    </button>
+
+    <!-- Caixa de notificações -->
+    <div id="notificationList" class="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white text-black p-4 rounded-lg shadow-lg hidden">
+        <h3 class="text-lg font-bold text-gray-800 border-b pb-2">Notificações</h3>
+        <ul class="mt-2 space-y-2">
+            <?php if (!empty($notifications) && is_array($notifications)): ?>
+                <?php foreach ($notifications as $notification): ?>
+                    <li class="p-2 bg-gray-100 rounded-lg shadow-md flex items-center space-x-2">
+                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M12 22s8-4 8-10a8 8 0 10-16 0c0 6 8 10 8 10z"></path>
+                        </svg>
+                        <span><?= htmlspecialchars($notification) ?></span>
+                    </li>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <li class="text-gray-500 text-center p-2">Sem novas notificações.</li>
+            <?php endif; ?>
+        </ul>
+    </div>
+</div>
+
       <div class="flex items-center">
           <div class="flex items-center">
               <span class="text-4xl font-bold text-blue-600"><a href="<?= $baseUrl ?>/dashboard">Ams </a></span>
@@ -140,20 +174,14 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
       </div>
   </nav>
 <?php endif; ?>
+
 <script>
-        const langButton = document.getElementById("language-button");
-        const langMenu = document.getElementById("language-menu");
+    document.getElementById('notificationBtn').addEventListener('click', function() {
+        document.getElementById('notificationList').classList.toggle('hidden');
+        document.getElementById('notificationDot').classList.add('hidden');
+    });
 
-        if (langButton) {
-            langButton.addEventListener("click", (event) => {
-                event.stopPropagation();
-                langMenu.classList.toggle("hidden");
-            });
-        }
-
-        document.addEventListener("click", (event) => {
-            if (langButton && !langButton.contains(event.target) && !langMenu.contains(event.target)) {
-                langMenu.classList.add("hidden");
-            }
-        });
-    </script>
+    if (document.querySelectorAll('#notificationList ul li').length > 1) {
+        document.getElementById('notificationDot').classList.remove('hidden');
+    }
+</script>

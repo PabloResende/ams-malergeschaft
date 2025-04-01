@@ -54,6 +54,9 @@ return [
     'progress' => 'Fortschritt',
     'notifications' => 'Benachrichtigungen',
     'not_new_notifications' => 'Keine neuen Benachrichtigungen',
+    'client' => 'Kunde',
+    'clients' => 'Kunden',
+    'analytics' => 'Analytik',
 
     // ---------------------------
     // Projekte-Seite
@@ -63,6 +66,7 @@ return [
     'edit_project' => 'Projekt bearbeiten',
     'delete_project' => 'Projekt löschen',
     'project_name' => 'Projektname',
+    'client_name' => 'Kundenname',
     'project_description' => 'Projektbeschreibung',
     'project_status' => 'Status',
     'actions' => 'Aktionen',

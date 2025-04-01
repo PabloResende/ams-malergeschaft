@@ -51,6 +51,9 @@ return [
     'progress' => 'Progress',
     'notifications' => 'Notifications',
     'not_new_notifications' => 'No new notifications',
+    'client' => 'Client',
+    'clients' => 'Clients',
+    'analytics' => 'Analytics',
     
     // ---------------------------
     // Projects Page
@@ -60,6 +63,7 @@ return [
     'edit_project' => 'Edit Project',
     'delete_project' => 'Delete Project',
     'project_name' => 'Project Name',
+    'client_name' => 'Client Name',
     'project_description' => 'Project Description',
     'project_status' => 'Status',
     'actions' => 'Actions',

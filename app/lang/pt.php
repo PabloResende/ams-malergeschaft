@@ -1,14 +1,14 @@
 <?php
 return [
     // ---------------------------
-    // Login & Authentication
+    // Login & Autenticação
     // ---------------------------
     'login' => 'Entrar',
     'register' => 'Registrar',
     'logout' => 'Sair',
 
     // ---------------------------
-    // Navigation
+    // Navegação
     // ---------------------------
     'profile' => 'Perfil',
     'dashboard' => 'Painel de Controle',
@@ -16,14 +16,14 @@ return [
     'employees' => 'Funcionários',
 
     // ---------------------------
-    // En-tête
+    // Cabeçalho
     // ---------------------------
     'Malergeschäft' => 'Lojas de Pintura',
     'new_project' => 'Novo Projeto +',
     'logout_button' => 'Sair',
 
     // ---------------------------
-    // Page de Profil
+    // Página de Perfil
     // ---------------------------
     'profile_picture' => 'Foto de Perfil',
     'name' => 'Nome',
@@ -51,6 +51,10 @@ return [
     'progress' => 'Progresso',
     'notifications' => 'Notificações',
     'not_new_notifications' => 'Sem novas notificações',
+    'client' => 'Cliente',
+    'clients' => 'Clientes',
+    'analytics' => 'Análise',
+
     
     // ---------------------------
     // Página dos Projetos
@@ -60,6 +64,7 @@ return [
     'edit_project' => 'Editar Projeto',
     'delete_project' => 'Excluir Projeto',
     'project_name' => 'Nome do Projeto',
+    'client_name' => 'Cliente',
     'projects' => 'Projetos',
     'back' => 'Voltar',
     'project_not_found' => 'Projeto não encontrado.',

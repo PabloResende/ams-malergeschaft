@@ -2,11 +2,10 @@
 
 $pdo = Database::connect();
 
-// Defina o limite para baixo estoque
 $lowStockLimit = 100;
 
-// Consulta para pegar os itens com estoque abaixo do limite
-$stmt = $pdo->prepare("SELECT id, name, quantity FROM inventory WHERE quantity < ?");
+// Se existir uma coluna 'type' que identifica o tipo do item (material, produto, etc.)
+$stmt = $pdo->prepare("SELECT id, name, quantity FROM inventory WHERE quantity < ? AND type = 'material'");
 $stmt->execute([$lowStockLimit]);
 $lowStockItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

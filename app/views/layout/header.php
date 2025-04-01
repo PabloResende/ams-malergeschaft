@@ -116,35 +116,6 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
   <!-- Navbar fixa -->
   <nav class="bg-white shadow p-4 fixed top-0 left-56 right-0 z-10 flex items-center justify-between">
      <!-- Botão de Notificação -->
-     <div class="relative">
-    <button id="notificationBtn" class="relative bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M15 17h5l-1.5-4M4 17h5l1.5-4M5 10c0-3.866 2.686-7 6-7s6 3.134 6 7v3a3 3 0 003 3v2H2v-2a3 3 0 003-3v-3z"></path>
-        </svg>
-        
-        <!-- Indicador de notificação -->
-        <span id="notificationDot" class="absolute top-0 right-0 bg-red-600 w-3 h-3 rounded-full animate-ping hidden"></span>
-    </button>
-
-    <!-- Caixa de notificações -->
-    <div id="notificationList" class="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white text-black p-4 rounded-lg shadow-lg hidden">
-        <h3 class="text-lg font-bold text-gray-800 border-b pb-2">Notificações</h3>
-        <ul class="mt-2 space-y-2">
-            <?php if (!empty($notifications) && is_array($notifications)): ?>
-                <?php foreach ($notifications as $notification): ?>
-                    <li class="p-2 bg-gray-100 rounded-lg shadow-md flex items-center space-x-2">
-                        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path d="M12 22s8-4 8-10a8 8 0 10-16 0c0 6 8 10 8 10z"></path>
-                        </svg>
-                        <span><?= htmlspecialchars($notification) ?></span>
-                    </li>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <li class="text-gray-500 text-center p-2">Sem novas notificações.</li>
-            <?php endif; ?>
-        </ul>
-    </div>
-</div>
 
       <div class="flex items-center">
           <div class="flex items-center">
@@ -158,10 +129,39 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
         <?= $langText['new_project'] ?? 'Novo Projeto +' ?>
     </a>
             </div>
+        <div class="relative">
+        <button id="notificationBtn" class="relative bg-transparent">
+    <!-- Ícone de sino -->
+            <svg class="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2C8.69 2 6 4.69 6 8v5H5a1 1 0 0 0 0 2h14a1 1 0 0 0 0-2h-1V8c0-3.31-2.69-6-6-6zm-4 15a4 4 0 0 0 8 0h-8z"/>
+            </svg>
+    <!-- Indicador de notificação -->
+            <span id="notificationDot" class="absolute top-0 right-0 bg-red-600 w-3 h-3 rounded-full animate-ping hidden"></span>
+        </button>
+    <!-- Caixa de notificações -->
+        <div id="notificationList" class="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white text-black p-4 rounded-lg shadow-lg hidden">
+            <h3 class="text-lg font-bold text-gray-800 border-b pb-2">Notificações</h3>
+            <ul class="mt-2 space-y-2">
+                <?php if (!empty($notifications) && is_array($notifications)): ?>
+                    <?php foreach ($notifications as $notification): ?>
+                        <li class="p-2 bg-gray-100 rounded-lg shadow-md flex items-center space-x-2">
+                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M12 22s8-4 8-10a8 8 0 10-16 0c0 6 8 10 8 10z"></path>
+                            </svg>
+                            <span><?= htmlspecialchars($notification) ?></span>
+                        </li>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <li class="text-gray-500 text-center p-2">Sem novas notificações.</li>
+                <?php endif; ?>
+            </ul>
+        </div>
+        </div>
           <div class="relative group">
               <button id="language-button" class="flex items-center gap-2 bg-white text-gray-900">
                   <?= $currentFlag ?>
               </button>
+              
               <div id="language-menu" class="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg border border-gray-300 hidden">
                   <?php foreach ($flags as $code => $flag): ?>
                       <a href="?lang=<?= htmlspecialchars($code) ?>" class="flex px-2 py-1 text-gray-800 hover:bg-gray-100">

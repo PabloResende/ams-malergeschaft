@@ -26,9 +26,11 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <div class="bg-white p-4 rounded-lg shadow flex flex-col">
                     <div class="flex items-center">
                         <div class="w-20 flex-shrink-0">
-                            <img src="<?= !empty($employee['profile_picture']) ? $baseUrl . '/uploads/' . $employee['profile_picture'] : 'https://via.placeholder.com/96x128'; ?>" 
-                                 alt="<?= htmlspecialchars($employee['name']) ?>" 
-                                 class="w-full h-auto object-cover rounded-lg">
+                        <img src="<?= !empty($employee['profile_picture']) ? $baseUrl . '/uploads/' . $employee['profile_picture'] : 'https://via.placeholder.com/96x128'; ?>" 
+     alt="<?= htmlspecialchars($employee['name']) ?>" 
+     class="w-full h-auto object-cover rounded-lg">
+
+
                         </div>
                         <div class="ml-4">
                             <h2 class="text-xl font-bold"><?= htmlspecialchars($employee['name']) ?></h2>
@@ -168,6 +170,10 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
             <div>
                 <label class="block mb-2 font-medium"><?= $langText['phone'] ?? 'Phone' ?></label>
                 <input type="text" name="phone" id="editEmployeePhone" class="w-full border p-2 rounded focus:outline-none focus:ring focus:ring-blue-300">
+            </div>
+            <div>
+                <label class="block mb-2 font-medium"><?= $langText['profile_picture'] ?? 'Profile Picture' ?></label>
+                <input type="file" name="profile_picture" class="w-full border p-2 rounded focus:outline-none focus:ring focus:ring-blue-300">
             </div>
             <div class="flex justify-end">
                 <button type="button" id="closeEmployeeEditModal" class="mr-2 px-4 py-2 border rounded"><?= $langText['cancel'] ?? 'Cancel' ?></button>

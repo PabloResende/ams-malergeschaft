@@ -78,23 +78,33 @@ class EmployeeController {
             $about = $_POST['about'] ?? '';
             $phone = $_POST['phone'] ?? '';
             $status = isset($_POST['active']) ? 1 : 0;
-
+    
             if (empty($id) || empty($name) || empty($role)) {
                 echo "Required fields missing.";
                 exit;
             }
-
+    
             require_once __DIR__ . '/../../config/Database.php';
             $pdo = Database::connect();
-            $stmt = $pdo->prepare("UPDATE employees SET name = ?, role = ?, birth_date = ?, start_date = ?, address = ?, about = ?, phone = ?, status = ? WHERE id = ?");
-            if ($stmt->execute([$name, $role, $birth_date, $start_date, $address, $about, $phone, $status, $id])) {
-                header("Location: /ams-malergeschaft/public/employees");
-                exit;
+    
+            // Verifica se uma nova imagem foi enviada
+            if (isset($_FILES['profile_picture']) && $_FILES['profile_picture']['error'] === UPLOAD_ERR_OK) {
+                $profilePicture = $_FILES['profile_picture']['name'];
+                move_uploaded_file($_FILES['profile_picture']['tmp_name'], __DIR__ . '/../../uploads/' . $profilePicture);
+    
+                // Atualiza com nova imagem
+                $stmt = $pdo->prepare("UPDATE employees SET name = ?, role = ?, birth_date = ?, start_date = ?, address = ?, about = ?, phone = ?, status = ?, profile_picture = ? WHERE id = ?");
+                $stmt->execute([$name, $role, $birth_date, $start_date, $address, $about, $phone, $status, $profilePicture, $id]);
             } else {
-                echo "Error updating employee.";
+                // Atualiza sem mudar a imagem
+                $stmt = $pdo->prepare("UPDATE employees SET name = ?, role = ?, birth_date = ?, start_date = ?, address = ?, about = ?, phone = ?, status = ? WHERE id = ?");
+                $stmt->execute([$name, $role, $birth_date, $start_date, $address, $about, $phone, $status, $id]);
             }
+    
+            header("Location: /ams-malergeschaft/public/employees");
+            exit;
         }
-    }
+    }    
 
     public function delete() {
         if (!isset($_GET['id'])) {

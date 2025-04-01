@@ -115,32 +115,26 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
 
   <!-- Navbar fixa -->
   <nav class="bg-white shadow p-4 fixed top-0 left-56 right-0 z-10 flex items-center justify-between">
-     <!-- Botão de Notificação -->
-
-      <div class="flex items-center">
-          <div class="flex items-center">
-              <span class="text-4xl font-bold text-blue-600"><a href="<?= $baseUrl ?>/dashboard">Ams </a></span>
-              <span class="ml-2 text-xl text-gray-600">Malergeschäft</span>
-          </div>
-      </div>
+    <div class="flex items-center">
+        <span class="text-4xl font-bold text-blue-600"><a href="<?= $baseUrl ?>/dashboard">Ams </a></span>
+        <span class="ml-2 text-xl text-gray-600">Malergeschäft</span>
+    </div>
       <div class="flex items-center space-x-6">
-      <div class="flex items-center space-x-6">
-      <a href="<?= $baseUrl ?>/projects?openModal=true" class="bg-green-500 text-white px-3 py-2 rounded hover:bg-green-600">
-        <?= $langText['new_project'] ?? 'Novo Projeto +' ?>
-    </a>
+            <div class="flex items-center space-x-6">
+                <a href="<?= $baseUrl ?>/projects?openModal=true" class="bg-green-500 text-white px-3 py-2 rounded hover:bg-green-600">
+                    <?= $langText['new_project'] ?? 'Novo Projeto +' ?>
+                </a>
             </div>
-        <div class="relative">
+            <div class="relative">
+        <!-- notificações -->
         <button id="notificationBtn" class="relative bg-transparent">
-    <!-- Ícone de sino -->
             <svg class="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C8.69 2 6 4.69 6 8v5H5a1 1 0 0 0 0 2h14a1 1 0 0 0 0-2h-1V8c0-3.31-2.69-6-6-6zm-4 15a4 4 0 0 0 8 0h-8z"/>
             </svg>
-    <!-- Indicador de notificação -->
             <span id="notificationDot" class="absolute top-0 right-0 bg-red-600 w-3 h-3 rounded-full animate-ping hidden"></span>
         </button>
-    <!-- Caixa de notificações -->
         <div id="notificationList" class="absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto bg-white text-black p-4 rounded-lg shadow-lg hidden">
-            <h3 class="text-lg font-bold text-gray-800 border-b pb-2">Notificações</h3>
+            <h3 class="text-lg font-bold text-gray-800 border-b pb-2"><?= $langText['notifications'] ?? 'Notificações' ?></h3>
             <ul class="mt-2 space-y-2">
                 <?php if (!empty($notifications) && is_array($notifications)): ?>
                     <?php foreach ($notifications as $notification): ?>
@@ -161,7 +155,6 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
               <button id="language-button" class="flex items-center gap-2 bg-white text-gray-900">
                   <?= $currentFlag ?>
               </button>
-              
               <div id="language-menu" class="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg border border-gray-300 hidden">
                   <?php foreach ($flags as $code => $flag): ?>
                       <a href="?lang=<?= htmlspecialchars($code) ?>" class="flex px-2 py-1 text-gray-800 hover:bg-gray-100">
@@ -171,17 +164,46 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
                   <?php endforeach; ?>
               </div>
           </div>
-      </div>
   </nav>
 <?php endif; ?>
 
 <script>
-    document.getElementById('notificationBtn').addEventListener('click', function() {
-        document.getElementById('notificationList').classList.toggle('hidden');
-        document.getElementById('notificationDot').classList.add('hidden');
-    });
+    document.addEventListener("DOMContentLoaded", function () {
+        // Controle do menu de idiomas
+        const langButton = document.getElementById("language-button");
+        const langMenu = document.getElementById("language-menu");
 
-    if (document.querySelectorAll('#notificationList ul li').length > 1) {
-        document.getElementById('notificationDot').classList.remove('hidden');
-    }
+        if (langButton) {
+            langButton.addEventListener("click", (event) => {
+                event.stopPropagation();
+                langMenu.classList.toggle("hidden");
+            });
+        }
+
+        document.addEventListener("click", (event) => {
+            if (langButton && !langButton.contains(event.target) && !langMenu.contains(event.target)) {
+                langMenu.classList.add("hidden");
+            }
+        });
+
+        // Controle das notificações
+        const notificationBtn = document.getElementById("notificationBtn");
+        const notificationList = document.getElementById("notificationList");
+        const notificationDot = document.getElementById("notificationDot");
+
+        if (notificationBtn && notificationList && notificationDot) {
+            notificationBtn.addEventListener("click", function () {
+                notificationList.classList.toggle("hidden");
+                notificationDot.classList.add("hidden");
+            });
+
+            // Verifica se há notificações e exibe o ponto vermelho
+            const hasNotifications = document.querySelectorAll("#notificationList ul li").length > 1;
+            if (hasNotifications) {
+                notificationDot.classList.remove("hidden");
+            } else {
+                notificationDot.classList.add("hidden");
+            }
+        }
+    });
 </script>

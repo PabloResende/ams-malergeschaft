@@ -142,10 +142,6 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <option value="completed"><?= $langText['completed'] ?? 'Completed' ?></option>
                     </select>
                 </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700"><?= $langText['progress'] ?? 'Progress' ?> (%)</label>
-                    <input type="number" name="progress" min="0" max="100" class="w-full p-2 border rounded" required>
-                </div>
                 <div class="flex justify-end">
                     <button type="button" id="closeModal" class="mr-2 px-4 py-2 border rounded"><?= $langText['cancel'] ?? 'Cancel' ?></button>
                     <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded"><?= $langText['submit'] ?? 'Submit' ?></button>

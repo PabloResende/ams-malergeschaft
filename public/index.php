@@ -102,12 +102,6 @@ switch ($route) {
         http_response_code(404);
         echo "404 - Page not found.";
         break;
-    case '/analytics':
-        require_once __DIR__ . '/../app/controllers/AnalyticsController.php';
-        $analyticsController = new AnalyticsController();
-        $analyticsController->index();
-        break;
-
 }
 
 ob_end_flush();

@@ -69,6 +69,14 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
                       </a>
                   </li>
                   <li class="mb-4">
+                      <a href="<?= $baseUrl ?>/clients" class="flex items-center space-x-2 hover:text-gray-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M8 7a4 4 0 1 1 8 0 4 4 0 0 1-8 0zM4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"></path>
+                        </svg>
+                          <span><?= $langText['clients'] ?? 'Clientes' ?></span>
+                      </a>
+                  </li>
+                  <li class="mb-4">
                         <a href="<?= $baseUrl ?>/inventory" class="flex items-center space-x-2 hover:text-gray-300">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>

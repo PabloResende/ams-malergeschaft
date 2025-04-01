@@ -34,10 +34,20 @@ CREATE TABLE employees (
     about TEXT,
     phone VARCHAR(20),
     profile_picture VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status ENUM('active', 'inactive') DEFAULT 'active'
 );
 
+-- Clients
+CREATE TABLE client (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    address VARCHAR(255),
+    about TEXT,
+    phone VARCHAR(20),
+    profile_picture VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Inventory
 CREATE TABLE inventory (

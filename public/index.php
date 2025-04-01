@@ -8,6 +8,7 @@ require_once __DIR__ . '/../app/controllers/UserController.php';
 require_once __DIR__ . '/../app/controllers/ProjectController.php';
 require_once __DIR__ . '/../app/controllers/InventoryController.php';
 require_once __DIR__ . '/../app/controllers/EmployeeController.php';
+require_once __DIR__ . '/../app/controllers/ClientsController.php';
 require_once __DIR__ . '/../app/lang/lang.php';
 
 $uri = $_SERVER['REQUEST_URI'];
@@ -25,6 +26,7 @@ $userController = new UserController();
 $projectController = new ProjectController();
 $inventoryController = new InventoryController();
 $employeeController = new EmployeeController();
+$clientsController = new ClientsController();
 
 switch ($route) {
     case '/':
@@ -78,6 +80,24 @@ switch ($route) {
         break;
     case '/employees/delete':
         $employeeController->delete();
+        break;
+    case '/clients':
+        $clientsController->list();
+        break;
+    case '/clients/create':
+        $clientsController->create();
+        break;
+    case '/clients/store':
+        $clientsController->store();
+        break;
+    case '/clients/edit':
+        $clientsController->edit();
+        break;
+    case '/clients/update':
+        $clientsController->update();
+        break;
+    case '/clients/delete':
+        $clientsController->delete();
         break;
     case '/inventory':
         $inventoryController->index();

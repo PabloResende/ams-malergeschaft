@@ -146,7 +146,7 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
                         </li>
                     <?php endforeach; ?>
                 <?php else: ?>
-                    <li class="text-gray-500 text-center p-2">Sem novas notificações.</li>
+                    <li class="text-gray-500 text-center p-2"><?= $langText['no_new_notifications'] ?? 'Sem novas notificações' ?></li>
                 <?php endif; ?>
             </ul>
         </div>

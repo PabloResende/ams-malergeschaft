@@ -12,7 +12,7 @@ $lowStockItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $notifications = [];
 
 foreach ($lowStockItems as $item) {
-    $notifications[] = "Só tem {$item['quantity']} unidades de {$item['name']} no estoque.";
+    $notifications[] = "{$item['quantity']}x {$item['name']}.";
 }
 
 return $notifications;

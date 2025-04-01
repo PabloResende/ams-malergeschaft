@@ -49,6 +49,8 @@ return [
     'completed_projects' => 'Projets terminés',
     'delivery' => 'Livraison',
     'progress' => 'Progrès',
+    'notifications' => 'Notifications',
+    'not_new_notifications' => 'Aucune nouvelle notification',
 
     // ---------------------------
     // Page des projets

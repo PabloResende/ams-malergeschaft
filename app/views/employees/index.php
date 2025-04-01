@@ -169,13 +169,6 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <label class="block mb-2 font-medium"><?= $langText['phone'] ?? 'Phone' ?></label>
                 <input type="text" name="phone" id="editEmployeePhone" class="w-full border p-2 rounded focus:outline-none focus:ring focus:ring-blue-300">
             </div>
-            <div>
-                <label class="block mb-2 font-medium"><?= $langText['status'] ?? 'Status' ?></label>
-                <label class="inline-flex items-center">
-                    <input type="checkbox" name="active" id="editEmployeeActive" class="form-checkbox" checked>
-                    <span class="ml-2"><?= $langText['active'] ?? 'Active' ?></span>
-                </label>
-            </div>
             <div class="flex justify-end">
                 <button type="button" id="closeEmployeeEditModal" class="mr-2 px-4 py-2 border rounded"><?= $langText['cancel'] ?? 'Cancel' ?></button>
                 <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded"><?= $langText['submit'] ?? 'Submit' ?></button>

@@ -26,6 +26,7 @@ class EmployeeController {
             $address = $_POST['address'] ?? '';
             $about = $_POST['about'] ?? '';
             $phone = $_POST['phone'] ?? '';
+            $status = isset($_POST['active']) ? 1 : 0;
             
             // Processando o upload da imagem
             $profilePicture = null;
@@ -36,9 +37,9 @@ class EmployeeController {
     
             try {
                 $pdo = Database::connect();
-                $stmt = $pdo->prepare("INSERT INTO employees (name, role, birth_date, start_date, address, about, phone, profile_picture) 
-                                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$name, $role, $birthDate, $startDate, $address, $about, $phone, $profilePicture]);
+                $stmt = $pdo->prepare("INSERT INTO employees (name, role, birth_date, start_date, address, about, phone, status, profile_picture) 
+                                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$name, $role, $birthDate, $startDate, $address, $about, $phone, $status, $profilePicture]);
     
                 header('Location: /ams-malergeschaft/public/employees');
                 exit;
@@ -76,7 +77,7 @@ class EmployeeController {
             $address = $_POST['address'] ?? '';
             $about = $_POST['about'] ?? '';
             $phone = $_POST['phone'] ?? '';
-            $active = isset($_POST['active']) ? 1 : 0;
+            $status = isset($_POST['active']) ? 1 : 0;
 
             if (empty($id) || empty($name) || empty($role)) {
                 echo "Required fields missing.";
@@ -85,8 +86,8 @@ class EmployeeController {
 
             require_once __DIR__ . '/../../config/Database.php';
             $pdo = Database::connect();
-            $stmt = $pdo->prepare("UPDATE employees SET name = ?, role = ?, birth_date = ?, start_date = ?, address = ?, about = ?, phone = ?, active = ? WHERE id = ?");
-            if ($stmt->execute([$name, $role, $birth_date, $start_date, $address, $about, $phone, $active, $id])) {
+            $stmt = $pdo->prepare("UPDATE employees SET name = ?, role = ?, birth_date = ?, start_date = ?, address = ?, about = ?, phone = ?, status = ? WHERE id = ?");
+            if ($stmt->execute([$name, $role, $birth_date, $start_date, $address, $about, $phone, $status, $id])) {
                 header("Location: /ams-malergeschaft/public/employees");
                 exit;
             } else {

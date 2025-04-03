@@ -1,5 +1,5 @@
 <?php
-$host = '';
+$host = 'localhost';
 $db = 'mvp_db';
 $user = 'root';
 $pass = '';

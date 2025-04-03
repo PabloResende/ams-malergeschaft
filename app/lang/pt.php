@@ -6,6 +6,7 @@ return [
     'login' => 'Entrar',
     'register' => 'Registrar',
     'logout' => 'Sair',
+    'dont_register' => 'Não tenho uma conta? Registre-se',
 
     // ---------------------------
     // Navegação

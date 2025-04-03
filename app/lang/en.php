@@ -6,6 +6,7 @@ return [
     'login' => 'Login',
     'register' => 'Register',
     'logout' => 'Logout',
+    'dont_register' => 'Don\'t have an account? Register',
 
     // ---------------------------
     // Navigation

@@ -25,6 +25,9 @@
                     <input type="password" name="password" class="border p-2 w-full" required>
                 </div>
                 <button type="submit" class="bg-blue-600 text-white p-2 w-full"><?= $langText['login'] ?></button>
+                <div>
+                    <a class="text-blue-600 font-sm" href="register"><?= $langText['dont_register'] ?></a>
+                </div>
             </form>
         </div>
     </div>

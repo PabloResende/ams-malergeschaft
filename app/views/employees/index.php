@@ -37,6 +37,11 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
                     <div class="mt-4 flex justify-end space-x-2">
+                        <!-- Botão Detalhes -->
+<button class="text-green-500 hover:underline text-sm viewEmployeeBtn" 
+        data-id="<?= $employee['id'] ?>">
+    <?= $langText['details'] ?? 'Details' ?>
+</button>
                         <button 
                             class="text-blue-500 hover:underline text-sm editEmployeeBtn" 
                             data-id="<?= $employee['id'] ?>"
@@ -67,6 +72,7 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <?php endif; ?>
     </div>
 </div>
+
 
 <!-- Botão Flutuante para Abrir o Modal de Criação de Funcionário -->
 <button id="addEmployeeBtn" class="fixed bottom-8 right-8 bg-green-500 text-white rounded-full p-4 shadow-lg hover:bg-green-600">
@@ -324,7 +330,6 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 <label class="block mb-2 font-medium"><?= $langText['about_me'] ?? 'About Me' ?></label>
                 <textarea name="about" id="editEmployeeAbout" class="w-full border p-2 rounded focus:outline-none focus:ring focus:ring-blue-300"></textarea>
             </div>
-            
             <div class="flex justify-end mt-4">
                 <button type="button" id="closeEmployeeEditModal" class="mr-2 px-4 py-2 border rounded"><?= $langText['cancel'] ?? 'Cancel' ?></button>
                 <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded"><?= $langText['submit'] ?? 'Submit' ?></button>
@@ -332,26 +337,131 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
         </form>
     </div>
 </div>
-
+            <!-- Modal de Detalhes do Funcionário -->
+            <div id="employeeViewModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+    <div class="bg-white rounded-md p-8 w-90 max-h-[90vh] overflow-y-auto" style="width: 90%; max-width: 800px;">
+        <h2 class="text-2xl font-bold mb-4"><?= $langText['employee_details'] ?? 'Employee Details' ?></h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Coluna 1: Informações Pessoais -->
+            <div class="col-span-1">
+                <div class="flex justify-center mb-4">
+                    <img id="viewProfilePicture" src="" alt="Profile Picture" 
+                         class="w-48 h-64 object-cover rounded-lg border">
+                </div>
+                
+                <h3 class="text-lg font-semibold mb-2 border-b pb-2"><?= $langText['personal_info'] ?? 'Personal Information' ?></h3>
+                <div class="space-y-2">
+                    <p><span class="font-medium"><?= $langText['name'] ?? 'Name' ?>:</span> <span id="viewName"></span></p>
+                    <p><span class="font-medium"><?= $langText['last_name'] ?? 'Last Name' ?>:</span> <span id="viewLastName"></span></p>
+                    <p><span class="font-medium"><?= $langText['birth_date'] ?? 'Birth Date' ?>:</span> <span id="viewBirthDate"></span></p>
+                    <p><span class="font-medium"><?= $langText['sex'] ?? 'Sex' ?>:</span> <span id="viewSex"></span></p>
+                    <p><span class="font-medium"><?= $langText['nationality'] ?? 'Nationality' ?>:</span> <span id="viewNationality"></span></p>
+                    <p><span class="font-medium"><?= $langText['marital_status'] ?? 'Marital Status' ?>:</span> <span id="viewMaritalStatus"></span></p>
+                    <p><span class="font-medium"><?= $langText['religion'] ?? 'Religion' ?>:</span> <span id="viewReligion"></span></p>
+                </div>
+            </div>
+            
+            <!-- Coluna 2: Informações Profissionais -->
+            <div class="col-span-1">
+                <h3 class="text-lg font-semibold mb-2 border-b pb-2"><?= $langText['professional_info'] ?? 'Professional Information' ?></h3>
+                <div class="space-y-2">
+                    <p><span class="font-medium"><?= $langText['role'] ?? 'Role' ?>:</span> <span id="viewRole"></span></p>
+                    <p><span class="font-medium"><?= $langText['start_date'] ?? 'Start Date' ?>:</span> <span id="viewStartDate"></span></p>
+                    <p><span class="font-medium"><?= $langText['permission_type'] ?? 'Permission Type' ?>:</span> <span id="viewPermissionType"></span></p>
+                    <p><span class="font-medium"><?= $langText['ahv_number'] ?? 'AHV Number' ?>:</span> <span id="viewAhvNumber"></span></p>
+                </div>
+                
+                <h3 class="text-lg font-semibold mt-4 mb-2 border-b pb-2"><?= $langText['contact_info'] ?? 'Contact Information' ?></h3>
+                <div class="space-y-2">
+                    <p><span class="font-medium"><?= $langText['address'] ?? 'Address' ?>:</span> <span id="viewAddress"></span></p>
+                    <p><span class="font-medium"><?= $langText['email'] ?? 'Email' ?>:</span> <span id="viewEmail"></span></p>
+                    <p><span class="font-medium"><?= $langText['phone'] ?? 'Phone' ?>:</span> <span id="viewPhone"></span></p>
+                </div>
+            </div>
+            
+            <!-- Coluna 3: Documentos -->
+            <div class="col-span-1">
+                <h3 class="text-lg font-semibold mb-2 border-b pb-2"><?= $langText['documents'] ?? 'Documents' ?></h3>
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="font-medium"><?= $langText['passport'] ?? 'Passport' ?></h4>
+                        <img id="viewPassport" src="" alt="Passport" class="w-full h-auto border rounded mt-1" style="max-height: 150px;">
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium"><?= $langText['permission_photos'] ?? 'Permission Photos' ?></h4>
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <div>
+                                <small>Front</small>
+                                <img id="viewPermissionFront" src="" alt="Permission Front" class="w-full h-auto border rounded" style="max-height: 120px;">
+                            </div>
+                            <div>
+                                <small>Back</small>
+                                <img id="viewPermissionBack" src="" alt="Permission Back" class="w-full h-auto border rounded" style="max-height: 120px;">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium"><?= $langText['health_card'] ?? 'Health Card' ?></h4>
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <div>
+                                <small>Front</small>
+                                <img id="viewHealthCardFront" src="" alt="Health Card Front" class="w-full h-auto border rounded" style="max-height: 120px;">
+                            </div>
+                            <div>
+                                <small>Back</small>
+                                <img id="viewHealthCardBack" src="" alt="Health Card Back" class="w-full h-auto border rounded" style="max-height: 120px;">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium"><?= $langText['bank_card'] ?? 'Bank Card' ?></h4>
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <div>
+                                <small>Front</small>
+                                <img id="viewBankCardFront" src="" alt="Bank Card Front" class="w-full h-auto border rounded" style="max-height: 120px;">
+                            </div>
+                            <div>
+                                <small>Back</small>
+                                <img id="viewBankCardBack" src="" alt="Bank Card Back" class="w-full h-auto border rounded" style="max-height: 120px;">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="marriageCertificateContainer">
+                        <h4 class="font-medium"><?= $langText['marriage_certificate'] ?? 'Marriage Certificate' ?></h4>
+                        <img id="viewMarriageCertificate" src="" alt="Marriage Certificate" class="w-full h-auto border rounded mt-1" style="max-height: 150px;">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-6">
+            <h3 class="text-lg font-semibold mb-2 border-b pb-2"><?= $langText['about_me'] ?? 'About Me' ?></h3>
+            <p id="viewAbout" class="text-gray-700"></p>
+        </div>
+        
+        <div class="flex justify-end mt-6">
+            <button type="button" id="closeEmployeeViewModal" class="bg-blue-500 text-white px-4 py-2 rounded">
+                <?= $langText['close'] ?? 'Close' ?>
+            </button>
+        </div>
+    </div>
+</div>
 <script>
+    // Controle do Modal de Criação
     const addEmployeeBtn = document.getElementById('addEmployeeBtn');
     const employeeModal = document.getElementById('employeeModal');
     const closeEmployeeModal = document.getElementById('closeEmployeeModal');
 
-    addEmployeeBtn.addEventListener('click', function() {
-        employeeModal.classList.remove('hidden');
-    });
+    addEmployeeBtn.addEventListener('click', () => employeeModal.classList.remove('hidden'));
+    closeEmployeeModal.addEventListener('click', () => employeeModal.classList.add('hidden'));
+    window.addEventListener('click', (e) => e.target === employeeModal && employeeModal.classList.add('hidden'));
 
-    closeEmployeeModal.addEventListener('click', function() {
-        employeeModal.classList.add('hidden');
-    });
-
-    window.addEventListener('click', function(event) {
-        if (event.target === employeeModal) {
-            employeeModal.classList.add('hidden');
-        }
-    });
-
+    // Controle do Modal de Edição
     const editButtons = document.querySelectorAll('.editEmployeeBtn');
     const employeeEditModal = document.getElementById('employeeEditModal');
     const closeEmployeeEditModal = document.getElementById('closeEmployeeEditModal');
@@ -379,13 +489,67 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
         });
     });
 
-    closeEmployeeEditModal.addEventListener('click', function() {
-        employeeEditModal.classList.add('hidden');
+    closeEmployeeEditModal.addEventListener('click', () => employeeEditModal.classList.add('hidden'));
+    window.addEventListener('click', (e) => e.target === employeeEditModal && employeeEditModal.classList.add('hidden'));
+
+    // Controle do Modal de Visualização
+    const viewButtons = document.querySelectorAll('.viewEmployeeBtn');
+    const employeeViewModal = document.getElementById('employeeViewModal');
+    const closeEmployeeViewModal = document.getElementById('closeEmployeeViewModal');
+
+    viewButtons.forEach(button => {
+        button.addEventListener('click', async function() {
+            const employeeId = this.getAttribute('data-id');
+            
+            try {
+                // Mude esta linha no seu JavaScript:
+                const response = await fetch(`<?= $baseUrl ?>/employees/get?id=${employeeId}`);
+                if (!response.ok) throw new Error('Network response was not ok');
+                
+                const employee = await response.json();
+                
+                // Preencher informações básicas
+                const textFields = [
+                    'Name', 'LastName', 'Address', 'Sex', 'BirthDate', 
+                    'Nationality', 'PermissionType', 'Email', 'AhvNumber',
+                    'Phone', 'Religion', 'MaritalStatus', 'Role', 'StartDate', 'About'
+                ];
+                
+                textFields.forEach(field => {
+                    const element = document.getElementById(`view${field}`);
+                    if (element) element.textContent = employee[field.toLowerCase()] || 'N/A';
+                });
+
+                // Preencher imagens
+                const imageFields = [
+                    'profile_picture', 'passport', 'permission_photo_front',
+                    'permission_photo_back', 'health_card_front', 'health_card_back',
+                    'bank_card_front', 'bank_card_back', 'marriage_certificate'
+                ];
+                
+                imageFields.forEach(field => {
+                    const elementId = `view${field.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('')}`;
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        element.src = employee[field] ? `<?= $baseUrl ?>/uploads/${employee[field]}` : 
+                                       `https://via.placeholder.com/150?text=No+${field.replace('_', ' ')}`;
+                    }
+                });
+
+                // Mostrar/ocultar certidão de casamento
+                const marriageContainer = document.getElementById('marriageCertificateContainer');
+                if (marriageContainer) {
+                    marriageContainer.style.display = employee.marriage_certificate ? 'block' : 'none';
+                }
+                
+                employeeViewModal.classList.remove('hidden');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error loading employee details');
+            }
+        });
     });
 
-    window.addEventListener('click', function(event) {
-        if (event.target === employeeEditModal) {
-            employeeEditModal.classList.add('hidden');
-        }
-    });
+    closeEmployeeViewModal.addEventListener('click', () => employeeViewModal.classList.add('hidden'));
+    window.addEventListener('click', (e) => e.target === employeeViewModal && employeeViewModal.classList.add('hidden'));
 </script>

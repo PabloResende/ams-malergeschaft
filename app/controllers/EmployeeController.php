@@ -233,4 +233,44 @@ class EmployeeController {
             echo "Error deleting employee.";
         }
     }
+    // No EmployeeController.php
+    public function getEmployee() {
+        header('Content-Type: application/json');
+        
+        try {
+            if (!isset($_GET['id'])) {
+                throw new Exception('Employee ID not provided');
+            }
+    
+            $pdo = Database::connect();
+            $stmt = $pdo->prepare("SELECT * FROM employees WHERE id = ?");
+            $stmt->execute([$_GET['id']]);
+            $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+            if (!$employee) {
+                throw new Exception('Employee not found');
+            }
+    
+            // Garante que todos os campos de documentos estejam definidos
+            $documentFields = [
+                'profile_picture', 'passport', 'permission_photo_front',
+                'permission_photo_back', 'health_card_front', 'health_card_back',
+                'bank_card_front', 'bank_card_back', 'marriage_certificate'
+            ];
+    
+            foreach ($documentFields as $field) {
+                if (!isset($employee[$field])) {
+                    $employee[$field] = null;
+                }
+            }
+    
+            echo json_encode($employee);
+            
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+        
+        exit;
+    }
 }

@@ -81,6 +81,10 @@ switch ($route) {
     case '/employees/delete':
         $employeeController->delete();
         break;
+    case '/employees/get':
+    case '/employees/getEmployee':
+        $employeeController->getEmployee();
+        break;
     case '/clients':
         $clientsController->list();
         break;

@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../config/Database.php';
 
 class EmployeeController {
 
+
     public function list() {
         $pdo = Database::connect();
         $stmt = $pdo->query("SELECT * FROM employees ORDER BY name ASC");

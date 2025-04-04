@@ -80,9 +80,8 @@ viewButtons.forEach((button) => {
     const employeeId = this.getAttribute("data-id");
 
     try {
-      const response = await fetch(
-        `<?= $baseUrl ?>/employees/get?id=${employeeId}`
-      );
+      const response = await fetch(`${baseUrl}/employees/get?id=${employeeId}`);
+
 
       if (!response.ok) {
         const error = await response.json();

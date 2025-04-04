@@ -206,4 +206,8 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
 </div>
 
+<script>
+  const baseUrl = "<?= $baseUrl ?>";
+</script>
+
 <script src="<?= $baseUrl ?>/js/employees.js"></script>

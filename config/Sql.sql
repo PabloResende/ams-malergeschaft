@@ -25,18 +25,38 @@ CREATE TABLE projects (
 
 -- Employees
 CREATE TABLE employees (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(255) NOT NULL,
-    role VARCHAR(255) NOT NULL,
-    birth_date DATE,
-    start_date DATE,
-    address VARCHAR(255),
-    about TEXT,
+    last_name VARCHAR(255) NOT NULL,
+    address TEXT,
+    sex ENUM('male', 'female', 'other') NOT NULL,
+    birth_date DATE NOT NULL,
+    nationality VARCHAR(100),
+    permission_type VARCHAR(100),
+    email VARCHAR(255),
+    ahv_number VARCHAR(50),
     phone VARCHAR(20),
-    profile_picture VARCHAR(255),
+    religion VARCHAR(50),
+    marital_status ENUM('single', 'married', 'divorced', 'widowed'),
+    role VARCHAR(100) NOT NULL,
+    start_date DATE NOT NULL,
+    about TEXT,
+    profile_picture LONGBLOB,
+    passport LONGBLOB,
+    permission_photo_front LONGBLOB,
+    permission_photo_back LONGBLOB,
+    health_card_front LONGBLOB,
+    health_card_back LONGBLOB,
+    bank_card_front LONGBLOB,
+    bank_card_back LONGBLOB,
+    marriage_certificate LONGBLOB,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status ENUM('active', 'inactive') DEFAULT 'active'
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
+-- Adicione índices conforme necessário
+ALTER TABLE employees ADD INDEX idx_name (name);
+ALTER TABLE employees ADD INDEX idx_role (role);
 
 -- Clients
 CREATE TABLE client (

@@ -496,59 +496,94 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
     const viewButtons = document.querySelectorAll('.viewEmployeeBtn');
     const employeeViewModal = document.getElementById('employeeViewModal');
     const closeEmployeeViewModal = document.getElementById('closeEmployeeViewModal');
-
     viewButtons.forEach(button => {
-        button.addEventListener('click', async function() {
-            const employeeId = this.getAttribute('data-id');
+    button.addEventListener('click', async function() {
+        const employeeId = this.getAttribute('data-id');
+        
+        try {
+            const response = await fetch(`<?= $baseUrl ?>/employees/get?id=${employeeId}`);
             
-            try {
-                // Mude esta linha no seu JavaScript:
-                const response = await fetch(`<?= $baseUrl ?>/employees/get?id=${employeeId}`);
-                if (!response.ok) throw new Error('Network response was not ok');
-                
-                const employee = await response.json();
-                
-                // Preencher informações básicas
-                const textFields = [
-                    'Name', 'LastName', 'Address', 'Sex', 'BirthDate', 
-                    'Nationality', 'PermissionType', 'Email', 'AhvNumber',
-                    'Phone', 'Religion', 'MaritalStatus', 'Role', 'StartDate', 'About'
-                ];
-                
-                textFields.forEach(field => {
-                    const element = document.getElementById(`view${field}`);
-                    if (element) element.textContent = employee[field.toLowerCase()] || 'N/A';
-                });
-
-                // Preencher imagens
-                const imageFields = [
-                    'profile_picture', 'passport', 'permission_photo_front',
-                    'permission_photo_back', 'health_card_front', 'health_card_back',
-                    'bank_card_front', 'bank_card_back', 'marriage_certificate'
-                ];
-                
-                imageFields.forEach(field => {
-                    const elementId = `view${field.split('_').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('')}`;
-                    const element = document.getElementById(elementId);
-                    if (element) {
-                        element.src = employee[field] ? `<?= $baseUrl ?>/uploads/${employee[field]}` : 
-                                       `https://via.placeholder.com/150?text=No+${field.replace('_', ' ')}`;
-                    }
-                });
-
-                // Mostrar/ocultar certidão de casamento
-                const marriageContainer = document.getElementById('marriageCertificateContainer');
-                if (marriageContainer) {
-                    marriageContainer.style.display = employee.marriage_certificate ? 'block' : 'none';
-                }
-                
-                employeeViewModal.classList.remove('hidden');
-            } catch (error) {
-                console.error('Error:', error);
-                alert('Error loading employee details');
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to load employee data');
             }
-        });
+            
+            const employee = await response.json();
+            
+            // Preenche os campos de texto
+            const textFields = {
+                'name': 'Name',
+                'last_name': 'LastName',
+                'address': 'Address',
+                'sex': 'Sex',
+                'birth_date': 'BirthDate',
+                'nationality': 'Nationality',
+                'permission_type': 'PermissionType',
+                'email': 'Email',
+                'ahv_number': 'AhvNumber',
+                'phone': 'Phone',
+                'religion': 'Religion',
+                'marital_status': 'MaritalStatus',
+                'role': 'Role',
+                'start_date': 'StartDate',
+                'about': 'About'
+            };
+            
+            Object.entries(textFields).forEach(([key, field]) => {
+                const element = document.getElementById(`view${field}`);
+                if (element) element.textContent = employee[key] || 'N/A';
+            });
+            
+            // Preenche as imagens
+            const imageFields = {
+                'profile_picture': 'ProfilePicture',
+                'passport': 'Passport',
+                'permission_photo_front': 'PermissionPhotoFront',
+                'permission_photo_back': 'PermissionPhotoBack',
+                'health_card_front': 'HealthCardFront',
+                'health_card_back': 'HealthCardBack',
+                'bank_card_front': 'BankCardFront',
+                'bank_card_back': 'BankCardBack',
+                'marriage_certificate': 'MarriageCertificate'
+            };
+            
+            Object.entries(imageFields).forEach(([key, field]) => {
+                const element = document.getElementById(`view${field}`);
+                if (element) {
+                    if (employee[key]) {
+                        element.src = employee[key];
+                        element.onerror = function() {
+                            this.src = 'https://via.placeholder.com/150?text=Image+Not+Loaded';
+                        };
+                        element.style.display = 'block';
+                        
+                        // Adiciona link para abrir em nova aba
+                        const parent = element.parentElement;
+                        parent.innerHTML = `
+                            <a href="${employee[key]}" target="_blank" class="block">
+                                <img src="${employee[key]}" 
+                                     alt="${field}" 
+                                     class="w-full h-auto border rounded mt-1" 
+                                     style="max-height: 150px;"
+                                     onerror="this.src='https://via.placeholder.com/150?text=Image+Not+Loaded'">
+                                <small class="text-blue-500 hover:underline">Ver em tamanho real</small>
+                            </a>
+                        `;
+                    } else {
+                        element.src = `https://via.placeholder.com/150?text=No+${key.replace(/_/g, '+')}`;
+                        element.style.display = 'block';
+                    }
+                }
+            });
+            
+            employeeViewModal.classList.remove('hidden');
+            
+        } catch (error) {
+            console.error('Error:', error);
+            alert(error.message || 'Error loading employee details');
+        }
     });
+});
 
     closeEmployeeViewModal.addEventListener('click', () => employeeViewModal.classList.add('hidden'));
     window.addEventListener('click', (e) => e.target === employeeViewModal && employeeViewModal.classList.add('hidden'));

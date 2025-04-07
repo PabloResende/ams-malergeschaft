@@ -57,7 +57,6 @@ class EmployeeController {
                         } else {
                             throw new Exception("Falha ao mover o arquivo de $field.");
                         }
-
                     }
                 }
                 
@@ -94,39 +93,24 @@ class EmployeeController {
             try {
                 $pdo = Database::connect();
     
-                $documentFields = [
-                    'profile_picture', 'passport', 'permission_photo_front',
-                    'permission_photo_back', 'health_card_front', 'health_card_back',
-                    'bank_card_front', 'bank_card_back', 'marriage_certificate'
-                ];
-    
+                // Campos não-arquivo que vêm do $_POST
                 $fields = [
                     'name', 'last_name', 'address', 'sex', 'birth_date', 'nationality',
                     'permission_type', 'email', 'ahv_number', 'phone', 'religion',
-                    'marital_status', 'role', 'start_date', 'about', 'id'
+                    'marital_status', 'role', 'start_date', 'about'
                 ];
     
-                $params = [];
-                foreach ($fields as $field) {
-                    if (isset($_FILES[$field]) && $_FILES[$field]['error'] == 0) {
-                        $originalName = $_FILES[$field]['name'];
-                        $extension = pathinfo($originalName, PATHINFO_EXTENSION);
-                        $uniqueName = uniqid($field . "_", true) . "." . $extension;
-                        $filepath = $uploadDir . $uniqueName;
-                
-                        if (move_uploaded_file($_FILES[$field]['tmp_name'], $filepath)) {
-                            $updateFields[] = "$field = :$field";
-                            $updateParams[":$field"] = $filepath;
-                        }
-                    }
-                }
-                
-                // Garante que o ID foi enviado
-                if (!isset($params['id'])) {
+                // Verifica se o ID foi enviado via POST e o adiciona aos parâmetros
+                if (!isset($_POST['id'])) {
                     throw new Exception("ID do funcionário não informado.");
                 }
+                $params = [];
+                foreach ($fields as $field) {
+                    $params[$field] = isset($_POST[$field]) ? $_POST[$field] : null;
+                }
+                $params['id'] = $_POST['id'];
     
-                // Começa a montar a query
+                // Inicia a query UPDATE
                 $query = "UPDATE employees SET 
                     name = :name,
                     last_name = :last_name,
@@ -144,7 +128,13 @@ class EmployeeController {
                     start_date = :start_date,
                     about = :about";
     
-                // Adiciona os documentos que foram enviados
+                // Processa os uploads dos documentos (opcionais)
+                $documentFields = [
+                    'profile_picture', 'passport', 'permission_photo_front',
+                    'permission_photo_back', 'health_card_front', 'health_card_back',
+                    'bank_card_front', 'bank_card_back', 'marriage_certificate'
+                ];
+    
                 foreach ($documentFields as $field) {
                     if (isset($_FILES[$field]) && $_FILES[$field]['error'] === UPLOAD_ERR_OK) {
                         $fileInfo = finfo_open(FILEINFO_MIME_TYPE);
@@ -207,7 +197,7 @@ class EmployeeController {
                 exit;
             }
     
-            // Monta links para os documentos binários
+            // Monta links para os documentos (se houver)
             $documentFields = [
                 'profile_picture', 'passport', 'permission_photo_front',
                 'permission_photo_back', 'health_card_front', 'health_card_back',
@@ -232,7 +222,6 @@ class EmployeeController {
         }
     }
     
-
     public function delete() {
         if (!isset($_GET['id'])) {
             echo "Employee ID not provided.";
@@ -281,17 +270,25 @@ class EmployeeController {
             exit;
         }
     
-        $data = $result[$type];
+        // Constrói o caminho completo do arquivo
+        $filePath = __DIR__ . '/../../public' . $result[$type];
+        if (!file_exists($filePath)) {
+            http_response_code(404);
+            echo "Arquivo não encontrado.";
+            exit;
+        }
     
-        // Detecta o MIME type dos dados armazenados
+        // Lê o conteúdo do arquivo e determina seu MIME type
+        $fileContents = file_get_contents($filePath);
         $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mimeType = $finfo->buffer($data);
+        $mimeType = $finfo->buffer($fileContents);
         if (!$mimeType) {
             $mimeType = 'application/octet-stream';
         }
     
         header("Content-Type: $mimeType");
-        echo $data;
+        echo $fileContents;
         exit;
     }
 }
+?>

@@ -27,14 +27,14 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 ?>
                 <div class="bg-white p-4 rounded-lg shadow flex flex-col">
                     <div class="flex items-center">
-                    <div class="flex items-center">
                         <div class="w-20 flex-shrink-0">
                             <?php if (!empty($employee['profile_picture'])): ?>
                                 <img src="<?= $baseUrl ?>/employees/document?id=<?= $employee['id'] ?>&type=profile_picture" 
                                     alt="<?= htmlspecialchars($employee['name']) ?>" 
                                     class="w-full h-auto object-cover rounded-lg">
                             <?php else: ?>
-                                <img src="https://via.placeholder.com/96x128" 
+                                <!-- Placeholder: insira aqui o caminho para seu SVG ou imagem padrão -->
+                                <img src="caminho/para/seu-placeholder.svg" 
                                     alt="Placeholder" 
                                     class="w-full h-auto object-cover rounded-lg">
                             <?php endif; ?>
@@ -46,14 +46,13 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </div>
                     </div>
                     <!-- Botão de Visualizar Detalhes -->
-<button 
-    class="viewEmployeeBtn text-green-500 py-1 px-3 rounded mr-2" 
-    data-id="<?= $employee['id'] ?>">
-    <?= $langText['view'] ?? 'View' ?>
-</button>
-
-                    <div class="mt-4 flex justify-end space-x-2">
                     <button 
+                        class="viewEmployeeBtn text-green-500 py-1 px-3 rounded mr-2" 
+                        data-id="<?= $employee['id'] ?>">
+                        <?= $langText['view'] ?? 'View' ?>
+                    </button>
+                    <div class="mt-4 flex justify-end space-x-2">
+                        <button 
                             class="text-blue-500 hover:underline text-sm editEmployeeBtn" 
                             data-id="<?= $employee['id'] ?>"
                             data-name="<?= htmlspecialchars($employee['name']) ?>"
@@ -79,12 +78,11 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </a>
                     </div>
                 </div>
-                <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </div>
-    <?php require_once __DIR__ . '/create.php'; ?>
+</div>
+<?php require_once __DIR__ . '/create.php'; ?>
 <!-- Botão Flutuante para Abrir o Modal de Criação de Funcionário -->
 <button id="addEmployeeBtn" class="fixed bottom-8 right-8 bg-green-500 text-white rounded-full p-4 shadow-lg hover:bg-green-600">
     <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -95,5 +93,4 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <script>
   const baseUrl = "<?= $baseUrl ?>";
 </script>
-
 <script src="<?= $baseUrl ?>/js/employees.js"></script>

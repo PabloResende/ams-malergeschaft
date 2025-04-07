@@ -45,15 +45,15 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <p class="text-gray-600"><?= $langText['time_in_company'] ?? 'Time in Company' ?>: <strong><?= trim($timeInCompany) ?></strong></p>
                         </div>
                     </div>
-                    <!-- Botão de Visualizar Detalhes -->
-                    <button 
-                        class="viewEmployeeBtn text-green-500 py-1 px-3 rounded mr-2" 
-                        data-id="<?= $employee['id'] ?>">
-                        <?= $langText['view'] ?? 'View' ?>
-                    </button>
-                    <div class="mt-4 flex justify-end space-x-2">
+                    <!-- Container dos Botões: alinhados uniformemente -->
+                    <div class="mt-4 flex justify-around">
                         <button 
-                            class="text-blue-500 hover:underline text-sm editEmployeeBtn" 
+                            class="viewEmployeeBtn text-green-500  rounded"
+                            data-id="<?= $employee['id'] ?>">
+                            <?= $langText['view'] ?? 'View' ?>
+                        </button>
+                        <button 
+                            class="editEmployeeBtn text-blue-500 rounded"
                             data-id="<?= $employee['id'] ?>"
                             data-name="<?= htmlspecialchars($employee['name']) ?>"
                             data-last_name="<?= htmlspecialchars($employee['last_name']) ?>"
@@ -73,7 +73,9 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         >
                             <?= $langText['edit'] ?? 'Edit' ?>
                         </button>
-                        <a href="<?= $baseUrl ?>/employees/delete?id=<?= $employee['id'] ?>" class="text-red-500 hover:underline text-sm" onclick="return confirm('Are you sure you want to delete this employee?');">
+                        <a href="<?= $baseUrl ?>/employees/delete?id=<?= $employee['id'] ?>" 
+                           class="text-red-500  rounded text-center text-sm"
+                           onclick="return confirm('Are you sure you want to delete this employee?');">
                             <?= $langText['delete'] ?? 'Delete' ?>
                         </a>
                     </div>
@@ -84,7 +86,7 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </div>
 <?php require_once __DIR__ . '/create.php'; ?>
 <!-- Botão Flutuante para Abrir o Modal de Criação de Funcionário -->
-<button id="addEmployeeBtn" class="fixed bottom-8 right-8 bg-green-500 text-white rounded-full p-4 shadow-lg hover:bg-green-600">
+<button id="addEmployeeBtn" class="fixed bottom-8 right-8 text-green-500">
     <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
     </svg>

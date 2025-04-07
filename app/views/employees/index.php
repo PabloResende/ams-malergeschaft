@@ -33,7 +33,6 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
                                     alt="<?= htmlspecialchars($employee['name']) ?>" 
                                     class="w-full h-auto object-cover rounded-lg">
                             <?php else: ?>
-                                <!-- Placeholder: insira aqui o caminho para seu SVG ou imagem padrão -->
                                 <img src="caminho/para/seu-placeholder.svg" 
                                     alt="Placeholder" 
                                     class="w-full h-auto object-cover rounded-lg">
@@ -50,7 +49,7 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <button 
                             class="viewEmployeeBtn text-green-500  rounded"
                             data-id="<?= $employee['id'] ?>">
-                            <?= $langText['view'] ?? 'View' ?>
+                            <?= $langText['details'] ?? 'Details' ?>
                         </button>
                         <button 
                             class="editEmployeeBtn text-blue-500 rounded"
@@ -86,7 +85,7 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </div>
 <?php require_once __DIR__ . '/create.php'; ?>
 <!-- Botão Flutuante para Abrir o Modal de Criação de Funcionário -->
-<button id="addEmployeeBtn" class="fixed bottom-8 right-8 text-green-500">
+<button id="addEmployeeBtn" class="fixed bottom-8 right-8 bg-green-500 text-white rounded-full p-4 shadow-lg hover:bg-green-600">
     <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
     </svg>

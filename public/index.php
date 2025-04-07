@@ -124,6 +124,9 @@ switch ($route) {
     case '/inventory/delete':
         $inventoryController->delete();
         break;
+    case '/calendar':
+        require_once __DIR__ . '/../app/views/calendar/index.php';
+        break;
     default:
         http_response_code(404);
         echo "404 - Page not found.";

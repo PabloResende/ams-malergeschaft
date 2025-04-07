@@ -1,4 +1,6 @@
 // Controle do Modal de Criação
+header('Content-Type: application/json');
+
 const addEmployeeBtn = document.getElementById("addEmployeeBtn");
 const employeeModal = document.getElementById("employeeModal");
 const closeEmployeeModal = document.getElementById("closeEmployeeModal");

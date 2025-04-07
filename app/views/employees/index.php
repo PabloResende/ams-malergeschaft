@@ -45,7 +45,13 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             <p class="text-gray-600"><?= $langText['time_in_company'] ?? 'Time in Company' ?>: <strong><?= trim($timeInCompany) ?></strong></p>
                         </div>
                     </div>
-                    
+                    <!-- Botão de Visualizar Detalhes -->
+<button 
+    class="viewEmployeeBtn text-green-500 py-1 px-3 rounded mr-2" 
+    data-id="<?= $employee['id'] ?>">
+    <?= $langText['view'] ?? 'View' ?>
+</button>
+
                     <div class="mt-4 flex justify-end space-x-2">
                     <button 
                             class="text-blue-500 hover:underline text-sm editEmployeeBtn" 
@@ -85,7 +91,7 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
         <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
     </svg>
 </button>
-
+<?php require_once __DIR__ . '/details.php'; ?>
 <script>
   const baseUrl = "<?= $baseUrl ?>";
 </script>

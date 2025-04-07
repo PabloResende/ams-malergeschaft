@@ -49,7 +49,15 @@ class EmployeeController {
                             throw new Exception("Arquivo $field excede o tamanho máximo permitido");
                         }
                         
-                        $data[$field] = file_get_contents($_FILES[$field]['tmp_name']);
+                        $filename = uniqid() . '_' . basename($_FILES[$field]['name']);
+                        $destination = __DIR__ . '/../../public/uploads/employees/' . $filename;
+
+                        if (move_uploaded_file($_FILES[$field]['tmp_name'], $destination)) {
+                            $data[$field] = "/uploads/employees/$filename";
+                        } else {
+                            throw new Exception("Falha ao mover o arquivo de $field.");
+                        }
+
                     }
                 }
                 
@@ -85,48 +93,40 @@ class EmployeeController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $pdo = Database::connect();
-                
-                // Campos de documentos
+    
                 $documentFields = [
                     'profile_picture', 'passport', 'permission_photo_front',
                     'permission_photo_back', 'health_card_front', 'health_card_back',
                     'bank_card_front', 'bank_card_back', 'marriage_certificate'
                 ];
+    
+                $fields = [
+                    'name', 'last_name', 'address', 'sex', 'birth_date', 'nationality',
+                    'permission_type', 'email', 'ahv_number', 'phone', 'religion',
+                    'marital_status', 'role', 'start_date', 'about', 'id'
+                ];
+    
+                $params = [];
+                foreach ($fields as $field) {
+                    if (isset($_FILES[$field]) && $_FILES[$field]['error'] == 0) {
+                        $originalName = $_FILES[$field]['name'];
+                        $extension = pathinfo($originalName, PATHINFO_EXTENSION);
+                        $uniqueName = uniqid($field . "_", true) . "." . $extension;
+                        $filepath = $uploadDir . $uniqueName;
                 
-                $data = $_POST;
-                
-                // Inicializa os campos de documentos com null se não estiverem definidos
-                foreach ($documentFields as $field) {
-                    if (!isset($data[$field])) {
-                        $data[$field] = null;
+                        if (move_uploaded_file($_FILES[$field]['tmp_name'], $filepath)) {
+                            $updateFields[] = "$field = :$field";
+                            $updateParams[":$field"] = $filepath;
+                        }
                     }
                 }
                 
-                // Processa uploads dos documentos ou mantém o existente
-                foreach ($documentFields as $field) {
-                    if (isset($_FILES[$field]) && $_FILES[$field]['error'] === UPLOAD_ERR_OK) {
-                        // Verifica o tipo MIME do arquivo
-                        $fileInfo = finfo_open(FILEINFO_MIME_TYPE);
-                        $mimeType = finfo_file($fileInfo, $_FILES[$field]['tmp_name']);
-                        finfo_close($fileInfo);
-                        
-                        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
-                        if (!in_array($mimeType, $allowedTypes)) {
-                            throw new Exception("Tipo de arquivo não permitido para $field");
-                        }
-                        
-                        if ($_FILES[$field]['size'] > 5 * 1024 * 1024) {
-                            throw new Exception("Arquivo $field excede o tamanho máximo permitido");
-                        }
-                        
-                        $data[$field] = file_get_contents($_FILES[$field]['tmp_name']);
-                    } elseif (isset($_POST["keep_$field"])) {
-                        // Se o usuário optar por manter o documento existente, remove esse campo do array
-                        unset($data[$field]);
-                    }
+                // Garante que o ID foi enviado
+                if (!isset($params['id'])) {
+                    throw new Exception("ID do funcionário não informado.");
                 }
-                
-                // Monta a query de atualização
+    
+                // Começa a montar a query
                 $query = "UPDATE employees SET 
                     name = :name,
                     last_name = :last_name,
@@ -143,27 +143,95 @@ class EmployeeController {
                     role = :role,
                     start_date = :start_date,
                     about = :about";
-                
-                // Acrescenta os campos de documentos que foram atualizados
+    
+                // Adiciona os documentos que foram enviados
                 foreach ($documentFields as $field) {
-                    if (isset($data[$field])) {
-                        $query .= ", $field = :$field";
+                    if (isset($_FILES[$field]) && $_FILES[$field]['error'] === UPLOAD_ERR_OK) {
+                        $fileInfo = finfo_open(FILEINFO_MIME_TYPE);
+                        $mimeType = finfo_file($fileInfo, $_FILES[$field]['tmp_name']);
+                        finfo_close($fileInfo);
+    
+                        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+                        if (!in_array($mimeType, $allowedTypes)) {
+                            throw new Exception("Tipo de arquivo não permitido para $field");
+                        }
+    
+                        if ($_FILES[$field]['size'] > 5 * 1024 * 1024) {
+                            throw new Exception("Arquivo $field excede o tamanho máximo permitido");
+                        }
+    
+                        $filename = uniqid() . '_' . basename($_FILES[$field]['name']);
+                        $destination = __DIR__ . '/../../public/uploads/employees/' . $filename;
+    
+                        if (move_uploaded_file($_FILES[$field]['tmp_name'], $destination)) {
+                            $params[$field] = "/uploads/employees/$filename";
+                            $query .= ", $field = :$field";
+                        } else {
+                            throw new Exception("Falha ao mover o arquivo de $field.");
+                        }
                     }
                 }
-                
+    
                 $query .= " WHERE id = :id";
-                
+    
                 $stmt = $pdo->prepare($query);
-                $stmt->execute($data);
-                
+                $stmt->execute($params);
+    
                 header('Location: /ams-malergeschaft/public/employees');
                 exit;
-                
+    
             } catch (Exception $e) {
                 die("Erro ao atualizar funcionário: " . $e->getMessage());
             }
         }
     }
+    
+    public function get() {
+        header('Content-Type: application/json');
+    
+        if (!isset($_GET['id'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'ID do funcionário não fornecido']);
+            exit;
+        }
+    
+        try {
+            $pdo = Database::connect();
+            $stmt = $pdo->prepare("SELECT * FROM employees WHERE id = ?");
+            $stmt->execute([$_GET['id']]);
+            $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+            if (!$employee) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Funcionário não encontrado']);
+                exit;
+            }
+    
+            // Monta links para os documentos binários
+            $documentFields = [
+                'profile_picture', 'passport', 'permission_photo_front',
+                'permission_photo_back', 'health_card_front', 'health_card_back',
+                'bank_card_front', 'bank_card_back', 'marriage_certificate'
+            ];
+    
+            foreach ($documentFields as $field) {
+                if ($employee[$field]) {
+                    $employee[$field] = "/ams-malergeschaft/public/employees/document?id={$employee['id']}&type={$field}";
+                } else {
+                    $employee[$field] = null;
+                }
+            }
+    
+            echo json_encode($employee);
+            exit;
+    
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro no servidor: ' . $e->getMessage()]);
+            exit;
+        }
+    }
+    
 
     public function delete() {
         if (!isset($_GET['id'])) {

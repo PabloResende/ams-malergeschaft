@@ -31,9 +31,21 @@ $eventsJson = json_encode($allEvents);
   <meta charset="UTF-8">
   <title>Calendários do Ano</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Define o layout fixo para as tabelas para manter as células com dimensões consistentes */
+    table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+    }
+    /* Faz com que cada célula tenha bordas definidas e não expanda além do esperado */
+    td {
+      overflow: hidden;
+    }
+  </style>
 </head>
 <body class="bg-gray-50">
-  <!-- Área principal (considerando que o header já está incluso) -->
+  <!-- Área principal -->
   <main class="ml-56 pt-20 p-6 min-h-screen">
     <div class="container mx-auto max-w-7xl">
       <!-- Cabeçalho com seletor de ano e botão para adicionar lembrete -->
@@ -99,7 +111,7 @@ $eventsJson = json_encode($allEvents);
   let storedReminders = localStorage.getItem('reminders');
   let reminderEvents = storedReminders ? JSON.parse(storedReminders) : [];
 
-  // Filtra lembretes expirados (remover lembrete se a data for menor que hoje)
+  // Filtra lembretes expirados (remove se a data for menor que hoje)
   function filterExpiredReminders() {
     const today = new Date();
     today.setHours(0,0,0,0);
@@ -112,18 +124,18 @@ $eventsJson = json_encode($allEvents);
   }
   filterExpiredReminders();
 
-  // Combina os eventos do servidor com os lembretes adicionados localmente
+  // Combina eventos do servidor e lembretes
   function getAllEvents() {
     return serverEvents.concat(reminderEvents);
   }
 
-  // Função para renderizar um calendário (tabela) para o mês e ano fornecidos
+  // Função para renderizar o calendário de um determinado mês e ano
   function renderCalendar(year, month) {
     const monthNames = [
       'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
       'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
     ];
-    // Cria o container do mês
+    // Container do mês
     const container = document.createElement('div');
     container.className = "bg-white rounded-xl shadow-lg p-4";
   
@@ -133,11 +145,11 @@ $eventsJson = json_encode($allEvents);
     header.innerText = `${monthNames[month]} ${year}`;
     container.appendChild(header);
   
-    // Cria uma tabela para o calendário
+    // Criação da tabela do calendário
     const table = document.createElement('table');
-    table.className = "w-full text-center border-collapse";
+    table.className = "w-full text-center";
   
-    // Cabeçalho da tabela com os nomes dos dias da semana
+    // Cabeçalho da tabela com os dias da semana
     const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     const thead = document.createElement('thead');
     const trWeek = document.createElement('tr');
@@ -150,33 +162,35 @@ $eventsJson = json_encode($allEvents);
     thead.appendChild(trWeek);
     table.appendChild(thead);
   
-    // Corpo da tabela: calcula o primeiro dia do mês e quantos dias tem
+    // Corpo da tabela: calcula o primeiro dia do mês e a quantidade de dias
     const tbody = document.createElement('tbody');
     const firstDay = new Date(year, month, 1);
     const startingDay = firstDay.getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
   
     let date = 1;
-    for (let i = 0; i < 6; i++) {
-      // Cria uma linha (semana) – serão no máximo 6 semanas
+    for (let i = 0; i < 6; i++) {  // no máximo 6 semanas
       const tr = document.createElement('tr');
       for (let j = 0; j < 7; j++) {
         const td = document.createElement('td');
         td.className = "border p-1 h-16 align-top relative";
   
         if (i === 0 && j < startingDay) {
-          // Célula em branco antes do primeiro dia
           td.innerHTML = "";
         } else if (date > daysInMonth) {
-          break;
+          td.innerHTML = "";
         } else {
-          // Exibe o número do dia
+          // Número do dia
           const dayDiv = document.createElement('div');
           dayDiv.className = "text-xs font-semibold absolute top-0 left-0 m-1";
           dayDiv.innerText = date;
           td.appendChild(dayDiv);
   
-          // Verifica se há algum evento para esta data
+          // Cria um wrapper para os eventos com limite de altura e overflow
+          const eventsWrapper = document.createElement('div');
+          eventsWrapper.className = "mt-4 overflow-hidden max-h-12";
+  
+          // Filtra eventos para a data
           const cellDate = new Date(year, month, date);
           cellDate.setHours(0,0,0,0);
           const eventsForDay = getAllEvents().filter(evt => {
@@ -185,21 +199,22 @@ $eventsJson = json_encode($allEvents);
             return evtDate.getTime() === cellDate.getTime();
           });
   
+          // Exibe cada evento, limitando o espaço dentro do wrapper
           eventsForDay.forEach(evt => {
             const evtDiv = document.createElement('div');
-            evtDiv.className = "mt-4 text-xs text-white rounded px-1 mb-1 truncate";
+            evtDiv.className = "mt-1 text-xs text-white rounded px-1 truncate";
             evtDiv.style.backgroundColor = evt.color || "#3b82f6";
             evtDiv.title = evt.title;
             evtDiv.innerText = evt.title;
-            td.appendChild(evtDiv);
+            eventsWrapper.appendChild(evtDiv);
           });
   
+          td.appendChild(eventsWrapper);
           date++;
         }
         tr.appendChild(td);
       }
       tbody.appendChild(tr);
-      // Se já foram preenchidos todos os dias, sair do loop
       if (date > daysInMonth) break;
     }
     table.appendChild(tbody);
@@ -207,7 +222,7 @@ $eventsJson = json_encode($allEvents);
     return container;
   }
   
-  // Função para renderizar os 12 calendários em uma grid
+  // Renderiza os 12 calendários em uma grid
   function renderYearCalendars() {
     const year = parseInt(document.getElementById('yearSelector').value);
     const grid = document.getElementById('calendarsGrid');
@@ -218,11 +233,11 @@ $eventsJson = json_encode($allEvents);
     }
   }
   
-  // Renderiza os calendários na carga da página e ao trocar o ano
+  // Renderiza ao carregar e ao mudar o ano
   document.addEventListener('DOMContentLoaded', renderYearCalendars);
   document.getElementById('yearSelector').addEventListener('change', renderYearCalendars);
   
-  // Modal para adicionar lembrete
+  // Configuração do modal para adicionar lembrete
   const addReminderBtn = document.getElementById('addReminderBtn');
   const reminderModal = document.getElementById('reminderModal');
   const closeModal = document.getElementById('closeModal');

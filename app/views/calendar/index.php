@@ -32,15 +32,28 @@ $eventsJson = json_encode($allEvents);
   <title>Calendários do Ano</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Define o layout fixo para as tabelas para manter as células com dimensões consistentes */
+    /* Layout fixo para as tabelas */
     table {
       width: 100%;
       table-layout: fixed;
       border-collapse: collapse;
     }
-    /* Faz com que cada célula tenha bordas definidas e não expanda além do esperado */
+    /* Garante que cada célula não ultrapasse seus limites */
     td {
       overflow: hidden;
+    }
+    /* Estilo básico para o tooltip flutuante */
+    #tooltip {
+      position: fixed;
+      background: rgba(0, 0, 0, 0.75);
+      color: #fff;
+      padding: 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      pointer-events: none;
+      display: none;
+      z-index: 1000;
     }
   </style>
 </head>
@@ -74,6 +87,9 @@ $eventsJson = json_encode($allEvents);
     </div>
   </main>
 
+  <!-- Tooltip flutuante -->
+  <div id="tooltip"></div>
+
   <!-- Modal para Adicionar Lembrete -->
   <div id="reminderModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
     <div class="bg-white rounded-lg shadow-xl w-11/12 max-w-md p-6">
@@ -103,7 +119,7 @@ $eventsJson = json_encode($allEvents);
     </div>
   </div>
 
-  <!-- Scripts para renderizar os calendários -->
+  <!-- Scripts para renderização dos calendários -->
   <script>
   // Eventos vindos do servidor
   const serverEvents = <?php echo $eventsJson; ?>;
@@ -111,7 +127,7 @@ $eventsJson = json_encode($allEvents);
   let storedReminders = localStorage.getItem('reminders');
   let reminderEvents = storedReminders ? JSON.parse(storedReminders) : [];
 
-  // Filtra lembretes expirados (remove se a data for menor que hoje)
+  // Filtra lembretes expirados (remove se data for menor que hoje)
   function filterExpiredReminders() {
     const today = new Date();
     today.setHours(0,0,0,0);
@@ -129,7 +145,7 @@ $eventsJson = json_encode($allEvents);
     return serverEvents.concat(reminderEvents);
   }
 
-  // Função para renderizar o calendário de um determinado mês e ano
+  // Função para renderizar o calendário (tabela) para um determinado mês e ano
   function renderCalendar(year, month) {
     const monthNames = [
       'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -139,7 +155,7 @@ $eventsJson = json_encode($allEvents);
     const container = document.createElement('div');
     container.className = "bg-white rounded-xl shadow-lg p-4";
   
-    // Cabeçalho com o nome do mês e ano
+    // Cabeçalho com nome do mês e ano
     const header = document.createElement('h3');
     header.className = "text-center text-lg font-semibold mb-2";
     header.innerText = `${monthNames[month]} ${year}`;
@@ -149,7 +165,7 @@ $eventsJson = json_encode($allEvents);
     const table = document.createElement('table');
     table.className = "w-full text-center";
   
-    // Cabeçalho da tabela com os dias da semana
+    // Cabeçalho com os dias da semana
     const weekdays = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     const thead = document.createElement('thead');
     const trWeek = document.createElement('tr');
@@ -162,14 +178,14 @@ $eventsJson = json_encode($allEvents);
     thead.appendChild(trWeek);
     table.appendChild(thead);
   
-    // Corpo da tabela: calcula o primeiro dia do mês e a quantidade de dias
+    // Corpo da tabela: cálculo do primeiro dia e número de dias do mês
     const tbody = document.createElement('tbody');
     const firstDay = new Date(year, month, 1);
     const startingDay = firstDay.getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
   
     let date = 1;
-    for (let i = 0; i < 6; i++) {  // no máximo 6 semanas
+    for (let i = 0; i < 6; i++) { // máximo de 6 semanas
       const tr = document.createElement('tr');
       for (let j = 0; j < 7; j++) {
         const td = document.createElement('td');
@@ -180,17 +196,17 @@ $eventsJson = json_encode($allEvents);
         } else if (date > daysInMonth) {
           td.innerHTML = "";
         } else {
-          // Número do dia
+          // Exibe o número do dia
           const dayDiv = document.createElement('div');
           dayDiv.className = "text-xs font-semibold absolute top-0 left-0 m-1";
           dayDiv.innerText = date;
           td.appendChild(dayDiv);
   
-          // Cria um wrapper para os eventos com limite de altura e overflow
+          // Wrapper para os eventos com altura limitada
           const eventsWrapper = document.createElement('div');
           eventsWrapper.className = "mt-4 overflow-hidden max-h-12";
   
-          // Filtra eventos para a data
+          // Filtra eventos para o dia corrente
           const cellDate = new Date(year, month, date);
           cellDate.setHours(0,0,0,0);
           const eventsForDay = getAllEvents().filter(evt => {
@@ -199,13 +215,32 @@ $eventsJson = json_encode($allEvents);
             return evtDate.getTime() === cellDate.getTime();
           });
   
-          // Exibe cada evento, limitando o espaço dentro do wrapper
+          // Para cada evento, cria o elemento com tooltip
           eventsForDay.forEach(evt => {
             const evtDiv = document.createElement('div');
             evtDiv.className = "mt-1 text-xs text-white rounded px-1 truncate";
             evtDiv.style.backgroundColor = evt.color || "#3b82f6";
             evtDiv.title = evt.title;
             evtDiv.innerText = evt.title;
+  
+            // Eventos para mostrar o tooltip flutuante
+            evtDiv.addEventListener('mouseenter', function(e) {
+              const tooltip = document.getElementById('tooltip');
+              tooltip.innerText = evt.title;
+              tooltip.style.left = (e.clientX + 10) + 'px';
+              tooltip.style.top = (e.clientY + 10) + 'px';
+              tooltip.style.display = 'block';
+            });
+            evtDiv.addEventListener('mousemove', function(e) {
+              const tooltip = document.getElementById('tooltip');
+              tooltip.style.left = (e.clientX + 10) + 'px';
+              tooltip.style.top = (e.clientY + 10) + 'px';
+            });
+            evtDiv.addEventListener('mouseleave', function(e) {
+              const tooltip = document.getElementById('tooltip');
+              tooltip.style.display = 'none';
+            });
+  
             eventsWrapper.appendChild(evtDiv);
           });
   
@@ -222,7 +257,7 @@ $eventsJson = json_encode($allEvents);
     return container;
   }
   
-  // Renderiza os 12 calendários em uma grid
+  // Renderiza os 12 calendários na grid
   function renderYearCalendars() {
     const year = parseInt(document.getElementById('yearSelector').value);
     const grid = document.getElementById('calendarsGrid');
@@ -233,7 +268,7 @@ $eventsJson = json_encode($allEvents);
     }
   }
   
-  // Renderiza ao carregar e ao mudar o ano
+  // Renderiza ao carregar a página e ao trocar o ano
   document.addEventListener('DOMContentLoaded', renderYearCalendars);
   document.getElementById('yearSelector').addEventListener('change', renderYearCalendars);
   

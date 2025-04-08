@@ -4,6 +4,27 @@ $pdo = Database::connect();
 
 $lowStockLimit = 100;
 
+// Lembretes de calendário (avisa no dia e nos 2 dias anteriores)
+$today = date('Y-m-d');
+$tomorrow = date('Y-m-d', strtotime('+1 day'));
+$afterTomorrow = date('Y-m-d', strtotime('+2 days'));
+
+$stmt = $pdo->prepare("SELECT title, reminder_date FROM reminders WHERE reminder_date IN (?, ?, ?)");
+$stmt->execute([$today, $tomorrow, $afterTomorrow]);
+$reminders = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($reminders as $r) {
+    $dateDiff = (strtotime($r['reminder_date']) - strtotime($today)) / 86400;
+
+    if ($dateDiff == 0) {
+        $notifications[] = "Lembrete de hoje: '{$r['title']}'";
+    } elseif ($dateDiff == 1) {
+        $notifications[] = "Lembrete amanhã: '{$r['title']}'";
+    } elseif ($dateDiff == 2) {
+        $notifications[] = "Lembrete em 2 dias: '{$r['title']}'";
+    }
+}
+
 // Notificações de estoque baixo para materiais
 $stmt = $pdo->prepare("SELECT id, name, quantity FROM inventory WHERE quantity < ? AND type = 'material'");
 $stmt->execute([$lowStockLimit]);

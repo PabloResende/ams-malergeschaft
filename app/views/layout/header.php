@@ -72,14 +72,6 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
                       </a>
                   </li>
                   <li class="mb-4">
-                      <a href="<?= $baseUrl ?>/clients" class="flex items-center space-x-2 hover:text-gray-300">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path d="M8 7a4 4 0 1 1 8 0 4 4 0 0 1-8 0zM4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"></path>
-                        </svg>
-                          <span><?= $langText['clients'] ?? 'Clientes' ?></span>
-                      </a>
-                  </li>
-                  <li class="mb-4">
                         <a href="<?= $baseUrl ?>/inventory" class="flex items-center space-x-2 hover:text-gray-300">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -91,11 +83,22 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
                   </li>
                   <li class="mb-4">
                     <a href="<?= $baseUrl ?>/calendar" class="flex items-center space-x-2 hover:text-gray-300">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path d="M8 7a4 4 0 1 1 8 0 4 4 0 0 1-8 0zM4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"></path>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
                         </svg>
                         <span><?= $langText['calendar'] ?? 'Calendar' ?></span>
                     </a>
+                  </li>
+                  <li class="mb-4">
+                      <a href="<?= $baseUrl ?>/clients" class="flex items-center space-x-2 hover:text-gray-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M8 7a4 4 0 1 1 8 0 4 4 0 0 1-8 0zM4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"></path>
+                        </svg>
+                          <span><?= $langText['clients'] ?? 'Clientes' ?></span>
+                      </a>
                   </li>
                   <li class="mb-4">
                     <a href="<?= $baseUrl ?>/analytics" class="flex items-center space-x-2 hover:text-gray-300">

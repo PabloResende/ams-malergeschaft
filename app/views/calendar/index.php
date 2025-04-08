@@ -24,6 +24,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 // Outros eventos estáticos podem ser adicionados aqui
 $allEvents = $projectEvents;
 $eventsJson = json_encode($allEvents);
+
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">

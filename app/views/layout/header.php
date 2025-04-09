@@ -38,11 +38,30 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
   <title>Ams Malergeschäft</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="icon" href="<?= $baseUrl ?>/assets/logo/ams-malergeschaft_icon.png" type="image/png">
+  <style>
+  @media (max-width: 767px) {
+    .sidebar-open {
+      transform: translateX(0)!important;
+    }
+    .content-overlay {
+      display: block;
+      background: rgba(0,0,0,0.3);
+      z-index: 40;
+    }
+  }
+</style>
 </head>
-<body class="bg-gray-100 text-gray-900">
+<body class="bg-gray-100 text-gray-900 relative">
 <?php if (!$isLoginOrRegisterPage && $isLoggedIn): ?>
+  <!-- Mobile Menu Button -->
+  <button id="mobileMenuButton" class="md:hidden fixed top-4 left-4 z-50 p-2 bg-gray-900 text-white rounded-lg">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>
+  </button>
+  <div id="contentOverlay" class="content-overlay fixed inset-0 hidden z-40"></div>
   <!-- Sidebar fixa -->
-  <aside class="w-56 bg-gray-900 text-white h-screen fixed left-0 top-0 p-4 flex flex-col justify-between">
+  <aside id="sidebar" class="w-56 bg-gray-900 text-white h-screen fixed left-0 top-0 p-4 flex flex-col justify-between transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out z-50">
       <div>
           <h1 class="text-xl font-bold mb-6"><a href="<?= $baseUrl ?>/dashboard">Ams Malergeschäft</a></h1>
           <nav>
@@ -125,7 +144,7 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false ||
   </aside>
 
   <!-- Navbar fixa -->
-  <nav class="bg-white shadow p-4 fixed top-0 left-56 right-0 z-10 flex items-center justify-between">
+  <nav class="bg-white shadow p-4 fixed top-0 left-0 md:left-56 right-0 z-10 flex items-center justify-between transition-all duration-200">
     <div class="flex items-center">
         <span class="text-4xl font-bold text-blue-600"><a href="<?= $baseUrl ?>/dashboard">Ams </a></span>
         <span class="ml-2 text-xl text-gray-600">Malergeschäft</span>

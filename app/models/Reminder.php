@@ -10,10 +10,9 @@ class Reminder {
     }
 
     public static function create($pdo, $data) {
-        $stmt = $pdo->prepare("INSERT INTO reminders (title, description, reminder_date, color) VALUES (?, ?, ?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO reminders (title, reminder_date, color) VALUES (?, ?, ?)");
         return $stmt->execute([
             $data['title'],
-            $data['description'] ?? '',
             $data['reminder_date'],
             $data['color']
         ]);

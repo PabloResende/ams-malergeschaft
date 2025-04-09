@@ -9,22 +9,43 @@ class CalendarController {
         $reminders = Reminder::getAll($pdo);
         include __DIR__ . '/../views/calendar/index.php';
     }
-
-    public function store() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+public function store() {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        try {
             $pdo = Database::connect();
+            
+            // Validação básica
+            if (empty($_POST['title'])) {
+                throw new Exception('Título é obrigatório');
+            }
+            
+            if (empty($_POST['reminder_date'])) {
+                throw new Exception('Data é obrigatória');
+            }
+
             $data = [
-                'title'         => $_POST['title'] ?? '',
-                'description'   => $_POST['description'] ?? '',
-                'reminder_date' => $_POST['reminder_date'] ?? '',
-                'color'         => $_POST['color'] ?? '#00ff00'
+                'title'         => $_POST['title'],
+                'reminder_date' => $_POST['reminder_date'],
+                'color'         => $_POST['color'] ?? '#3b82f6'
             ];
+
             $created = Reminder::create($pdo, $data);
-            header('Content-Type: application/json');
-            echo json_encode(['success' => $created]);
-            exit;
+            
+            echo json_encode([
+                'success' => $created,
+                'message' => $created ? 'Lembrete salvo!' : 'Erro ao salvar'
+            ]);
+            
+        } catch (Exception $e) {
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
         }
+        exit;
     }
+}
 
     public function fetch() {
         $pdo = Database::connect();

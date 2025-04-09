@@ -177,24 +177,38 @@ document.addEventListener('DOMContentLoaded', () => {
     // Submissão do formulário via AJAX
     const reminderForm = document.getElementById('reminderForm');
     reminderForm.addEventListener('submit', e => {
-      e.preventDefault();
-      const formData = new FormData(reminderForm);
-      fetch('/calendar/store', {
-        method: 'POST',
-        body: formData
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            alert('Lembrete salvo!');
-            reminderModal.classList.add('hidden');
-            reminderForm.reset();
-            loadAndRenderCalendars();
-          } else {
-            alert('Falha ao salvar o lembrete.');
-          }
+        e.preventDefault();
+        const formData = new FormData(reminderForm);
+        
+        // Debug: Mostra os dados do formulário
+        for (const [key, value] of formData.entries()) {
+            console.log(`${key}: ${value}`);
+        }
+    
+        fetch('/calendar/store', {
+            method: 'POST',
+            body: formData
         })
-        .catch(err => console.error(err));
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Resposta:', data); // Debug da resposta
+            if (data.success) {
+                alert(data.message);
+                reminderModal.classList.add('hidden');
+                reminderForm.reset();
+                loadAndRenderCalendars();
+            } else {
+                alert(data.message || 'Erro desconhecido');
+            }
+        })
+        .catch(err => {
+            console.error('Erro:', err);
+            alert('Falha na comunicação com o servidor');
+        });
     });
   });
-  

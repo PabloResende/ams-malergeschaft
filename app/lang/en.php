@@ -15,6 +15,7 @@ return [
     'dashboard' => 'Dashboard',
     'projects' => 'Projects',
     'employees' => 'Employees',
+    'calendar' => 'Calendar',
 
     // ---------------------------
     // Header

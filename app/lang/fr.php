@@ -15,6 +15,7 @@ return [
     'dashboard' => 'Tableau de bord',
     'projects' => 'Projets',
     'employees' => 'Employés',
+    'calendar' => 'Calendrier',
 
     // ---------------------------
     // En-tête

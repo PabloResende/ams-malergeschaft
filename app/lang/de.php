@@ -15,6 +15,7 @@ return [
     'dashboard' => 'Dashboard',
     'projects' => 'Projekte',
     'employees' => 'Mitarbeiter',
+    'calendar' => 'Kalender',
 
     // ---------------------------
     // Kopfzeile

@@ -15,6 +15,7 @@ return [
     'dashboard' => 'Painel de Controle',
     'projects' => 'Projetos',
     'employees' => 'Funcionários',
+    'calendar' => 'Calendário',
 
     // ---------------------------
     // Cabeçalho

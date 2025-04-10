@@ -30,6 +30,9 @@ $eventsJson = json_encode($allEvents);
   <meta charset="UTF-8">
   <title>Calendários do Ano</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    const baseUrl = "<?= $baseUrl ?>";
+  </script>
   <style>
     /* Layout fixo para as tabelas */
     table {

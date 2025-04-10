@@ -126,6 +126,14 @@ $eventsJson = json_encode($allEvents);
     </div>
   </div>
 
+  <!-- Modal para calendário expandido -->
+<div id="expandedCalendarModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+  <div class="bg-white rounded-lg shadow-xl w-11/12 max-w-3xl p-6 relative">
+    <button id="closeExpandedCalendar" class="absolute top-2 right-2 text-gray-700 font-bold text-xl">&times;</button>
+    <div id="expandedCalendarContent"></div>
+  </div>
+</div>
+
   <!-- Carrega o JavaScript do calendário em um arquivo externo -->
   <script src="<?= $baseUrl ?>/js/calendar.js"></script>
 </body>

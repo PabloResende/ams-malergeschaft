@@ -52,7 +52,7 @@ class UserController {
         }
     
         require_once __DIR__ . '/../models/Project.php';
-        $projectModel = new Project();
+        $projectModel = new ProjectModel();
         $projects = $projectModel->getAll();
     
         require __DIR__ . '/../views/dashboard/index.php';

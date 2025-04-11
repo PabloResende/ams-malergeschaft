@@ -74,3 +74,42 @@ if (notificationItems.length > 0) {
   const hasNotifications = !notificationItems[0].classList.contains('text-gray-500');
   notificationDot.classList.toggle('hidden', !hasNotifications);
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+  // Dropdown de Idioma
+  const langButton = document.getElementById('language-button');
+  const langMenu = document.getElementById('language-menu');
+  if (langButton && langMenu) {
+    langButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      langMenu.classList.toggle('hidden');
+    });
+    document.addEventListener('click', (e) => {
+      if (!langButton.contains(e.target) && !langMenu.contains(e.target)) {
+        langMenu.classList.add('hidden');
+      }
+    });
+  }
+  
+  // Notificações
+  const notificationBtn = document.getElementById('notificationBtn');
+  const notificationList = document.getElementById('notificationList');
+  const notificationDot = document.getElementById('notificationDot');
+  if (notificationBtn && notificationList && notificationDot) {
+    notificationBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      notificationList.classList.toggle('hidden');
+      notificationDot.classList.add('hidden');
+    });
+    const notificationItems = document.querySelectorAll('#notificationList ul li');
+    const hasNotifications = notificationItems.length > 0 && 
+      !notificationItems[0].classList.contains('text-gray-500');
+    notificationDot.classList.toggle('hidden', !hasNotifications);
+  }
+  
+  document.addEventListener('click', function(e) {
+    if (notificationList && !notificationBtn.contains(e.target) && !notificationList.contains(e.target)) {
+      notificationList.classList.add('hidden');
+    }
+  });
+});

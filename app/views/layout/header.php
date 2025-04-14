@@ -194,12 +194,6 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false || s
       </div>
     </nav>
 
-    <!-- Conteúdo Principal (Desktop) -->
-    <div class="ml-56 p-4 pt-20">
-      <!-- Aqui vem o conteúdo da página para desktop -->
-      <h2 class="text-2xl font-bold"><?= $langText['dashboard'] ?? 'Painel de Controle' ?></h2>
-      <p class="mt-2 text-base text-gray-700">Conteúdo do painel, gráficos e demais informações.</p>
-    </div>
   </div>
   <!-- ================ Fim Desktop Layout ================ -->
 
@@ -251,14 +245,6 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false || s
         </div>
       </div>
     </nav>
-
-    <!-- Conteúdo Principal Mobile -->
-    <div class="content-wrapper">
-      <div class="p-4 mt-16">
-        <h2 class="text-xl font-bold"><?= $langText['dashboard'] ?? 'Painel de Controle' ?></h2>
-        <p class="mt-2 text-sm text-gray-700">Aqui você coloca o conteúdo principal do aplicativo para mobile.</p>
-      </div>
-    </div>
 
     <!-- Barra de Navegação Inferior Mobile -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white bottom-nav z-50">

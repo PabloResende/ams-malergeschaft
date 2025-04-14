@@ -114,8 +114,11 @@ document.addEventListener("DOMContentLoaded", () => {
     header.className = "text-center text-lg font-semibold mb-2 cursor-pointer";
     header.textContent = `${monthNames[month]} ${year}`;
     header.addEventListener("click", () => {
-      showExpandedCalendar(year, month);
+      if (window.innerWidth >= 768) {
+        showExpandedCalendar(year, month);
+      }
     });
+    
     container.appendChild(header);
 
     // Cria a tabela do calendário

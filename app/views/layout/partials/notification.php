@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../../../../config/Database.php';
+
 $pdo = Database::connect();
 
 $lowStockLimit = 100;

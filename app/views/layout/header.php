@@ -1,5 +1,5 @@
 <?php
-include __DIR__ . "/partials/notification.php";
+// include __DIR__ . "/partials/notification.php";
 
 // Inicia a sessão caso não esteja ativa
 if (session_status() !== PHP_SESSION_ACTIVE) {

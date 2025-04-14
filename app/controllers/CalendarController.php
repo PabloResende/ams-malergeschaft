@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../models/Reminder.php';
+require_once __DIR__ . '/../models/Calendar.php';
 require_once __DIR__ . '/../../config/Database.php';
 
 class CalendarController {

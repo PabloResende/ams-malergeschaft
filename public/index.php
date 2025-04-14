@@ -21,7 +21,15 @@ if (isset($_GET['lang'])) {
         setcookie('lang', $_GET['lang'], time() + (86400 * 30), "/");
     }
 }
+
 $route = strtok($route, '?');
+
+// Proteção de rotas
+$publicRoutes = ['/', '/login', '/auth', '/register', '/store'];
+if (!in_array($route, $publicRoutes) && !isset($_SESSION['user'])) {
+    header("Location: $basePath/login");
+    exit;
+}
 
 $userController = new UserController();
 $projectController = new ProjectController();
@@ -86,7 +94,6 @@ switch ($route) {
     case '/employees/get':
         $employeeController->get();
         break;
-        
     case '/employees/document':
         $employeeController->serveDocument();
         break;
@@ -142,4 +149,3 @@ switch ($route) {
 }
 
 ob_end_flush();
-?>

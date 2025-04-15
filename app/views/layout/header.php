@@ -310,11 +310,7 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false || s
   <!-- ================ Fim Mobile Layout ================ -->
 
 <?php else: ?>
-  <!-- Layout simplificado para páginas de autenticação (login/registro) -->
-  <div class="p-4">
-    <h2 class="text-xl font-bold">Acesso</h2>
-    <!-- Formulário ou mensagem de login/registro -->
-  </div>
+
 <?php endif; ?>
 
 <script src="<?= $baseUrl ?>/js/header.js"></script>

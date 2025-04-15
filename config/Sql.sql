@@ -1,5 +1,3 @@
--- SQLs for the database
-
 -- Users
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -23,9 +21,9 @@ CREATE TABLE projects (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Employees
+-- Employees (se desejar controlar se estão ativos, adicione o campo "active")
 CREATE TABLE employees (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     last_name VARCHAR(255) NOT NULL,
     address TEXT,
@@ -50,11 +48,11 @@ CREATE TABLE employees (
     bank_card_front LONGBLOB,
     bank_card_back LONGBLOB,
     marriage_certificate LONGBLOB,
+    active TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Adicione índices conforme necessário
 ALTER TABLE employees ADD INDEX idx_name (name);
 ALTER TABLE employees ADD INDEX idx_role (role);
 
@@ -78,7 +76,17 @@ CREATE TABLE inventory (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- project_resources
+-- Tarefas do projeto
+CREATE TABLE tasks (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    project_id INT NOT NULL,
+    description TEXT NOT NULL,
+    completed TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+);
+
+-- project_resources (para funcionários e materiais)
 CREATE TABLE project_resources (
     id INT AUTO_INCREMENT PRIMARY KEY,
     project_id INT NOT NULL,

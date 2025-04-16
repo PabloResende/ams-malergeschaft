@@ -90,14 +90,6 @@ $inventoryItems = $pdo->query("SELECT id, name, quantity FROM inventory WHERE qu
             <h1 class="text-[13px] text-gray-600"><?= $langText['client'] ?? 'Client' ?></h1>
             <p class="text-sm font-semibold -mt-1"><?= htmlspecialchars($project['client_name']) ?></p>
           </span>
-          <!-- Barra de Progresso Real -->
-          <div class="w-full bg-gray-200 rounded-full h-2 mt-3">
-            <div class="progress-bar bg-blue-500 h-2 rounded-full" style="width: <?= $progress ?>%;"></div>
-          </div>
-          <p class="mt-1 text-sm text-gray-600">
-            <?= $langText['progress'] ?? 'Progress' ?>: 
-            <span class="progress-value"><?= $progress ?></span>%
-          </p>
 
           <!-- Painel de detalhes com as tarefas reais -->
           <div class="project-details hidden mt-4 border-t pt-4">

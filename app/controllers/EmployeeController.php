@@ -61,4 +61,16 @@ class EmployeeController {
     public function serveDocument() {
         Employee::serveDocument($_GET['id'], $_GET['type']);
     }
+
+    public function checkAllocation() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $data = json_decode(file_get_contents('php://input'), true);
+            $empId = $data['emp_id'] ?? null;
+            
+            if ($empId) {
+              $allocations = EmployeeModel::checkAllocation($empId);
+              echo json_encode(['allocated' => $allocations > 0, 'count' => $allocations]);
+            }
+        }
+    }
 }

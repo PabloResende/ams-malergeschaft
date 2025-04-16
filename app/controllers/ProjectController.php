@@ -1,5 +1,4 @@
 <?php
-
 require_once __DIR__ . '/../models/Project.php';
 
 class ProjectController {
@@ -21,7 +20,6 @@ class ProjectController {
                 'progress'     => $_POST['progress'] ?? 0
             ];
             
-            // Recebe as tarefas, funcionários e materiais enviados em JSON
             $tasks = isset($_POST['tasks']) ? json_decode($_POST['tasks'], true) : [];
             $employees = isset($_POST['employees']) ? json_decode($_POST['employees'], true) : [];
             $inventoryResources = isset($_POST['inventoryResources']) ? json_decode($_POST['inventoryResources'], true) : [];
@@ -61,9 +59,12 @@ class ProjectController {
                 'status'       => $_POST['status'] ?? 'in_progress',
                 'progress'     => $_POST['progress'] ?? 0
             ];
-
-            // Aqui, caso deseje atualizar os recursos, processar as alterações
-            if (ProjectModel::update($id, $data)) {
+            
+            $tasks = isset($_POST['tasks']) ? json_decode($_POST['tasks'], true) : [];
+            $employees = isset($_POST['employees']) ? json_decode($_POST['employees'], true) : [];
+            $inventoryResources = isset($_POST['inventoryResources']) ? json_decode($_POST['inventoryResources'], true) : [];
+            
+            if (ProjectModel::update($id, $data, $tasks, $employees, $inventoryResources)) {
                 header("Location: /ams-malergeschaft/public/projects");
                 exit;
             } else {

@@ -56,4 +56,12 @@ public static function delete($id) {
 public static function serveDocument($id, $type) {
     // Igual à função do controller, mas isolada aqui
 }
+
+public static function checkAllocation($empId) {
+    $pdo = Database::connect();
+    $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM project_resources WHERE resource_type = 'employee' AND resource_id = ?");
+    $stmt->execute([$empId]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    return $result ? (int)$result['count'] : 0;
+  }
 }

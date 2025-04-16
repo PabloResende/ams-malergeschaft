@@ -52,7 +52,7 @@ $inventoryItems = $pdo->query("SELECT id, name, quantity FROM inventory WHERE qu
     <?php else: ?>
       <?php foreach ($projects as $project): ?>
         <?php
-        // Define tag de status
+        // Tag de status
         $status = $project['status'];
         if ($status === 'in_progress') {
             $tag = '<span class="bg-blue-500 text-white px-3 py-1 rounded-full text-[12px] font-semibold">'.
@@ -69,7 +69,7 @@ $inventoryItems = $pdo->query("SELECT id, name, quantity FROM inventory WHERE qu
         $stmtTasks->execute([$project['id']]);
         $tasks = $stmtTasks->fetchAll(PDO::FETCH_ASSOC);
 
-        // Calcula o progresso com base nas tarefas
+        // Calcula o progresso real baseado nas tarefas
         $totalTasks = count($tasks);
         $completedTasks = 0;
         foreach ($tasks as $task) {
@@ -90,7 +90,14 @@ $inventoryItems = $pdo->query("SELECT id, name, quantity FROM inventory WHERE qu
             <h1 class="text-[13px] text-gray-600"><?= $langText['client'] ?? 'Client' ?></h1>
             <p class="text-sm font-semibold -mt-1"><?= htmlspecialchars($project['client_name']) ?></p>
           </span>
-
+          <!-- Barra de Progresso Real -->
+          <div class="w-full bg-gray-200 rounded-full h-2 mt-3">
+            <div class="progress-bar bg-blue-500 h-2 rounded-full" style="width: <?= $progress ?>%;"></div>
+          </div>
+          <p class="mt-1 text-sm text-gray-600">
+            <?= $langText['progress'] ?? 'Progress' ?>: 
+            <span class="progress-value"><?= $progress ?></span>%
+          </p>
 
           <!-- Painel de detalhes com as tarefas reais -->
           <div class="project-details hidden mt-4 border-t pt-4">
@@ -101,7 +108,7 @@ $inventoryItems = $pdo->query("SELECT id, name, quantity FROM inventory WHERE qu
                   <?php foreach ($tasks as $task): ?>
                     <li>
                       <label>
-                        <input type="checkbox" class="task-checkbox" data-project-id="<?= $project['id'] ?>" data-task-id="<?= $task['id'] ?>" <?= $task['completed'] ? 'checked' : '' ?>>
+                        <input type="checkbox" class="task-checkbox" data-task-id="<?= $task['id'] ?>" <?= $task['completed'] ? 'checked' : '' ?>>
                         <?= htmlspecialchars($task['description']) ?>
                       </label>
                     </li>
@@ -111,7 +118,7 @@ $inventoryItems = $pdo->query("SELECT id, name, quantity FROM inventory WHERE qu
                 <?php endif; ?>
               </ul>
             </div>
-            <!-- A barra de progresso nos detalhes é atualizada conforme os checkboxes forem marcados -->
+            <!-- Barra de progresso nos detalhes -->
             <div class="w-full bg-gray-200 rounded-full h-2 mt-3">
               <div class="progress-bar bg-blue-500 h-2 rounded-full" style="width: <?= $progress ?>%;"></div>
             </div>
@@ -123,6 +130,7 @@ $inventoryItems = $pdo->query("SELECT id, name, quantity FROM inventory WHERE qu
 
           <!-- Botões de ação -->
           <div class="mt-4 flex justify-end space-x-2">
+            <!-- Incluímos o data-tasks com as tarefas em JSON para edição -->
             <button class="text-blue-500 hover:underline text-sm editProjectBtn"
               data-id="<?= $project['id'] ?>"
               data-name="<?= htmlspecialchars($project['name']) ?>"
@@ -133,6 +141,7 @@ $inventoryItems = $pdo->query("SELECT id, name, quantity FROM inventory WHERE qu
               data-total_hours="<?= htmlspecialchars($project['total_hours']) ?>"
               data-status="<?= htmlspecialchars($project['status']) ?>"
               data-progress="<?= htmlspecialchars($progress) ?>"
+              data-tasks='<?= json_encode($tasks, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>'
             >
               <?= $langText['edit'] ?? 'Edit' ?>
             </button>
@@ -244,7 +253,7 @@ $inventoryItems = $pdo->query("SELECT id, name, quantity FROM inventory WHERE qu
           <small class="text-gray-500">Verifique se há quantidade suficiente no estoque.</small>
         </div>
         
-        <!-- Ocultos para enviar os arrays (tarefas, funcionários, inventário) via JSON -->
+        <!-- Campos ocultos para enviar os arrays via JSON -->
         <input type="hidden" name="tasks" id="tasksData">
         <input type="hidden" name="employees" id="employeesData">
         <input type="hidden" name="inventoryResources" id="inventoryData">
@@ -258,13 +267,13 @@ $inventoryItems = $pdo->query("SELECT id, name, quantity FROM inventory WHERE qu
   </div>
 
   <!-- Modal de Edição de Projeto -->
-  <!-- Para este exemplo, o modal de edição segue o mesmo padrão, mas você pode adaptá-lo para carregar e editar as tarefas, funcionários e materiais já associados -->
   <div id="projectEditModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-    <div class="bg-white rounded-md p-8 w-90 max-h-[90vh] overflow-y-auto mt-10">
-      <h3 class="text-xl font-bold mb-4"><?= $langText['edit_project'] ?? 'Edit Project' ?></h3>
-      <form id="projectEditForm" action="<?= $baseUrl ?>/projects/update" method="POST">
-        <input type="hidden" name="id" id="editProjectId">
-        <!-- Os demais campos seguem o mesmo padrão -->
+  <div class="bg-white rounded-md p-8 w-90 max-h-[90vh] overflow-y-auto mt-10">
+    <button id="closeProjectEditModal" class="absolute top-2 right-2 text-gray-700">&times;</button>
+    <h3 class="text-xl font-bold mb-4"><?= $langText['edit_project'] ?? 'Edit Project' ?></h3>
+    <form id="projectEditForm" action="<?= $baseUrl ?>/projects/update" method="POST">
+      <input type="hidden" name="id" id="editProjectId">
+        <!-- Campos básicos do projeto -->
         <div class="mb-4">
           <label class="block text-gray-700"><?= $langText['name'] ?? 'Name' ?></label>
           <input type="text" name="name" id="editProjectName" class="w-full p-2 border rounded" required>
@@ -297,19 +306,71 @@ $inventoryItems = $pdo->query("SELECT id, name, quantity FROM inventory WHERE qu
             <option value="completed"><?= $langText['completed'] ?? 'Completed' ?></option>
           </select>
         </div>
-        <!-- O progresso real será calculado a partir das tarefas já cadastradas -->
+        
+        <!-- Seção de Tarefas para edição -->
         <div class="mb-4">
-          <label class="block text-gray-700"><?= $langText['progress'] ?? 'Progress' ?> (%)</label>
-          <input type="number" name="progress" id="editProjectProgress" readonly class="w-full p-2 border rounded">
+          <label class="block text-gray-700"><?= $langText['tasks'] ?? 'Tasks' ?></label>
+          <div id="editTasksContainer"></div>
+          <div class="flex mt-2">
+            <input type="text" id="editNewTaskInput" class="w-full p-2 border rounded" placeholder="<?= $langText['task_placeholder'] ?? 'Task description' ?>">
+            <button type="button" id="editAddTaskBtn" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded">
+              <?= $langText['add'] ?? 'Add' ?>
+            </button>
+          </div>
         </div>
-        <!-- Seções para edição de tarefas, funcionários e inventário podem ser incluídas aqui -->
-        <div class="flex justify-end">
-          <button type="button" id="closeProjectEditModal" class="mr-2 px-4 py-2 border rounded"><?= $langText['cancel'] ?? 'Cancel' ?></button>
-          <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded"><?= $langText['submit'] ?? 'Submit' ?></button>
+        
+        <!-- Seção de Funcionários (select) para edição -->
+        <div class="mb-4">
+          <label class="block text-gray-700">Funcionários</label>
+          <div id="editEmployeesContainer"></div>
+          <div class="flex mt-2">
+            <select id="editEmployeeSelect" class="w-full p-2 border rounded">
+              <option value="">Selecione um funcionário</option>
+              <?php foreach ($activeEmployees as $emp): ?>
+                <option value="<?= $emp['id'] ?>">
+                  <?= htmlspecialchars($emp['name'] . ' ' . $emp['last_name']) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+            <button type="button" id="editAddEmployeeBtn" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded">
+              Adicionar
+            </button>
+          </div>
         </div>
-      </form>
-    </div>
+        
+        <!-- Seção de Materiais / Inventário (select) para edição -->
+        <div class="mb-4">
+          <label class="block text-gray-700">Materiais / Inventário</label>
+          <div id="editInventoryContainer"></div>
+          <div class="flex mt-2 space-x-2">
+            <select id="editInventorySelect" class="p-2 border rounded">
+              <option value="">Selecione um material</option>
+              <?php foreach ($inventoryItems as $item): ?>
+                <option value="<?= $item['id'] ?>">
+                  <?= htmlspecialchars($item['name']) ?> (Disponível: <?= $item['quantity'] ?>)
+                </option>
+              <?php endforeach; ?>
+            </select>
+            <input type="number" id="editInventoryQuantity" class="p-2 border rounded" placeholder="Quantidade" min="1">
+            <button type="button" id="editAddInventoryBtn" class="bg-blue-500 text-white px-3 py-2 rounded">
+              Adicionar
+            </button>
+          </div>
+        </div>
+        
+        <!-- Campos ocultos para enviar arrays via JSON -->
+        <input type="hidden" name="tasks" id="editTasksData">
+        <input type="hidden" name="employees" id="editEmployeesData">
+        <input type="hidden" name="inventoryResources" id="editInventoryData">
+        
+        <div class="flex justify-end mt-4">
+        <button type="button" id="closeProjectEditModal" class="mr-2 px-4 py-2 border rounded"><?= $langText['cancel'] ?? 'Cancel' ?></button>
+        <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded"><?= $langText['submit'] ?? 'Submit' ?></button>
+      </div>
+    </form>
   </div>
+</div>
 </div>
 
 <script src="<?= $baseUrl ?>/js/projects.js"></script>
+<script src="<?= $baseUrl ?>/js/projectEdit.js"></script>

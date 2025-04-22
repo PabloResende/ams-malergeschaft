@@ -365,4 +365,3 @@ $inventoryItems = $pdo->query("SELECT id, name, quantity FROM inventory WHERE qu
 </div>
 
 <script src="<?= $baseUrl ?>/js/projects.js"></script>
-<script src="<?= $baseUrl ?>/js/projectEdit.js"></script>

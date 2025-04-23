@@ -2,8 +2,9 @@
 const baseUrl = window.location.origin + '/ams-malergeschaft/public';
 
 document.addEventListener("DOMContentLoaded", () => {
+  // … seu código de criação de projetos permanece igual …
 
-  // ——————————————   edição/exclusão no modal de detalhes   ——————————————
+  // —————————— Modal de Detalhes / Edição ——————————
   const detailsModal               = document.getElementById("projectDetailsModal");
   const closeDetailsBtn            = document.getElementById("closeProjectDetailsModal");
   const cancelDetailsBtn           = document.getElementById("cancelDetailsBtn");
@@ -21,6 +22,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const detailsProjectStartDateEl  = document.getElementById("detailsProjectStartDate");
   const detailsProjectEndDateEl    = document.getElementById("detailsProjectEndDate");
   const detailsProjectStatusEl     = document.getElementById("detailsProjectStatus");
+
+  // Progress bar
+  const detailsProgressBar         = document.getElementById("detailsProgressBar");
+  const detailsProgressText        = document.getElementById("detailsProgressText");
 
   // Contêineres dinâmicos
   const detailsTasksContainer      = document.getElementById("detailsTasksContainer");
@@ -42,9 +47,31 @@ document.addEventListener("DOMContentLoaded", () => {
   const detailsInventoryData       = document.getElementById("detailsInventoryData");
 
   // Arrays internos de edição
-  let detailsTaskList = [], detailsEmployeeList = [], detailsInventoryList = [];
+  let detailsTaskList      = [];
+  let detailsEmployeeList  = [];
+  let detailsInventoryList = [];
 
-  // — Funções de renderização para o modo edição —
+  // — Atualiza progress bar e bloqueia status até 100% —
+  function updateDetailsProgress() {
+    const total = detailsTaskList.length;
+    const done  = detailsTaskList.filter(t => t.completed).length;
+    const pct   = total ? Math.round(done / total * 100) : 0;
+
+    detailsProgressBar.style.width = pct + "%";
+    detailsProgressText.innerText  = pct + "%";
+    // só libera o select de status quando estiver 100%
+    detailsProjectStatusEl.disabled = pct < 100;
+    // atualiza também o progresso no payload
+    // (caso queira salvar progress no banco)
+    detailsForm.querySelector("input[name=progress]")?.remove();
+    const progHidden = document.createElement("input");
+    progHidden.type  = "hidden";
+    progHidden.name  = "progress";
+    progHidden.value = pct;
+    detailsForm.appendChild(progHidden);
+  }
+
+  // — Renderização de Tasks (com update de progress) —
   function renderDetailsTasks() {
     detailsTasksContainer.innerHTML = "";
     detailsTaskList.forEach((t, i) => {
@@ -55,19 +82,22 @@ document.addEventListener("DOMContentLoaded", () => {
         <span class="flex-1">${t.description}</span>
         <button class="ml-2 text-red-500">&times;</button>
       `;
-      const checkbox = row.querySelector("input");
-      const removeBtn = row.querySelector("button");
-      checkbox.addEventListener("change", e => {
+      const cb = row.querySelector("input");
+      cb.addEventListener("change", e => {
         detailsTaskList[i].completed = e.target.checked;
+        updateDetailsProgress();
       });
-      removeBtn.addEventListener("click", () => {
+      row.querySelector("button").addEventListener("click", () => {
         detailsTaskList.splice(i, 1);
         renderDetailsTasks();
+        updateDetailsProgress();
       });
       detailsTasksContainer.appendChild(row);
     });
+    updateDetailsProgress();
   }
 
+  // — Renderização de Employees (com update de employee_count) —
   function renderDetailsEmployees() {
     detailsEmployeesContainer.innerHTML = "";
     detailsEmployeeList.forEach((e, i) => {
@@ -83,8 +113,11 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       detailsEmployeesContainer.appendChild(row);
     });
+    // atualizar input de contagem de funcionários
+    detailsProjectEmployeeCountEl.value = detailsEmployeeList.length;
   }
 
+  // — Renderização de Inventário (mantém igual, se quiser) —
   function renderDetailsInventory() {
     detailsInventoryContainer.innerHTML = "";
     detailsInventoryList.forEach((it, i) => {
@@ -102,21 +135,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // — Fechar modal —
+  // — Fechamento do modal de detalhes —
   closeDetailsBtn.addEventListener("click", () => detailsModal.classList.add("hidden"));
   cancelDetailsBtn.addEventListener("click", () => detailsModal.classList.add("hidden"));
   window.addEventListener("click", e => {
     if (e.target === detailsModal) detailsModal.classList.add("hidden");
   });
 
-  // — Excluir projeto —
+  // — Exclusão de projeto —
   deleteProjectBtn.addEventListener("click", () => {
     if (!confirm("Deseja realmente excluir este projeto?")) return;
     const id = detailsProjectIdEl.value;
     window.location.href = `${baseUrl}/projects/delete?id=${id}`;
   });
 
-  // — Adicionar itens —
+  // — Adição de Tasks —
   detailsAddTaskBtn.addEventListener("click", () => {
     const desc = detailsNewTaskInput.value.trim();
     if (!desc) return;
@@ -125,6 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderDetailsTasks();
   });
 
+  // — Adição de Employees —
   detailsAddEmployeeBtn.addEventListener("click", () => {
     const id   = detailsEmployeeSelect.value;
     const name = detailsEmployeeSelect.selectedOptions[0]?.text;
@@ -142,6 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // — Adição de Inventário —
   detailsAddInventoryBtn.addEventListener("click", () => {
     const id   = detailsInventorySelect.value;
     const name = detailsInventorySelect.selectedOptions[0]?.text;
@@ -154,14 +189,14 @@ document.addEventListener("DOMContentLoaded", () => {
     renderDetailsInventory();
   });
 
-  // — Preparar dados antes de enviar o form de atualização —
+  // — Prepara JSONs antes de enviar o form —
   detailsForm.addEventListener("submit", () => {
     detailsTasksData.value      = JSON.stringify(detailsTaskList);
     detailsEmployeesData.value  = JSON.stringify(detailsEmployeeList.map(e => e.id));
     detailsInventoryData.value  = JSON.stringify(detailsInventoryList);
   });
 
-  // — Quando clicar em um card, carrega dados e habilita edição —
+  // — Ao clicar no card, carrega e abre para edição —
   document.querySelectorAll(".project-item").forEach(card => {
     card.addEventListener("click", function(event) {
       event.preventDefault();
@@ -184,17 +219,17 @@ document.addEventListener("DOMContentLoaded", () => {
           detailsProjectEndDateEl.value       = data.end_date || "";
           detailsProjectStatusEl.value        = data.status || "";
 
-          // inicializa listas
-          detailsTaskList      = (data.tasks || []).map(t => ({ description: t.description, completed: t.completed }));
+          // popula arrays
+          detailsTaskList      = (data.tasks     || []).map(t => ({ description: t.description, completed: t.completed }));
           detailsEmployeeList  = (data.employees || []).map(e => ({ id: e.id, name: e.name + " " + e.last_name }));
           detailsInventoryList = (data.inventory || []).map(i => ({ id: i.id, name: i.name, quantity: i.quantity }));
 
-          // renderiza
+          // renderiza e calcula progress
           renderDetailsTasks();
           renderDetailsEmployees();
           renderDetailsInventory();
 
-          // mostra botões
+          // revela botões
           saveDetailsBtn.classList.remove("hidden");
           deleteProjectBtn.classList.remove("hidden");
 

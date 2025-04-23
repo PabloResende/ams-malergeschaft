@@ -21,6 +21,10 @@ class EmployeeController {
     }
 
     public function update() {
+        if ($data['status'] === 'completed' && $data['progress'] < 100) {
+            echo "Não é possível marcar como concluído até que todas as tasks estejam finalizadas.";
+            return;
+        }
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 Employee::update($_POST['id'], $_POST, $_FILES);

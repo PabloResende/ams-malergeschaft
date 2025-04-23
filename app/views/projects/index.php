@@ -225,7 +225,6 @@ $inventoryItems = $pdo
       <h3 class="text-xl font-bold mb-4"><?= $langText['project_details'] ?? 'Project Details' ?></h3>
       <form id="projectDetailsForm" action="<?= $baseUrl ?>/projects/update" method="POST">
         <input type="hidden" name="id" id="detailsProjectId">
-
         <!-- Campos básicos (AGORA EDITÁVEIS) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
@@ -246,7 +245,8 @@ $inventoryItems = $pdo
           </div>
           <div>
             <label class="block text-gray-700"><?= $langText['employee_count'] ?? 'Quantidade de Funcionários' ?></label>
-            <input type="number" name="employee_count" id="detailsProjectEmployeeCount" class="w-full p-2 border rounded">
+            <input type="number" name="employee_count" id="detailsProjectEmployeeCount"
+                   class="w-full p-2 border rounded">
           </div>
           <div>
             <label class="block text-gray-700"><?= $langText['start_date'] ?? 'Data de Início' ?></label>
@@ -264,16 +264,19 @@ $inventoryItems = $pdo
               <option value="completed"><?= $langText['completed'] ?? 'Completed' ?></option>
             </select>
           </div>
+                  <!-- PROGRESSO DINÂMICO -->
+        <div class="mb-4">
+          <label class="block text-gray-700"><?= $langText['progress'] ?? 'Progress' ?></label>
+          <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
+            <div id="detailsProgressBar"
+                class="bg-blue-500 h-2 rounded-full"
+                style="width:0%;"></div>
+          </div>
+          <span id="detailsProgressText" class="text-sm text-gray-600">0%</span>
         </div>
-        
-      <!-- Barra de progresso -->
-      <div class="mb-4">
-        <label class="block text-gray-700"><?= $langText['progress'] ?? 'Progress' ?></label>
-        <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
-          <div id="detailsProgressBar" class="bg-blue-500 h-2 rounded-full" style="width:0%;"></div>
         </div>
-        <span id="detailsProgressText" class="text-sm text-gray-600">0%</span>
-      </div>
+
+
 
         <!-- Tarefas (edição) -->
         <div class="mb-4">

@@ -40,33 +40,37 @@ class ProjectController {
             echo "Erro ao salvar o projeto.";
         }
     }
-
+ 
     public function update() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: /ams-malergeschaft/public/projects");
             exit;
         }
+   
         $id = $_POST['id'] ?? '';
         if (empty($id) || empty($_POST['name'])) {
             echo "Dados obrigatórios faltando.";
             return;
         }
+   
         $data = [
             'name'           => $_POST['name'],
-            'location'       => $_POST['location'] ?? '',
-            'description'    => $_POST['description'] ?? '',
-            'start_date'     => $_POST['start_date'] ?? '',
-            'end_date'       => $_POST['end_date'] ?? '',
-            'total_hours'    => $_POST['total_hours'] ?? 0,
-            'budget'         => $_POST['budget'] ?? 0,
+            'location'       => $_POST['location']       ?? '',
+            'description'    => $_POST['description']    ?? '',
+            'start_date'     => $_POST['start_date']     ?? '',
+            'end_date'       => $_POST['end_date']       ?? '',
+            'total_hours'    => $_POST['total_hours']    ?? 0,
+            'budget'         => $_POST['budget']         ?? 0,
             'employee_count' => $_POST['employee_count'] ?? 0,
-            'status'         => $_POST['status'] ?? 'in_progress',
-            'progress'       => $_POST['progress'] ?? 0,
+            'status'         => $_POST['status']         ?? 'in_progress',
+            'progress'       => $_POST['progress']       ?? 0,
         ];
-        $tasks              = json_decode($_POST['tasks'] ?? '[]', true);
-        $employees          = json_decode($_POST['employees'] ?? '[]', true);
-        $inventoryResources = json_decode($_POST['inventoryResources'] ?? '[]', true);
-
+   
+        $tasks              = json_decode($_POST['tasks']                ?? '[]', true);
+        $employees          = json_decode($_POST['employees']            ?? '[]', true);
+        $inventoryResources = json_decode($_POST['inventoryResources']   ?? '[]', true);
+   
+        require_once __DIR__ . '/../models/Project.php';
         if (ProjectModel::update($id, $data, $tasks, $employees, $inventoryResources)) {
             header("Location: /ams-malergeschaft/public/projects");
             exit;
@@ -74,7 +78,8 @@ class ProjectController {
             echo "Erro ao atualizar o projeto.";
         }
     }
-
+   
+    
     public function delete() {
         if (!isset($_GET['id'])) {
             header("Location: /ams-malergeschaft/public/projects");

@@ -2,8 +2,6 @@
 const baseUrl = window.location.origin + '/ams-malergeschaft/public';
 
 document.addEventListener("DOMContentLoaded", () => {
-  // ——————————————   criação de projetos (mantém seu código atual)   ——————————————
-  // … aqui vem todo o bloco de 'Modal de Criação' exatamente como antes …
 
   // ——————————————   edição/exclusão no modal de detalhes   ——————————————
   const detailsModal               = document.getElementById("projectDetailsModal");

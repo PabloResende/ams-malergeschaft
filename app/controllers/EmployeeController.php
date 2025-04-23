@@ -63,14 +63,27 @@ class EmployeeController {
     }
 
     public function checkAllocation() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $data = json_decode(file_get_contents('php://input'), true);
-            $empId = $data['emp_id'] ?? null;
-            
-            if ($empId) {
-              $allocations = EmployeeModel::checkAllocation($empId);
-              echo json_encode(['allocated' => $allocations > 0, 'count' => $allocations]);
-            }
+        $input = json_decode(file_get_contents('php://input'), true);
+        $emp_id = $input['emp_id'] ?? null;
+        if (!$emp_id) {
+            http_response_code(400);
+            echo json_encode(['error'=>'emp_id missing']);
+            return;
         }
-    }
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare("
+          SELECT COUNT(*) as count
+          FROM project_resources
+          WHERE resource_type = 'employee'
+            AND resource_id   = ?
+        ");
+        $stmt->execute([$emp_id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $count = $row['count'] ?? 0;
+        header('Content-Type: application/json');
+        echo json_encode([
+          'allocated' => ($count > 0),
+          'count'     => (int)$count
+        ]);
+    }    
 }

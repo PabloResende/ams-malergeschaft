@@ -265,6 +265,15 @@ $inventoryItems = $pdo
             </select>
           </div>
         </div>
+        
+      <!-- Barra de progresso -->
+      <div class="mb-4">
+        <label class="block text-gray-700"><?= $langText['progress'] ?? 'Progress' ?></label>
+        <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
+          <div id="detailsProgressBar" class="bg-blue-500 h-2 rounded-full" style="width:0%;"></div>
+        </div>
+        <span id="detailsProgressText" class="text-sm text-gray-600">0%</span>
+      </div>
 
         <!-- Tarefas (edição) -->
         <div class="mb-4">

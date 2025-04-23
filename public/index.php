@@ -79,6 +79,9 @@ switch ($route) {
     case '/employees':
         $employeeController->list();
         break;
+    case '/employees/checkAllocation':
+        $employeeController->checkAllocation();
+        break;
     case '/employees/create':
         $employeeController->create();
         break;

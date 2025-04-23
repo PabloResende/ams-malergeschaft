@@ -70,6 +70,9 @@ switch ($route) {
     case '/projects/update':
         $projectController->update();
         break;
+    case '/projects/show':
+        $projectController->show();
+        break;        
     case '/projects/delete':
         $projectController->delete();
         break;

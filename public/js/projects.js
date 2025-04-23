@@ -1,299 +1,198 @@
-
-let editTaskList = [];
-let editEmployeeList = [];
-let editInventoryList = [];
+// public/js/projects.js
+const baseUrl = window.location.origin + '/ams-malergeschaft/public';
 
 document.addEventListener("DOMContentLoaded", () => {
-  //
-  // 1) MODAL DE CRIAÇÃO
-  //
-  const addProjectBtn = document.getElementById("addProjectBtn");
-  const projectModal = document.getElementById("projectModal");
-  const closeModal = document.getElementById("closeModal");
+  // — MODAL DE CRIAÇÃO
+  const projectModal       = document.getElementById("projectModal");
+  const addProjectBtn      = document.getElementById("addProjectBtn");
+  const closeModal         = document.getElementById("closeModal");
+  const projectForm        = document.getElementById("projectForm");
+
+  const tasksContainer     = document.getElementById("tasksContainer");
+  const employeesContainer = document.getElementById("employeesContainer");
+  const inventoryContainer = document.getElementById("inventoryContainer");
+
+  const newTaskInput       = document.getElementById("newTaskInput");
+  const addTaskBtn         = document.getElementById("addTaskBtn");
+  const employeeSelect     = document.getElementById("employeeSelect");
+  const addEmployeeBtn     = document.getElementById("addEmployeeBtn");
+  const inventorySelect    = document.getElementById("inventorySelect");
+  const inventoryQuantity  = document.getElementById("inventoryQuantity");
+  const addInventoryBtn    = document.getElementById("addInventoryBtn");
+
+  let taskList = [], employeeList = [], inventoryList = [];
+
+  function renderTasks() {
+    tasksContainer.innerHTML = "";
+    taskList.forEach((t, i) => {
+      const row = document.createElement("div");
+      row.className = "flex items-center mb-2";
+      row.innerHTML = `<input type="checkbox" class="mr-2" ${t.completed ? "checked" : ""}><span>${t.description}</span>`;
+      row.querySelector("input").addEventListener("change", e => {
+        taskList[i].completed = e.target.checked;
+      });
+      tasksContainer.appendChild(row);
+    });
+  }
+
+  function renderEmployees() {
+    employeesContainer.innerHTML = "";
+    employeeList.forEach((e, i) => {
+      const row = document.createElement("div");
+      row.className = "flex items-center mb-2";
+      row.innerHTML = `<span>${e.name}</span> <button class="ml-2 text-red-500">&times;</button>`;
+      row.querySelector("button").addEventListener("click", () => {
+        employeeList.splice(i, 1);
+        renderEmployees();
+      });
+      employeesContainer.appendChild(row);
+    });
+  }
+
+  function renderInventory() {
+    inventoryContainer.innerHTML = "";
+    inventoryList.forEach((it, i) => {
+      const row = document.createElement("div");
+      row.className = "flex items-center mb-2";
+      row.innerHTML = `<span>${it.name} (Qtd: ${it.quantity})</span> <button class="ml-2 text-red-500">&times;</button>`;
+      row.querySelector("button").addEventListener("click", () => {
+        inventoryList.splice(i, 1);
+        renderInventory();
+      });
+      inventoryContainer.appendChild(row);
+    });
+  }
 
   addProjectBtn.addEventListener("click", () => projectModal.classList.remove("hidden"));
-  closeModal .addEventListener("click", () => projectModal.classList.add("hidden"));
+  closeModal.addEventListener("click", () => projectModal.classList.add("hidden"));
   window.addEventListener("click", e => {
     if (e.target === projectModal) projectModal.classList.add("hidden");
   });
 
-  //
-  // 2) CRIAÇÃO: TAREFAS, FUNCIONÁRIOS E INVENTÁRIO
-  //
-  let taskList      = [];
-  let employeeList  = [];
-  let inventoryList = [];
-
-  // tarefas
-  document.getElementById("addTaskBtn").addEventListener("click", () => {
-    const desc = document.getElementById("newTaskInput").value.trim();
+  addTaskBtn.addEventListener("click", () => {
+    const desc = newTaskInput.value.trim();
     if (!desc) return;
     taskList.push({ description: desc, completed: false });
-    renderTasks(); updateTaskProgress();
-    document.getElementById("newTaskInput").value = "";
+    newTaskInput.value = "";
+    renderTasks();
   });
-  function renderTasks() {
-    const c = document.getElementById("tasksContainer");
-    c.innerHTML = "";
-    taskList.forEach((t,i) => {
-      const row = document.createElement("div");
-      row.className = "flex items-center mb-2";
-      row.innerHTML = `
-        <input type="checkbox" class="mr-2" ${t.completed?"checked":""} data-idx="${i}">
-        <span>${t.description}</span>
-      `;
-      row.querySelector("input").addEventListener("change", e => {
-        taskList[i].completed = e.target.checked;
-        updateTaskProgress();
-      });
-      c.appendChild(row);
-    });
-  }
-  function updateTaskProgress() {
-    const total = taskList.length;
-    const done  = taskList.filter(t=>t.completed).length;
-    const pct   = total ? Math.round(done/total*100) : 0;
-    const bar = document.getElementById("createProgressBar");
-    if (bar) {
-      bar.style.width = pct + "%";
-      bar.textContent = pct + "%";
-    }
-  }
 
-  // funcionários
-  document.getElementById("addEmployeeBtn").addEventListener("click", () => {
-    const sel = document.getElementById("employeeSelect");
-    const id  = sel.value;
-    const name= sel.options[sel.selectedIndex]?.text;
-    if (!id || employeeList.some(e=>e.id===id)) return;
-    // checa alocação
-    fetch('/ams-malergeschaft/public/employees/checkAllocation', {
-      method:"POST", headers:{"Content-Type":"application/json"},
+  addEmployeeBtn.addEventListener("click", () => {
+    const id   = employeeSelect.value;
+    const name = employeeSelect.selectedOptions[0]?.text;
+    if (!id || employeeList.some(e => e.id === id)) return;
+    fetch(`${baseUrl}/employees/checkAllocation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ emp_id: id })
     })
-    .then(r=>r.json())
-    .then(j=>{
-      if (j.allocated) alert(`Atenção: já alocado em ${j.count} projeto(s)!`);
+    .then(r => r.json())
+    .then(j => {
+      if (j.allocated) alert(`Já alocado em ${j.count} projeto(s)!`);
       employeeList.push({ id, name });
       renderEmployees();
     });
   });
-  function renderEmployees() {
-    const c = document.getElementById("employeesContainer");
-    c.innerHTML = "";
-    employeeList.forEach((e,i) => {
-      const row = document.createElement("div");
-      row.className = "flex items-center mb-2";
-      row.innerHTML = `
-        <span>Funcionário: ${e.name}</span>
-        <button class="ml-2 text-red-500" data-idx="${i}">X</button>
-      `;
-      row.querySelector("button").addEventListener("click", () => {
-        employeeList.splice(i,1);
-        renderEmployees();
-      });
-      c.appendChild(row);
-    });
-  }
 
-  // inventário
-  document.getElementById("addInventoryBtn").addEventListener("click", () => {
-    const sel = document.getElementById("inventorySelect");
-    const id  = sel.value;
-    const name= sel.options[sel.selectedIndex]?.text;
-    const qty = parseInt(document.getElementById("inventoryQuantity").value,10);
-    if (!id||qty<=0) return;
-    const ex = inventoryList.find(x=>x.id===id);
-    if (ex) ex.quantity += qty; else inventoryList.push({id,name,quantity:qty});
+  addInventoryBtn.addEventListener("click", () => {
+    const id   = inventorySelect.value;
+    const name = inventorySelect.selectedOptions[0]?.text;
+    const qty  = parseInt(inventoryQuantity.value, 10);
+    if (!id || qty <= 0) return;
+    const ex = inventoryList.find(i => i.id === id);
+    if (ex) ex.quantity += qty;
+    else inventoryList.push({ id, name, quantity: qty });
+    inventoryQuantity.value = "";
     renderInventory();
   });
-  function renderInventory() {
-    const c = document.getElementById("inventoryContainer");
-    c.innerHTML = "";
-    inventoryList.forEach((it,i) => {
-      const row = document.createElement("div");
-      row.className = "flex items-center mb-2";
-      row.innerHTML = `
-        <span>Material: ${it.name} (Qtd: ${it.quantity})</span>
-        <button class="ml-2 text-red-500" data-idx="${i}">X</button>
-      `;
-      row.querySelector("button").addEventListener("click", () => {
-        inventoryList.splice(i,1);
-        renderInventory();
-      });
-      c.appendChild(row);
-    });
-  }
 
-  // ao submeter criação
-  document.getElementById("projectForm").addEventListener("submit", () => {
-    document.getElementById("tasksData").value     = JSON.stringify(taskList);
-    document.getElementById("employeesData").value = JSON.stringify(employeeList.map(e=>e.id));
-    document.getElementById("inventoryData").value = JSON.stringify(inventoryList);
+  projectForm.addEventListener("submit", () => {
+    document.getElementById("tasksData").value      = JSON.stringify(taskList);
+    document.getElementById("employeesData").value  = JSON.stringify(employeeList.map(e => e.id));
+    document.getElementById("inventoryData").value  = JSON.stringify(inventoryList);
   });
 
+  // — MODAL DE DETALHES / EDIÇÃO
+  const detailsModal                  = document.getElementById("projectDetailsModal");
+  const closeDetailsBtn               = document.getElementById("closeProjectDetailsModal");
+  const cancelDetailsBtn              = document.getElementById("cancelDetailsBtn");
+  const detailsProjectIdEl            = document.getElementById("detailsProjectId");
+  const detailsProjectNameEl          = document.getElementById("detailsProjectName");
+  const detailsProjectLocationEl      = document.getElementById("detailsProjectLocation");
+  const detailsProjectTotalHoursEl    = document.getElementById("detailsProjectTotalHours");
+  const detailsProjectBudgetEl        = document.getElementById("detailsProjectBudget");
+  const detailsProjectEmployeeCountEl = document.getElementById("detailsProjectEmployeeCount");
+  const detailsProjectStartDateEl     = document.getElementById("detailsProjectStartDate");
+  const detailsProjectEndDateEl       = document.getElementById("detailsProjectEndDate");
+  const detailsProjectStatusEl        = document.getElementById("detailsProjectStatus");
+  const detailsTasksContainer         = document.getElementById("detailsTasksContainer");
+  const detailsEmployeesContainer     = document.getElementById("detailsEmployeesContainer");
+  const detailsInventoryContainer     = document.getElementById("detailsInventoryContainer");
 
-  //
-  // 3) ABRIR / FECHAR MODAL DE EDIÇÃO via DELEGATION
-  //
-  const editModal = document.getElementById("projectEditModal");
-  document.body.addEventListener("click", e => {
-    if (e.target.classList.contains("editProjectBtn")) {
-      const btn = e.target;
-      // preenche campos
-      document.getElementById("editProjectId").value          = btn.dataset.id;
-      document.getElementById("editProjectName").value        = btn.dataset.name;
-      document.getElementById("editProjectClientName").value  = btn.dataset.client_name;
-      document.getElementById("editProjectDescription").value = btn.dataset.description;
-      document.getElementById("editProjectStartDate").value   = btn.dataset.start_date;
-      document.getElementById("editProjectEndDate").value     = btn.dataset.end_date;
-      document.getElementById("editProjectTotalHours").value  = btn.dataset.total_hours;
-      document.getElementById("editProjectStatus").value      = btn.dataset.status;
-
-      // tarefas
-      try { editTaskList = JSON.parse(btn.dataset.tasks); } catch { editTaskList = []; }
-      renderEditTasks();
-
-      // limpa listas de funcionários e inventário
-      editEmployeeList = [];
-      renderEditEmployees();
-      editInventoryList = [];
-      renderEditInventory();
-
-      editModal.classList.remove("hidden");
-    }
-    // fechar
-    if (e.target.id === "closeProjectEditModal") {
-      editModal.classList.add("hidden");
-    }
-    // click fora
-    if (e.target === editModal) {
-      editModal.classList.add("hidden");
-    }
+  // Fecha o modal de detalhes
+  closeDetailsBtn.addEventListener("click", () => detailsModal.classList.add("hidden"));
+  cancelDetailsBtn.addEventListener("click", () => detailsModal.classList.add("hidden"));
+  window.addEventListener("click", e => {
+    if (e.target === detailsModal) detailsModal.classList.add("hidden");
   });
 
-  //
-  // 4) EDIÇÃO: tarefas, funcionários e inventário
-  //
-  const editTasksContainer     = document.getElementById("editTasksContainer");
-  const editEmployeesContainer = document.getElementById("editEmployeesContainer");
-  const editInventoryContainer = document.getElementById("editInventoryContainer");
+  // Evento de clique nos cards ('.project-item')
+  document.querySelectorAll(".project-item").forEach(card => {
+    card.addEventListener("click", function(event) {
+      event.preventDefault();
+      const projectId = this.dataset.projectId || this.getAttribute("data-id");
+      console.log(`Projeto selecionado: ID = ${projectId}`);
 
-  document.getElementById("editAddTaskBtn").addEventListener("click", () => {
-    const desc = document.getElementById("editNewTaskInput").value.trim();
-    if (!desc) return;
-    editTaskList.push({ description: desc, completed: false });
-    renderEditTasks();
-    document.getElementById("editNewTaskInput").value = "";
-  });
-  function renderEditTasks() {
-    editTasksContainer.innerHTML = "";
-    editTaskList.forEach((t,i) => {
-      const row = document.createElement("div");
-      row.className = "flex items-center mb-2";
-      row.innerHTML = `
-        <input type="checkbox" class="mr-2" ${t.completed?"checked":""} data-idx="${i}">
-        <input type="text" class="w-full p-1 border rounded" value="${t.description}" data-idx="${i}">
-        <button class="ml-2 text-red-500" data-idx="${i}">X</button>
-      `;
-      row.querySelector("input[type=text]").addEventListener("change", e => {
-        editTaskList[i].description = e.target.value;
-      });
-      row.querySelector("input[type=checkbox]").addEventListener("change", e => {
-        editTaskList[i].completed = e.target.checked;
-      });
-      row.querySelector("button").addEventListener("click", () => {
-        editTaskList.splice(i,1);
-        renderEditTasks();
-      });
-      editTasksContainer.appendChild(row);
-    });
-  }
+      fetch(`${baseUrl}/projects/show?id=${projectId}`)
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.json();
+        })
+        .then(data => {
+          console.log("Dados do projeto recebidos:", data);
+          // Preenche campos básicos
+          detailsProjectIdEl.value            = data.id || "";
+          detailsProjectNameEl.value          = data.name || "";
+          detailsProjectLocationEl.value      = data.location || "";
+          detailsProjectTotalHoursEl.value    = data.total_hours || "";
+          detailsProjectBudgetEl.value        = data.budget || "";
+          detailsProjectEmployeeCountEl.value = data.employee_count || "";
+          detailsProjectStartDateEl.value     = data.start_date || "";
+          detailsProjectEndDateEl.value       = data.end_date || "";
+          detailsProjectStatusEl.value        = data.status || "";
 
-  document.getElementById("editAddEmployeeBtn").addEventListener("click", () => {
-    const sel = document.getElementById("editEmployeeSelect");
-    const id  = sel.value;
-    const name= sel.options[sel.selectedIndex]?.text;
-    if (!id || editEmployeeList.some(e=>e.id===id)) return;
-    editEmployeeList.push({ id, name });
-    renderEditEmployees();
-  });
-  function renderEditEmployees() {
-    editEmployeesContainer.innerHTML = "";
-    editEmployeeList.forEach((e,i) => {
-      const row = document.createElement("div");
-      row.className = "flex items-center mb-2";
-      row.innerHTML = `
-        <span>Funcionário: ${e.name}</span>
-        <button class="ml-2 text-red-500" data-idx="${i}">X</button>
-      `;
-      row.querySelector("button").addEventListener("click", () => {
-        editEmployeeList.splice(i,1);
-        renderEditEmployees();
-      });
-      editEmployeesContainer.appendChild(row);
-    });
-  }
+          // Preenche tarefas (somente leitura)
+          detailsTasksContainer.innerHTML = "";
+          (data.tasks || []).forEach(t => {
+            const row = document.createElement("div");
+            row.className = "flex items-center mb-2";
+            row.innerHTML = `<input type="checkbox" class="mr-2" ${t.completed ? "checked" : ""} disabled><span>${t.description}</span>`;
+            detailsTasksContainer.appendChild(row);
+          });
+          // Preenche funcionários
+          detailsEmployeesContainer.innerHTML = "";
+          (data.employees || []).forEach(e => {
+            const row = document.createElement("div");
+            row.className = "flex items-center mb-2";
+            row.innerHTML = `<span>${e.name} ${e.last_name}</span>`;
+            detailsEmployeesContainer.appendChild(row);
+          });
+          // Preenche inventário
+          detailsInventoryContainer.innerHTML = "";
+          (data.inventory || []).forEach(i => {
+            const row = document.createElement("div");
+            row.className = "flex items-center mb-2";
+            row.innerHTML = `<span>${i.name} (Qtd: ${i.quantity})</span>`;
+            detailsInventoryContainer.appendChild(row);
+          });
 
-  document.getElementById("editAddInventoryBtn").addEventListener("click", () => {
-    const sel = document.getElementById("editInventorySelect");
-    const id  = sel.value;
-    const name= sel.options[sel.selectedIndex]?.text;
-    const qty = parseInt(document.getElementById("editInventoryQuantity").value,10);
-    if (!id||qty<=0) return;
-    const ex = editInventoryList.find(x=>x.id===id);
-    if (ex) ex.quantity+=qty; else editInventoryList.push({id,name,quantity:qty});
-    renderEditInventory();
-  });
-  function renderEditInventory() {
-    editInventoryContainer.innerHTML = "";
-    editInventoryList.forEach((it,i) => {
-      const row = document.createElement("div");
-      row.className = "flex items-center mb-2";
-      row.innerHTML = `
-        <span>Material: ${it.name} (Qtd: ${it.quantity})</span>
-        <button class="ml-2 text-red-500" data-idx="${i}">X</button>
-      `;
-      row.querySelector("button").addEventListener("click", () => {
-        editInventoryList.splice(i,1);
-        renderEditInventory();
-      });
-      editInventoryContainer.appendChild(row);
-    });
-  }
-
-  // ao submeter edição
-  document.getElementById("projectEditForm").addEventListener("submit", () => {
-    document.getElementById("editTasksData").value     = JSON.stringify(editTaskList);
-    document.getElementById("editEmployeesData").value = JSON.stringify(editEmployeeList.map(e=>e.id));
-    document.getElementById("editInventoryData").value = JSON.stringify(editInventoryList);
-  });
-
-
-  //
-  // 5) ATUALIZAÇÃO DE TAREFAS EM PAINEL (persistência)
-  //
-  document.querySelectorAll(".task-checkbox").forEach(cb => {
-    cb.addEventListener("change", () => {
-      const id  = cb.dataset.taskId;
-      const ok  = cb.checked ? 1 : 0;
-      fetch('/ams-malergeschaft/public/tasks/update', {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ task_id:id, completed: ok })
-      })
-      .then(r=>r.json())
-      .then(j=>{
-        if (j.success) {
-          const panel = cb.closest(".project-details");
-          // recalcula e atualiza a barra dentro do details
-          const checks = panel.querySelectorAll(".task-checkbox");
-          const total  = checks.length,
-                done   = [...checks].filter(x=>x.checked).length,
-                pct    = total?Math.round(done/total*100):0;
-          panel.querySelector(".progress-bar").style.width = pct + "%";
-          panel.querySelector(".progress-value").textContent = pct;
-        }
-      });
+          // Exibe o modal
+          detailsModal.classList.remove("hidden");
+        })
+        .catch(error => {
+          console.error("Erro ao buscar detalhes do projeto:", error);
+          alert("Não foi possível carregar os detalhes do projeto.");
+        });
     });
   });
 

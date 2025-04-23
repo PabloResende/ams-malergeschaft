@@ -226,39 +226,39 @@ $inventoryItems = $pdo
       <form id="projectDetailsForm" action="<?= $baseUrl ?>/projects/update" method="POST">
         <input type="hidden" name="id" id="detailsProjectId">
 
-        <!-- Campos básicos -->
+        <!-- Campos básicos (AGORA EDITÁVEIS) -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label class="block text-gray-700"><?= $langText['name'] ?? 'Nome do Projeto' ?></label>
-            <input type="text" name="name" id="detailsProjectName" class="w-full p-2 border rounded" readonly>
+            <input type="text" name="name" id="detailsProjectName" class="w-full p-2 border rounded">
           </div>
           <div>
             <label class="block text-gray-700"><?= $langText['location'] ?? 'Localização / Endereço' ?></label>
-            <input type="text" name="location" id="detailsProjectLocation" class="w-full p-2 border rounded" readonly>
+            <input type="text" name="location" id="detailsProjectLocation" class="w-full p-2 border rounded">
           </div>
           <div>
             <label class="block text-gray-700"><?= $langText['total_hours'] ?? 'Quantidade de Horas' ?></label>
-            <input type="number" name="total_hours" id="detailsProjectTotalHours" class="w-full p-2 border rounded" readonly>
+            <input type="number" name="total_hours" id="detailsProjectTotalHours" class="w-full p-2 border rounded">
           </div>
           <div>
             <label class="block text-gray-700"><?= $langText['budget'] ?? 'Budget' ?></label>
-            <input type="number" name="budget" id="detailsProjectBudget" step="0.01" class="w-full p-2 border rounded" readonly>
+            <input type="number" name="budget" id="detailsProjectBudget" step="0.01" class="w-full p-2 border rounded">
           </div>
           <div>
             <label class="block text-gray-700"><?= $langText['employee_count'] ?? 'Quantidade de Funcionários' ?></label>
-            <input type="number" name="employee_count" id="detailsProjectEmployeeCount" class="w-full p-2 border rounded" readonly>
+            <input type="number" name="employee_count" id="detailsProjectEmployeeCount" class="w-full p-2 border rounded">
           </div>
           <div>
             <label class="block text-gray-700"><?= $langText['start_date'] ?? 'Data de Início' ?></label>
-            <input type="date" name="start_date" id="detailsProjectStartDate" class="w-full p-2 border rounded" readonly>
+            <input type="date" name="start_date" id="detailsProjectStartDate" class="w-full p-2 border rounded">
           </div>
           <div>
             <label class="block text-gray-700"><?= $langText['end_date'] ?? 'Data de Término' ?></label>
-            <input type="date" name="end_date" id="detailsProjectEndDate" class="w-full p-2 border rounded" readonly>
+            <input type="date" name="end_date" id="detailsProjectEndDate" class="w-full p-2 border rounded">
           </div>
           <div>
             <label class="block text-gray-700"><?= $langText['status'] ?? 'Status' ?></label>
-            <select name="status" id="detailsProjectStatus" class="w-full p-2 border rounded" disabled>
+            <select name="status" id="detailsProjectStatus" class="w-full p-2 border rounded">
               <option value="in_progress"><?= $langText['in_progress'] ?? 'In Progress' ?></option>
               <option value="pending"><?= $langText['pending'] ?? 'Pending' ?></option>
               <option value="completed"><?= $langText['completed'] ?? 'Completed' ?></option>
@@ -266,59 +266,61 @@ $inventoryItems = $pdo
           </div>
         </div>
 
-        <!-- Tarefas -->
+        <!-- Tarefas (edição) -->
         <div class="mb-4">
           <label class="block text-gray-700"><?= $langText['tasks'] ?? 'Tasks' ?></label>
           <div id="detailsTasksContainer"></div>
           <div class="flex mt-2">
-            <input type="text" id="detailsNewTaskInput" class="w-full p-2 border rounded" placeholder="<?= $langText['task_placeholder'] ?? 'Task description' ?>" disabled>
-            <button type="button" id="detailsAddTaskBtn" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded" disabled><?= $langText['add'] ?? 'Add' ?></button>
+            <input type="text" id="detailsNewTaskInput" class="w-full p-2 border rounded" placeholder="<?= $langText['task_placeholder'] ?? 'Task description' ?>">
+            <button type="button" id="detailsAddTaskBtn" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded"><?= $langText['add'] ?? 'Add' ?></button>
           </div>
         </div>
 
-        <!-- Funcionários -->
+        <!-- Funcionários (edição) -->
         <div class="mb-4">
           <label class="block text-gray-700"><?= $langText['employees'] ?? 'Employees' ?></label>
           <div id="detailsEmployeesContainer"></div>
           <div class="flex mt-2">
-            <select id="detailsEmployeeSelect" class="w-full p-2 border rounded" disabled>
+            <select id="detailsEmployeeSelect" class="w-full p-2 border rounded">
               <option value=""><?= $langText['select_employee'] ?? 'Select an employee' ?></option>
               <?php foreach ($activeEmployees as $emp): ?>
                 <option value="<?= $emp['id'] ?>"><?= htmlspecialchars($emp['name'].' '.$emp['last_name'], ENT_QUOTES, 'UTF-8') ?></option>
               <?php endforeach; ?>
             </select>
-            <button type="button" id="detailsAddEmployeeBtn" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded" disabled><?= $langText['add'] ?? 'Add' ?></button>
+            <button type="button" id="detailsAddEmployeeBtn" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded"><?= $langText['add'] ?? 'Add' ?></button>
           </div>
         </div>
 
-        <!-- Inventário -->
+        <!-- Inventário (edição) -->
         <div class="mb-4">
           <label class="block text-gray-700"><?= $langText['inventory'] ?? 'Inventory' ?></label>
-          <div id="detailsInventoryContainer"></div>  
+          <div id="detailsInventoryContainer"></div>
           <div class="flex mt-2 space-x-2">
-            <select id="detailsInventorySelect" class="flex-1 p-2 border rounded" disabled>
+            <select id="detailsInventorySelect" class="flex-1 p-2 border rounded">
               <option value=""><?= $langText['select_material'] ?? 'Select material' ?></option>
               <?php foreach ($inventoryItems as $item): ?>
                 <option value="<?= $item['id'] ?>"><?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?> (<?= $langText['available'] ?? 'Available' ?>: <?= $item['quantity'] ?>)</option>
               <?php endforeach; ?>
             </select>
-            <input type="number" id="detailsInventoryQuantity" class="p-2 border rounded" placeholder="<?= $langText['quantity'] ?? 'Quantity' ?>" min="1" disabled>
-            <button type="button" id="detailsAddInventoryBtn" class="bg-blue-500 text-white px-3 py-2 rounded" disabled><?= $langText['add'] ?? 'Add' ?></button>
+            <input type="number" id="detailsInventoryQuantity" class="p-2 border rounded" placeholder="<?= $langText['quantity'] ?? 'Quantity' ?>" min="1">
+            <button type="button" id="detailsAddInventoryBtn" class="bg-blue-500 text-white px-3 py-2 rounded"><?= $langText['add'] ?? 'Add' ?></button>
           </div>
         </div>
 
-        <!-- Hidden fields de JSON -->
-        <input type="hidden" name="tasks" id="tasksData">
-        <input type="hidden" name="employees" id="employeesData">
-        <input type="hidden" name="inventoryResources" id="inventoryData">
+        <!-- Campos ocultos para JSON -->
+        <input type="hidden" name="tasks" id="detailsTasksData">
+        <input type="hidden" name="employees" id="detailsEmployeesData">
+        <input type="hidden" name="inventoryResources" id="detailsInventoryData">
 
         <div class="flex justify-end mt-4 space-x-2">
           <button type="button" id="cancelDetailsBtn" class="px-4 py-2 border rounded"><?= $langText['cancel'] ?? 'Cancel' ?></button>
-          <button type="submit" id="saveDetailsBtn" class="bg-green-500 text-white px-4 py-2 rounded hidden"><?= $langText['save_changes'] ?? 'Save Changes' ?></button>
+          <button type="button" id="deleteProjectBtn" class="px-4 py-2 border rounded text-red-600"><?= $langText['delete'] ?? 'Delete' ?></button>
+          <button type="submit" id="saveDetailsBtn" class="hidden bg-green-500 text-white px-4 py-2 rounded"><?= $langText['save_changes'] ?? 'Save Changes' ?></button>
         </div>
       </form>
     </div>
   </div>
+
 </div>
 
 <script src="<?= $baseUrl ?>/js/projects.js"></script>

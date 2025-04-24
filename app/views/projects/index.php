@@ -143,10 +143,6 @@ $inventoryItems = $pdo
             <input type="number" name="budget" step="0.01" class="w-full p-2 border rounded">
           </div>
           <div>
-            <label class="block text-gray-700"><?= $langText['employee_count'] ?? 'Quantidade de Funcionários' ?></label>
-            <input type="number" name="employee_count" class="w-full p-2 border rounded">
-          </div>
-          <div>
             <label class="block text-gray-700"><?= $langText['start_date'] ?? 'Data de Início' ?></label>
             <input type="date" name="start_date" class="w-full p-2 border rounded" required>
           </div>
@@ -164,7 +160,7 @@ $inventoryItems = $pdo
           </div>
         </div>
 
-        <!-- Tarefas -->
+        <!-- TAREFAS -->
         <div class="mb-4">
           <label class="block text-gray-700"><?= $langText['tasks'] ?? 'Tasks' ?></label>
           <div id="tasksContainer"></div>
@@ -174,7 +170,7 @@ $inventoryItems = $pdo
           </div>
         </div>
 
-        <!-- Funcionários -->
+        <!-- FUNCIONÁRIOS -->
         <div class="mb-4">
           <label class="block text-gray-700"><?= $langText['employees'] ?? 'Employees' ?></label>
           <div id="employeesContainer"></div>
@@ -189,7 +185,7 @@ $inventoryItems = $pdo
           </div>
         </div>
 
-        <!-- Inventário -->
+        <!-- INVENTÁRIO -->
         <div class="mb-4">
           <label class="block text-gray-700"><?= $langText['inventory'] ?? 'Inventory' ?></label>
           <div id="inventoryContainer"></div>
@@ -207,10 +203,11 @@ $inventoryItems = $pdo
           </div>
         </div>
 
-        <!-- Hidden fields -->
+        <!-- HIDDENS PARA JSON & COUNTS -->
         <input type="hidden" name="tasks" id="tasksData">
         <input type="hidden" name="employees" id="employeesData">
         <input type="hidden" name="inventoryResources" id="inventoryData">
+        <input type="hidden" name="employee_count" id="employeeCountDataCreate">
 
         <div class="flex justify-end mt-4 space-x-2">
           <button type="button" id="closeModal" class="px-4 py-2 border rounded"><?= $langText['cancel'] ?? 'Cancel' ?></button>
@@ -237,7 +234,7 @@ $inventoryItems = $pdo
           <span id="detailsProgressText" class="text-sm text-gray-600">0%</span>
         </div>
 
-        <!-- Campos básicos -->
+        <!-- Campos editáveis -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label class="block text-gray-700"><?= $langText['name'] ?? 'Nome do Projeto' ?></label>
@@ -254,10 +251,6 @@ $inventoryItems = $pdo
           <div>
             <label class="block text-gray-700"><?= $langText['budget'] ?? 'Budget' ?></label>
             <input type="number" name="budget" step="0.01" id="detailsProjectBudget" class="w-full p-2 border rounded">
-          </div>
-          <div>
-            <label class="block text-gray-700"><?= $langText['employee_count'] ?? 'Quantidade de Funcionários' ?></label>
-            <input type="number" name="employee_count" id="detailsProjectEmployeeCount" class="w-full p-2 border rounded">
           </div>
           <div>
             <label class="block text-gray-700"><?= $langText['start_date'] ?? 'Data de Início' ?></label>
@@ -277,7 +270,7 @@ $inventoryItems = $pdo
           </div>
         </div>
 
-        <!-- Tarefas (Edição) -->
+        <!-- TAREFAS -->
         <div class="mb-4">
           <label class="block text-gray-700"><?= $langText['tasks'] ?? 'Tasks' ?></label>
           <div id="detailsTasksContainer"></div>
@@ -287,7 +280,7 @@ $inventoryItems = $pdo
           </div>
         </div>
 
-        <!-- Funcionários (Edição) -->
+        <!-- FUNCIONÁRIOS -->
         <div class="mb-4">
           <label class="block text-gray-700"><?= $langText['employees'] ?? 'Employees' ?></label>
           <div id="detailsEmployeesContainer"></div>
@@ -302,7 +295,7 @@ $inventoryItems = $pdo
           </div>
         </div>
 
-        <!-- Inventário (Edição) -->
+        <!-- INVENTÁRIO -->
         <div class="mb-4">
           <label class="block text-gray-700"><?= $langText['inventory'] ?? 'Inventory' ?></label>
           <div id="detailsInventoryContainer"></div>
@@ -320,15 +313,16 @@ $inventoryItems = $pdo
           </div>
         </div>
 
-        <!-- Campos ocultos para JSON -->
+        <!-- HIDDENS PARA JSON & COUNTS -->
         <input type="hidden" name="tasks" id="detailsTasksData">
         <input type="hidden" name="employees" id="detailsEmployeesData">
         <input type="hidden" name="inventoryResources" id="detailsInventoryData">
+        <input type="hidden" name="employee_count" id="detailsEmployeeCountData">
 
         <div class="flex justify-end mt-4 space-x-2">
           <button type="button" id="cancelDetailsBtn" class="px-4 py-2 border rounded"><?= $langText['cancel'] ?? 'Cancel' ?></button>
           <button type="button" id="deleteProjectBtn" class="px-4 py-2 border rounded text-red-600"><?= $langText['delete'] ?? 'Delete' ?></button>
-          <button type="submit" id="saveDetailsBtn" class="hidden bg-green-500 text-white px-3 py-2 rounded"><?= $langText['save_changes'] ?? 'Save Changes' ?></button>
+          <button type="submit" id="saveDetailsBtn" class="hidden bg-green-500 text-white px-4 py-2 rounded"><?= $langText['save_changes'] ?? 'Save Changes' ?></button>
         </div>
       </form>
     </div>

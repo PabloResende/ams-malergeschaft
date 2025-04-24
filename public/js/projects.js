@@ -2,7 +2,7 @@
 const baseUrl = window.location.origin + '/ams-malergeschaft/public';
 
 document.addEventListener("DOMContentLoaded", () => {
-  // —————————————— MODAL DE CRIAÇÃO ——————————————
+  // —————— MODAL DE CRIAÇÃO ——————
   const projectModal       = document.getElementById("projectModal");
   const addProjectBtn      = document.getElementById("addProjectBtn");
   const closeModal         = document.getElementById("closeModal");
@@ -20,6 +20,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const inventoryQuantity  = document.getElementById("inventoryQuantity");
   const addInventoryBtn    = document.getElementById("addInventoryBtn");
 
+  const tasksData          = document.getElementById("tasksData");
+  const employeesData      = document.getElementById("employeesData");
+  const inventoryData      = document.getElementById("inventoryData");
+  const empCountDataCreate = document.getElementById("employeeCountDataCreate");
+
   let taskList      = [];
   let employeeList  = [];
   let inventoryList = [];
@@ -30,8 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const row = document.createElement("div");
       row.className = "flex items-center mb-2";
       row.innerHTML = `<input type="checkbox" class="mr-2" ${t.completed ? "checked" : ""}><span>${t.description}</span>`;
-      const cb = row.querySelector("input");
-      cb.addEventListener("change", e => {
+      row.querySelector("input").addEventListener("change", e => {
         taskList[i].completed = e.target.checked;
       });
       tasksContainer.appendChild(row);
@@ -43,7 +47,7 @@ document.addEventListener("DOMContentLoaded", () => {
     employeeList.forEach((e, i) => {
       const row = document.createElement("div");
       row.className = "flex items-center mb-2";
-      row.innerHTML = `<span>${e.name}</span><button class="ml-2 text-red-500">&times;</button>`;
+      row.innerHTML = `<span class="flex-1">${e.name}</span><button class="ml-2 text-red-500">&times;</button>`;
       row.querySelector("button").addEventListener("click", () => {
         employeeList.splice(i, 1);
         renderEmployees();
@@ -57,7 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
     inventoryList.forEach((it, i) => {
       const row = document.createElement("div");
       row.className = "flex items-center mb-2";
-      row.innerHTML = `<span>${it.name} (Qtd: ${it.quantity})</span><button class="ml-2 text-red-500">&times;</button>`;
+      row.innerHTML = `<span class="flex-1">${it.name} (Qtd: ${it.quantity})</span><button class="ml-2 text-red-500">&times;</button>`;
       row.querySelector("button").addEventListener("click", () => {
         inventoryList.splice(i, 1);
         renderInventory();
@@ -66,12 +70,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  addProjectBtn.addEventListener("click", () => projectModal.classList.remove("hidden"));
-  closeModal.addEventListener("click", () => projectModal.classList.add("hidden"));
+  // abrir modal de criação
+  addProjectBtn.addEventListener("click", () => {
+    projectModal.classList.remove("hidden");
+  });
+  // fechar modal de criação
+  closeModal.addEventListener("click", () => {
+    projectModal.classList.add("hidden");
+  });
   window.addEventListener("click", e => {
     if (e.target === projectModal) projectModal.classList.add("hidden");
   });
 
+  // adicionar tarefa
   addTaskBtn.addEventListener("click", () => {
     const desc = newTaskInput.value.trim();
     if (!desc) return;
@@ -80,6 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTasks();
   });
 
+  // adicionar funcionário
   addEmployeeBtn.addEventListener("click", () => {
     const id   = employeeSelect.value;
     const name = employeeSelect.selectedOptions[0]?.text;
@@ -89,14 +101,15 @@ document.addEventListener("DOMContentLoaded", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ emp_id: id })
     })
-      .then(r => r.json())
-      .then(j => {
-        if (j.allocated) alert(`Já alocado em ${j.count} projeto(s)!`);
-        employeeList.push({ id, name });
-        renderEmployees();
-      });
+    .then(r => r.json())
+    .then(j => {
+      if (j.allocated) alert(`Já alocado em ${j.count} projeto(s)!`);
+      employeeList.push({ id, name });
+      renderEmployees();
+    });
   });
 
+  // adicionar inventário
   addInventoryBtn.addEventListener("click", () => {
     const selected  = inventorySelect.selectedOptions[0];
     const available = parseInt(selected?.dataset.stock || "0", 10);
@@ -109,57 +122,54 @@ document.addEventListener("DOMContentLoaded", () => {
     const name = selected.text;
     if (!id) return;
     const ex = inventoryList.find(i => i.id === id);
-    if (ex) {
-      ex.quantity += qty;
-    } else {
-      inventoryList.push({ id, name, quantity: qty });
-    }
+    if (ex) ex.quantity += qty;
+    else inventoryList.push({ id, name, quantity: qty });
     inventoryQuantity.value = "";
     renderInventory();
   });
 
+  // antes de enviar o form, popula hidden fields
   projectForm.addEventListener("submit", () => {
-    document.getElementById("tasksData").value     = JSON.stringify(taskList);
-    document.getElementById("employeesData").value = JSON.stringify(employeeList.map(e => e.id));
-    document.getElementById("inventoryData").value = JSON.stringify(inventoryList);
+    tasksData.value     = JSON.stringify(taskList);
+    employeesData.value = JSON.stringify(employeeList.map(e => e.id));
+    inventoryData.value = JSON.stringify(inventoryList);
+    empCountDataCreate.value = employeeList.length;
   });
 
-  // —————————————— MODAL DE DETALHES / EDIÇÃO ——————————————
-  const detailsModal               = document.getElementById("projectDetailsModal");
-  const closeDetailsBtn            = document.getElementById("closeProjectDetailsModal");
-  const cancelDetailsBtn           = document.getElementById("cancelDetailsBtn");
-  const deleteProjectBtn           = document.getElementById("deleteProjectBtn");
-  const detailsForm                = document.getElementById("projectDetailsForm");
-  const saveDetailsBtn             = document.getElementById("saveDetailsBtn");
+  // —————— MODAL DE DETALHES / EDIÇÃO ——————
+  const detailsModal           = document.getElementById("projectDetailsModal");
+  const closeDetailsBtn        = document.getElementById("closeProjectDetailsModal");
+  const cancelDetailsBtn       = document.getElementById("cancelDetailsBtn");
+  const deleteProjectBtn       = document.getElementById("deleteProjectBtn");
+  const detailsForm            = document.getElementById("projectDetailsForm");
+  const saveDetailsBtn         = document.getElementById("saveDetailsBtn");
 
-  const detailsProjectIdEl         = document.getElementById("detailsProjectId");
-  const detailsProjectNameEl       = document.getElementById("detailsProjectName");
-  const detailsProjectLocationEl   = document.getElementById("detailsProjectLocation");
+  const detailsProjectIdEl     = document.getElementById("detailsProjectId");
+  const detailsProjectNameEl   = document.getElementById("detailsProjectName");
+  const detailsProjectLocationEl = document.getElementById("detailsProjectLocation");
   const detailsProjectTotalHoursEl = document.getElementById("detailsProjectTotalHours");
-  const detailsProjectBudgetEl     = document.getElementById("detailsProjectBudget");
-  const detailsProjectEmployeeCountEl = document.getElementById("detailsProjectEmployeeCount");
-  const detailsProjectStartDateEl  = document.getElementById("detailsProjectStartDate");
-  const detailsProjectEndDateEl    = document.getElementById("detailsProjectEndDate");
-  const detailsProjectStatusEl     = document.getElementById("detailsProjectStatus");
+  const detailsProjectBudgetEl = document.getElementById("detailsProjectBudget");
+  const detailsProjectStatusEl = document.getElementById("detailsProjectStatus");
 
-  const detailsProgressBar         = document.getElementById("detailsProgressBar");
-  const detailsProgressText        = document.getElementById("detailsProgressText");
+  const detailsProgressBar     = document.getElementById("detailsProgressBar");
+  const detailsProgressText    = document.getElementById("detailsProgressText");
 
-  const detailsTasksContainer      = document.getElementById("detailsTasksContainer");
-  const detailsEmployeesContainer  = document.getElementById("detailsEmployeesContainer");
-  const detailsInventoryContainer  = document.getElementById("detailsInventoryContainer");
+  const detailsTasksContainer    = document.getElementById("detailsTasksContainer");
+  const detailsEmployeesContainer= document.getElementById("detailsEmployeesContainer");
+  const detailsInventoryContainer= document.getElementById("detailsInventoryContainer");
 
-  const detailsNewTaskInput        = document.getElementById("detailsNewTaskInput");
-  const detailsAddTaskBtn          = document.getElementById("detailsAddTaskBtn");
-  const detailsEmployeeSelect      = document.getElementById("detailsEmployeeSelect");
-  const detailsAddEmployeeBtn      = document.getElementById("detailsAddEmployeeBtn");
-  const detailsInventorySelect     = document.getElementById("detailsInventorySelect");
-  const detailsInventoryQuantity   = document.getElementById("detailsInventoryQuantity");
-  const detailsAddInventoryBtn     = document.getElementById("detailsAddInventoryBtn");
+  const detailsNewTaskInput     = document.getElementById("detailsNewTaskInput");
+  const detailsAddTaskBtn       = document.getElementById("detailsAddTaskBtn");
+  const detailsEmployeeSelect   = document.getElementById("detailsEmployeeSelect");
+  const detailsAddEmployeeBtn   = document.getElementById("detailsAddEmployeeBtn");
+  const detailsInventorySelect  = document.getElementById("detailsInventorySelect");
+  const detailsInventoryQuantity= document.getElementById("detailsInventoryQuantity");
+  const detailsAddInventoryBtn  = document.getElementById("detailsAddInventoryBtn");
 
-  const detailsTasksData           = document.getElementById("detailsTasksData");
-  const detailsEmployeesData       = document.getElementById("detailsEmployeesData");
-  const detailsInventoryData       = document.getElementById("detailsInventoryData");
+  const detailsTasksData        = document.getElementById("detailsTasksData");
+  const detailsEmployeesData    = document.getElementById("detailsEmployeesData");
+  const detailsInventoryData    = document.getElementById("detailsInventoryData");
+  const detailsEmpCountData     = document.getElementById("detailsEmployeeCountData");
 
   let detailsTaskList      = [];
   let detailsEmployeeList  = [];
@@ -170,19 +180,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const done  = detailsTaskList.filter(t => t.completed).length;
     const pct   = total ? Math.round(done / total * 100) : 0;
 
-    detailsProgressBar.style.width       = pct + "%";
-    detailsProgressText.innerText        = pct + "%";
-    detailsProjectStatusEl.disabled      = pct < 100;
-    // insere/atualiza hidden progress
-    const prev = detailsForm.querySelector("input[name=progress]");
-    if (prev) prev.value = pct;
-    else {
-      const h = document.createElement("input");
-      h.type  = "hidden";
-      h.name  = "progress";
-      h.value = pct;
+    detailsProgressBar.style.width  = pct + "%";
+    detailsProgressText.innerText   = pct + "%";
+    detailsProjectStatusEl.disabled = pct < 100;
+
+    // atualiza hidden progress
+    let h = detailsForm.querySelector("input[name=progress]");
+    if (!h) {
+      h = document.createElement("input");
+      h.type = "hidden";
+      h.name = "progress";
       detailsForm.appendChild(h);
     }
+    h.value = pct;
   }
 
   function renderDetailsTasks() {
@@ -195,8 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <span class="flex-1">${t.description}</span>
         <button class="ml-2 text-red-500">&times;</button>
       `;
-      const cb = row.querySelector("input");
-      cb.addEventListener("change", e => {
+      row.querySelector("input").addEventListener("change", e => {
         detailsTaskList[i].completed = e.target.checked;
         updateDetailsProgress();
       });
@@ -224,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       detailsEmployeesContainer.appendChild(row);
     });
-    detailsProjectEmployeeCountEl.value = detailsEmployeeList.length;
+    detailsEmpCountData.value = detailsEmployeeList.length;
   }
 
   function renderDetailsInventory() {
@@ -244,18 +253,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // fechar modal de detalhes
   closeDetailsBtn.addEventListener("click", () => detailsModal.classList.add("hidden"));
   cancelDetailsBtn.addEventListener("click", () => detailsModal.classList.add("hidden"));
   window.addEventListener("click", e => {
     if (e.target === detailsModal) detailsModal.classList.add("hidden");
   });
 
+  // excluir projeto
   deleteProjectBtn.addEventListener("click", () => {
     if (!confirm("Deseja realmente excluir este projeto?")) return;
     const id = detailsProjectIdEl.value;
     window.location.href = `${baseUrl}/projects/delete?id=${id}`;
   });
 
+  // adicionar tarefa no detalhe
   detailsAddTaskBtn.addEventListener("click", () => {
     const desc = detailsNewTaskInput.value.trim();
     if (!desc) return;
@@ -264,6 +276,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderDetailsTasks();
   });
 
+  // adicionar funcionário no detalhe
   detailsAddEmployeeBtn.addEventListener("click", () => {
     const id   = detailsEmployeeSelect.value;
     const name = detailsEmployeeSelect.selectedOptions[0]?.text;
@@ -273,14 +286,15 @@ document.addEventListener("DOMContentLoaded", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ emp_id: id })
     })
-      .then(r => r.json())
-      .then(j => {
-        if (j.allocated) alert(`Já alocado em ${j.count} projeto(s)!`);
-        detailsEmployeeList.push({ id, name });
-        renderDetailsEmployees();
-      });
+    .then(r => r.json())
+    .then(j => {
+      if (j.allocated) alert(`Já alocado em ${j.count} projeto(s)!`);
+      detailsEmployeeList.push({ id, name });
+      renderDetailsEmployees();
+    });
   });
 
+  // adicionar inventário no detalhe
   detailsAddInventoryBtn.addEventListener("click", () => {
     const selected  = detailsInventorySelect.selectedOptions[0];
     const available = parseInt(selected?.dataset.stock || "0", 10);
@@ -299,36 +313,36 @@ document.addEventListener("DOMContentLoaded", () => {
     renderDetailsInventory();
   });
 
+  // antes de submeter edição, popula hidden fields
   detailsForm.addEventListener("submit", () => {
     detailsTasksData.value      = JSON.stringify(detailsTaskList);
     detailsEmployeesData.value  = JSON.stringify(detailsEmployeeList.map(e => e.id));
     detailsInventoryData.value  = JSON.stringify(detailsInventoryList);
+    detailsEmpCountData.value   = detailsEmployeeList.length;
   });
 
+  // carregar e abrir modal de detalhe ao clicar no card
   document.querySelectorAll(".project-item").forEach(card => {
     card.addEventListener("click", function(event) {
       event.preventDefault();
-      const projectId = this.dataset.projectId || this.getAttribute("data-id");
+      const projectId = this.dataset.projectId;
       fetch(`${baseUrl}/projects/show?id=${projectId}`)
-        .then(r => {
-          if (!r.ok) throw new Error(`HTTP ${r.status}`);
-          return r.json();
-        })
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
         .then(data => {
-          detailsProjectIdEl.value            = data.id || "";
-          detailsProjectNameEl.value          = data.name || "";
-          detailsProjectLocationEl.value      = data.location || "";
-          detailsProjectTotalHoursEl.value    = data.total_hours || "";
-          detailsProjectBudgetEl.value        = data.budget || "";
-          detailsProjectEmployeeCountEl.value = data.employee_count || "";
-          detailsProjectStartDateEl.value     = data.start_date || "";
-          detailsProjectEndDateEl.value       = data.end_date || "";
-          detailsProjectStatusEl.value        = data.status || "";
+          // popula campos
+          detailsProjectIdEl.value        = data.id || "";
+          detailsProjectNameEl.value      = data.name || "";
+          detailsProjectLocationEl.value  = data.location || "";
+          detailsProjectTotalHoursEl.value= data.total_hours || "";
+          detailsProjectBudgetEl.value    = data.budget || "";
+          detailsProjectStatusEl.value    = data.status || "";
 
+          // popula arrays internas
           detailsTaskList      = (data.tasks     || []).map(t => ({ description: t.description, completed: t.completed }));
-          detailsEmployeeList  = (data.employees || []).map(e => ({ id: e.id, name: e.name + " " + e.last_name }));
+          detailsEmployeeList  = (data.employees || []).map(e => ({ id: e.id, name: `${e.name} ${e.last_name}` }));
           detailsInventoryList = (data.inventory || []).map(i => ({ id: i.id, name: i.name, quantity: i.quantity }));
 
+          // renderiza tudo
           renderDetailsTasks();
           renderDetailsEmployees();
           renderDetailsInventory();

@@ -47,6 +47,22 @@ class ProjectModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public static function restoreInventory(int $projectId): void {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare("
+            SELECT resource_id, quantity
+            FROM project_resources
+            WHERE project_id = ? AND resource_type = 'inventory'
+        ");
+        $stmt->execute([$projectId]);
+        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $up = $pdo->prepare("UPDATE inventory SET quantity = quantity + ? WHERE id = ?");
+        foreach ($items as $it) {
+            $up->execute([(int)$it['quantity'], $it['resource_id']]);
+        }
+    }
+
     public static function create($data, $tasks = [], $employees = [], $inventoryResources = []) {
         $pdo = Database::connect();
         $pdo->beginTransaction();
@@ -69,37 +85,36 @@ class ProjectModel {
             $data['progress']
         ]);
 
-        if (!$ok) { $pdo->rollBack(); return false; }
+        if (!$ok) {
+            $pdo->rollBack();
+            return false;
+        }
         $projectId = $pdo->lastInsertId();
 
-        // Tarefas
         if (!empty($tasks)) {
             $ts = $pdo->prepare("INSERT INTO tasks (project_id, description, completed, created_at) VALUES (?, ?, ?, NOW())");
             foreach ($tasks as $t) {
                 if (empty($t['description'])) continue;
-                $c = !empty($t['completed']) ? 1 : 0;
-                $ts->execute([$projectId, $t['description'], $c]);
+                $ts->execute([$projectId, $t['description'], !empty($t['completed']) ? 1 : 0]);
             }
         }
 
-        // Funcionários
         if (!empty($employees)) {
             $rs = $pdo->prepare("
-              INSERT INTO project_resources (project_id, resource_type, resource_id, quantity, created_at)
-              VALUES (?, 'employee', ?, 1, NOW())
+                INSERT INTO project_resources (project_id, resource_type, resource_id, quantity, created_at)
+                VALUES (?, 'employee', ?, 1, NOW())
             ");
             foreach ($employees as $eid) {
                 $rs->execute([$projectId, $eid]);
             }
         }
 
-        // Inventário
         if (!empty($inventoryResources)) {
             $sel = $pdo->prepare("SELECT quantity FROM inventory WHERE id = ?");
             $up  = $pdo->prepare("UPDATE inventory SET quantity = quantity - ? WHERE id = ?");
             $rs  = $pdo->prepare("
-              INSERT INTO project_resources (project_id, resource_type, resource_id, quantity, created_at)
-              VALUES (?, 'inventory', ?, ?, NOW())
+                INSERT INTO project_resources (project_id, resource_type, resource_id, quantity, created_at)
+                VALUES (?, 'inventory', ?, ?, NOW())
             ");
             foreach ($inventoryResources as $it) {
                 if (empty($it['id']) || empty($it['quantity'])) continue;
@@ -115,23 +130,26 @@ class ProjectModel {
         $pdo->commit();
         return true;
     }
+
     public static function update($id, $data, $tasks = [], $employees = [], $inventoryResources = []) {
         $pdo = Database::connect();
         $pdo->beginTransaction();
         try {
-            // 1) Atualiza campos principais
+            // restaurar estoque antes de reaplicar
+            self::restoreInventory($id);
+
             $stmt = $pdo->prepare("
                 UPDATE projects SET
-                  name           = ?,
-                  location       = ?,
-                  description    = ?,
-                  start_date     = ?,
-                  end_date       = ?,
-                  total_hours    = ?,
-                  budget         = ?,
-                  employee_count = ?,
-                  status         = ?,
-                  progress       = ?
+                    name           = ?,
+                    location       = ?,
+                    description    = ?,
+                    start_date     = ?,
+                    end_date       = ?,
+                    total_hours    = ?,
+                    budget         = ?,
+                    employee_count = ?,
+                    status         = ?,
+                    progress       = ?
                 WHERE id = ?
             ");
             $stmt->execute([
@@ -147,45 +165,34 @@ class ProjectModel {
                 $data['progress'],
                 $id
             ]);
-    
-            // 2) Remove registros antigos
-            $pdo->prepare("DELETE FROM tasks WHERE project_id = ?")
-                ->execute([$id]);
-            $pdo->prepare("DELETE FROM project_resources WHERE project_id = ?")
-                ->execute([$id]);
-    
-            // 3) Reinsere tarefas
+
+            $pdo->prepare("DELETE FROM tasks WHERE project_id = ?")->execute([$id]);
+            $pdo->prepare("DELETE FROM project_resources WHERE project_id = ?")->execute([$id]);
+
             if (!empty($tasks)) {
-                $ts = $pdo->prepare("
-                  INSERT INTO tasks (project_id, description, completed, created_at)
-                  VALUES (?, ?, ?, NOW())
-                ");
+                $ts = $pdo->prepare("INSERT INTO tasks (project_id, description, completed, created_at) VALUES (?, ?, ?, NOW())");
                 foreach ($tasks as $t) {
                     if (empty($t['description'])) continue;
                     $ts->execute([$id, $t['description'], !empty($t['completed']) ? 1 : 0]);
                 }
             }
-    
-            // 4) Reinsere funcionários
+
             if (!empty($employees)) {
                 $rs = $pdo->prepare("
-                  INSERT INTO project_resources
-                    (project_id, resource_type, resource_id, quantity, created_at)
-                  VALUES (?, 'employee', ?, 1, NOW())
+                    INSERT INTO project_resources (project_id, resource_type, resource_id, quantity, created_at)
+                    VALUES (?, 'employee', ?, 1, NOW())
                 ");
                 foreach ($employees as $eid) {
                     $rs->execute([$id, $eid]);
                 }
             }
-    
-            // 5) Reinsere inventário
+
             if (!empty($inventoryResources)) {
                 $sel = $pdo->prepare("SELECT quantity FROM inventory WHERE id = ?");
                 $up  = $pdo->prepare("UPDATE inventory SET quantity = quantity - ? WHERE id = ?");
                 $rs  = $pdo->prepare("
-                  INSERT INTO project_resources
-                    (project_id, resource_type, resource_id, quantity, created_at)
-                  VALUES (?, 'inventory', ?, ?, NOW())
+                    INSERT INTO project_resources (project_id, resource_type, resource_id, quantity, created_at)
+                    VALUES (?, 'inventory', ?, ?, NOW())
                 ");
                 foreach ($inventoryResources as $it) {
                     if (empty($it['id']) || empty($it['quantity'])) continue;
@@ -197,18 +204,19 @@ class ProjectModel {
                     }
                 }
             }
-    
+
             $pdo->commit();
             return true;
         } catch (\Exception $e) {
             $pdo->rollBack();
             throw $e;
         }
-    }    
+    }
 
     public static function delete($id) {
         $pdo = Database::connect();
         $stmt = $pdo->prepare("DELETE FROM projects WHERE id = ?");
         return $stmt->execute([$id]);
     }
+
 }

@@ -4,9 +4,9 @@ require_once __DIR__ . '/../../../config/Database.php';
 
 $pdo = Database::connect();
 
-// 1) Carrega projetos
+// 1) Carrega projetos com filtro
 $filter = $_GET['filter'] ?? '';
-$query  = "SELECT * FROM projects";
+$query = "SELECT * FROM projects";
 if ($filter === 'active') {
     $query .= " WHERE status = 'in_progress'";
 } elseif ($filter === 'pending') {
@@ -17,7 +17,7 @@ if ($filter === 'active') {
 $query .= $filter === 'active'
     ? " ORDER BY end_date ASC"
     : " ORDER BY created_at DESC";
-$stmt    = $pdo->prepare($query);
+$stmt = $pdo->prepare($query);
 $stmt->execute();
 $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -82,7 +82,7 @@ $inventoryItems = $pdo
         ?>
         <div
           class="project-item cursor-pointer bg-white p-6 rounded-xl shadow hover:shadow-md transition-all"
-          data-id="<?= $project['id'] ?>"
+          data-project-id="<?= $project['id'] ?>"
         >
           <div class="flex items-center justify-between mb-2">
             <h4 class="text-xl font-bold flex-1"><?= htmlspecialchars($project['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></h4>
@@ -112,7 +112,7 @@ $inventoryItems = $pdo
   </div>
 
   <!-- Botão flutuante de criar -->
-  <button id="addProjectBtn" class="fixed bottom-8 right-8 bg-green-500 text-white rounded-full p-4 shadow-lg hover:bg-green-600">
+  <button type="button" id="addProjectBtn" class="fixed bottom-8 right-8 bg-green-500 text-white rounded-full p-4 shadow-lg hover:bg-green-600">
     <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
     </svg>
@@ -197,7 +197,9 @@ $inventoryItems = $pdo
             <select id="inventorySelect" class="flex-1 p-2 border rounded">
               <option value=""><?= $langText['select_material'] ?? 'Select material' ?></option>
               <?php foreach ($inventoryItems as $item): ?>
-                <option value="<?= $item['id'] ?>"><?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?> (<?= $langText['available'] ?? 'Available' ?>: <?= $item['quantity'] ?>)</option>
+                <option value="<?= $item['id'] ?>" data-stock="<?= $item['quantity'] ?>">
+                  <?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?> (<?= $langText['available'] ?? 'Available' ?>: <?= $item['quantity'] ?>)
+                </option>
               <?php endforeach; ?>
             </select>
             <input type="number" id="inventoryQuantity" class="p-2 border rounded" placeholder="<?= $langText['quantity'] ?? 'Quantity' ?>" min="1">
@@ -221,11 +223,21 @@ $inventoryItems = $pdo
   <!-- Modal de Detalhes / Edição -->
   <div id="projectDetailsModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
     <div class="bg-white rounded-md p-8 w-90 max-h-[90vh] overflow-y-auto mt-10 relative">
-      <button id="closeProjectDetailsModal" class="absolute top-2 right-2 text-gray-700 text-2xl">&times;</button>
+      <button type="button" id="closeProjectDetailsModal" class="absolute top-2 right-2 text-gray-700 text-2xl">&times;</button>
       <h3 class="text-xl font-bold mb-4"><?= $langText['project_details'] ?? 'Project Details' ?></h3>
       <form id="projectDetailsForm" action="<?= $baseUrl ?>/projects/update" method="POST">
         <input type="hidden" name="id" id="detailsProjectId">
-        <!-- Campos básicos (AGORA EDITÁVEIS) -->
+
+        <!-- PROGRESSO DINÂMICO -->
+        <div class="mb-4">
+          <label class="block text-gray-700"><?= $langText['progress'] ?? 'Progress' ?></label>
+          <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
+            <div id="detailsProgressBar" class="bg-blue-500 h-2 rounded-full" style="width:0%;"></div>
+          </div>
+          <span id="detailsProgressText" class="text-sm text-gray-600">0%</span>
+        </div>
+
+        <!-- Campos básicos -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label class="block text-gray-700"><?= $langText['name'] ?? 'Nome do Projeto' ?></label>
@@ -241,12 +253,11 @@ $inventoryItems = $pdo
           </div>
           <div>
             <label class="block text-gray-700"><?= $langText['budget'] ?? 'Budget' ?></label>
-            <input type="number" name="budget" id="detailsProjectBudget" step="0.01" class="w-full p-2 border rounded">
+            <input type="number" name="budget" step="0.01" id="detailsProjectBudget" class="w-full p-2 border rounded">
           </div>
           <div>
             <label class="block text-gray-700"><?= $langText['employee_count'] ?? 'Quantidade de Funcionários' ?></label>
-            <input type="number" name="employee_count" id="detailsProjectEmployeeCount"
-                   class="w-full p-2 border rounded">
+            <input type="number" name="employee_count" id="detailsProjectEmployeeCount" class="w-full p-2 border rounded">
           </div>
           <div>
             <label class="block text-gray-700"><?= $langText['start_date'] ?? 'Data de Início' ?></label>
@@ -264,21 +275,9 @@ $inventoryItems = $pdo
               <option value="completed"><?= $langText['completed'] ?? 'Completed' ?></option>
             </select>
           </div>
-                  <!-- PROGRESSO DINÂMICO -->
-        <div class="mb-4">
-          <label class="block text-gray-700"><?= $langText['progress'] ?? 'Progress' ?></label>
-          <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
-            <div id="detailsProgressBar"
-                class="bg-blue-500 h-2 rounded-full"
-                style="width:0%;"></div>
-          </div>
-          <span id="detailsProgressText" class="text-sm text-gray-600">0%</span>
-        </div>
         </div>
 
-
-
-        <!-- Tarefas (edição) -->
+        <!-- Tarefas (Edição) -->
         <div class="mb-4">
           <label class="block text-gray-700"><?= $langText['tasks'] ?? 'Tasks' ?></label>
           <div id="detailsTasksContainer"></div>
@@ -288,7 +287,7 @@ $inventoryItems = $pdo
           </div>
         </div>
 
-        <!-- Funcionários (edição) -->
+        <!-- Funcionários (Edição) -->
         <div class="mb-4">
           <label class="block text-gray-700"><?= $langText['employees'] ?? 'Employees' ?></label>
           <div id="detailsEmployeesContainer"></div>
@@ -303,7 +302,7 @@ $inventoryItems = $pdo
           </div>
         </div>
 
-        <!-- Inventário (edição) -->
+        <!-- Inventário (Edição) -->
         <div class="mb-4">
           <label class="block text-gray-700"><?= $langText['inventory'] ?? 'Inventory' ?></label>
           <div id="detailsInventoryContainer"></div>
@@ -311,7 +310,9 @@ $inventoryItems = $pdo
             <select id="detailsInventorySelect" class="flex-1 p-2 border rounded">
               <option value=""><?= $langText['select_material'] ?? 'Select material' ?></option>
               <?php foreach ($inventoryItems as $item): ?>
-                <option value="<?= $item['id'] ?>"><?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?> (<?= $langText['available'] ?? 'Available' ?>: <?= $item['quantity'] ?>)</option>
+                <option value="<?= $item['id'] ?>" data-stock="<?= $item['quantity'] ?>">
+                  <?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?> (<?= $langText['available'] ?? 'Available' ?>: <?= $item['quantity'] ?>)
+                </option>
               <?php endforeach; ?>
             </select>
             <input type="number" id="detailsInventoryQuantity" class="p-2 border rounded" placeholder="<?= $langText['quantity'] ?? 'Quantity' ?>" min="1">
@@ -327,12 +328,11 @@ $inventoryItems = $pdo
         <div class="flex justify-end mt-4 space-x-2">
           <button type="button" id="cancelDetailsBtn" class="px-4 py-2 border rounded"><?= $langText['cancel'] ?? 'Cancel' ?></button>
           <button type="button" id="deleteProjectBtn" class="px-4 py-2 border rounded text-red-600"><?= $langText['delete'] ?? 'Delete' ?></button>
-          <button type="submit" id="saveDetailsBtn" class="hidden bg-green-500 text-white px-4 py-2 rounded"><?= $langText['save_changes'] ?? 'Save Changes' ?></button>
+          <button type="submit" id="saveDetailsBtn" class="hidden bg-green-500 text-white px-3 py-2 rounded"><?= $langText['save_changes'] ?? 'Save Changes' ?></button>
         </div>
       </form>
     </div>
   </div>
-
 </div>
 
-<script src="<?= $baseUrl ?>/js/projects.js"></script>
+<script defer src="<?= $baseUrl ?>/js/projects.js"></script>

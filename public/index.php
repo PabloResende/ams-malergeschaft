@@ -10,6 +10,7 @@ require_once __DIR__ . '/../app/controllers/InventoryController.php';
 require_once __DIR__ . '/../app/controllers/EmployeeController.php';
 require_once __DIR__ . '/../app/controllers/ClientsController.php';
 require_once __DIR__ . '/../app/controllers/CalendarController.php';
+require_once __DIR__ . '/../app/controllers/AnalyticsController.php';
 require_once __DIR__ . '/../app/lang/lang.php';
 
 $uri = $_SERVER['REQUEST_URI'];
@@ -37,6 +38,7 @@ $inventoryController = new InventoryController();
 $employeeController = new EmployeeController();
 $clientsController = new ClientsController();
 $calendarController = new CalendarController();
+$analyticsController = new AnalyticsController();
 
 switch ($route) {
     case '/':
@@ -147,6 +149,12 @@ switch ($route) {
         break;
     case '/calendar/fetch':
         $calendarController->fetch();
+        break;
+    case '/analytics':
+        $analyticsController->index();
+        break;
+    case '/analytics/stats':
+        $analyticsController->stats();
         break;
     default:
         http_response_code(404);

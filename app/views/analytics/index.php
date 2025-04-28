@@ -95,6 +95,7 @@ for ($i = 0; $i <= 10; $i++) {
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
 <script>
-  const apiBase = '<?= $baseUrl ?>/analytics';
+  window.apiBase = '<?= $baseUrl ?>/analytics';
 </script>
 <script src="<?= $baseUrl ?>/js/analytics.js"></script>
+

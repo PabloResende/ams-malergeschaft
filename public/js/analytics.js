@@ -1,158 +1,135 @@
 // public/js/analytics.js
-document.addEventListener('DOMContentLoaded', () => {
-  const yearSelect    = document.getElementById('filterYear');
-  const quarterSelect = document.getElementById('filterQuarter');
-  const semesterSelect= document.getElementById('filterSemester');
-  const form          = document.getElementById('filterForm');
-  const charts        = {};
 
-  function destroyChart(id) {
-    const chart = Chart.getChart(id);
-    if (chart) chart.destroy();
+document.addEventListener('DOMContentLoaded', () => {
+  const yearSel     = document.getElementById('filterYear');
+  const quarterSel  = document.getElementById('filterQuarter');
+  const semesterSel = document.getElementById('filterSemester');
+  const form        = document.getElementById('filterForm');
+
+  let chartCreated, chartCompleted, chartComparison, chartStatus;
+
+  function destroyAll() {
+    [chartCreated, chartCompleted, chartComparison, chartStatus]
+      .forEach(c => c && c.destroy());
   }
 
-  function renderCharts(data) {
-    const labels    = data.labels    ?? ['Jan', 'Feb', 'Mar'];
-    const created   = data.created   ?? [0, 0, 0];
-    const completed = data.completed ?? [0, 0, 0];
+  function fetchStats(y, q, s) {
+    const params = new URLSearchParams();
+    if (y) params.set('year', y);
+    if (q) params.set('quarter', q);
+    if (s) params.set('semester', s);
+    return fetch(`${apiBase}/stats?${params}`)
+      .then(r => r.json());
+  }
 
-    // destruir antes de recriar
-    ['chartCreated','chartCompleted','chartComparison','chartBudget','chartStatus']
-      .forEach(d => destroyChart(d));
+  function render(d) {
+    destroyAll();
 
-    // Projetos Criados
-    charts.chartCreated = new Chart(
+    // Projects Created
+    chartCreated = new Chart(
       document.getElementById('chartCreated'),
       {
         type: 'bar',
-        data: { labels, datasets: [{ label: 'Criados', data: created }] },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false
-        }
+        data: { labels: d.labels, datasets: [{ label: 'Created', data: d.created }] },
+        options: { responsive: true, maintainAspectRatio: false }
       }
     );
 
-    // Projetos Concluídos
-    charts.chartCompleted = new Chart(
+    // Projects Completed
+    chartCompleted = new Chart(
       document.getElementById('chartCompleted'),
       {
         type: 'bar',
-        data: { labels, datasets: [{ label: 'Concluídos', data: completed }] },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false
-        }
+        data: { labels: d.labels, datasets: [{ label: 'Completed', data: d.completed }] },
+        options: { responsive: true, maintainAspectRatio: false }
       }
     );
 
-    // Comparação (Linha)
-    charts.chartComparison = new Chart(
+    // Created vs Completed
+    chartComparison = new Chart(
       document.getElementById('chartComparison'),
       {
         type: 'line',
         data: {
-          labels,
+          labels: d.labels,
           datasets: [
-            { label: 'Criados',    data: created,   fill: false, tension: 0.2 },
-            { label: 'Finalizados',data: completed, fill: false, tension: 0.2 }
+            { label: 'Created', data: d.created, fill: false, tension: 0.2 },
+            { label: 'Completed', data: d.completed, fill: false, tension: 0.2 }
           ]
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false
-        }
+        options: { responsive: true, maintainAspectRatio: false }
       }
     );
 
-    // Orçamento
-    charts.chartBudget = new Chart(
-      document.getElementById('chartBudget'),
-      {
-        type: 'bar',
-        data: {
-          labels: ['Orçamento'],
-          datasets: [
-            { label: 'Planejado', data: [data.budget_total   ?? 0] },
-            { label: 'Usado',     data: [data.budget_used    ?? 0] }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: { y: { beginAtZero: true } }
-        }
-      }
-    );
-
-    // Status (Pizza)
-    charts.chartStatus = new Chart(
+    // Project Status
+    chartStatus = new Chart(
       document.getElementById('chartStatus'),
       {
         type: 'pie',
         data: {
-          labels: Object.keys(data.status ?? {}),
-          datasets: [{ data: Object.values(data.status ?? {}) }]
+          labels: Object.keys(d.status),
+          datasets: [{ data: Object.values(d.status) }]
         },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false
-        }
+        options: { responsive: true, maintainAspectRatio: false }
       }
     );
-
-    // Indicadores
-    document.getElementById('totalMaterials').textContent = data.materials ?? 0;
-    document.getElementById('totalHours').textContent     = data.hours     ?? 0;
   }
 
-  function buildQueryParams() {
-    const params = new URLSearchParams();
-    if (yearSelect.value)    params.append('year',    yearSelect.value);
-    if (quarterSelect.value) params.append('quarter', quarterSelect.value);
-    if (semesterSelect.value)params.append('semester',semesterSelect.value);
-    return params.toString();
+  async function loadAll() {
+    const stats = await fetchStats(
+      yearSel.value,
+      quarterSel.value,
+      semesterSel.value
+    );
+    render(stats);
   }
 
-  function loadData() {
-    fetch(`/ams-malergeschaft/public/analytics/stats?${buildQueryParams()}`)
-      .then(res => res.json())
-      .then(renderCharts)
-      .catch(err => console.error('Erro ao carregar dados:', err));
-  }
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    loadAll();
+  });
 
-  form.addEventListener('submit', e => { e.preventDefault(); loadData(); });
-  document.getElementById('btnExportPdf')
-    .addEventListener('click', e => {
-      e.preventDefault();
-      window.open(`/ams-malergeschaft/public/analytics/exportPdf?${buildQueryParams()}`);
+  document.getElementById('btnExportPdf').addEventListener('click', e => {
+    e.preventDefault();
+    const p = new URLSearchParams({
+      year: yearSel.value,
+      quarter: quarterSel.value,
+      semester: semesterSel.value
     });
-  document.getElementById('btnExportExcel')
-    .addEventListener('click', e => {
-      e.preventDefault();
-      window.open(`/ams-malergeschaft/public/analytics/exportExcel?${buildQueryParams()}`);
-    });
-  document.getElementById('btnSendEmail')
-    .addEventListener('click', e => {
-      e.preventDefault();
-      fetch(`/ams-malergeschaft/public/analytics/sendEmail`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          year:    yearSelect.value,
-          quarter: quarterSelect.value,
-          semester:semesterSelect.value
-        })
-      })
-      .then(res => res.json())
-      .then(res => {
-        alert(res.success
-          ? 'Relatório enviado com sucesso!'
-          : 'Erro ao enviar relatório: ' + res.message
-        );
-      })
-      .catch(err => console.error('Erro no envio de e-mail:', err));
-    });
+    window.open(`${apiBase}/exportPdf?${p}`);
+  });
 
-  loadData();
+  document.getElementById('btnExportExcel').addEventListener('click', e => {
+    e.preventDefault();
+    const p = new URLSearchParams({
+      year: yearSel.value,
+      quarter: quarterSel.value,
+      semester: semesterSel.value
+    });
+    window.open(`${apiBase}/exportExcel?${p}`);
+  });
+
+  document.getElementById('btnSendEmail').addEventListener('click', async e => {
+    e.preventDefault();
+    const d = await fetchStats(
+      yearSel.value,
+      quarterSel.value,
+      semesterSel.value
+    );
+    const summary = [
+      `Projects created: ${d.created.reduce((a,b)=>a+b,0)}`,
+      `Projects completed: ${d.completed.reduce((a,b)=>a+b,0)}`
+    ];
+    const res = await fetch(`${apiBase}/sendEmail`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ summary })
+    });
+    const json = await res.json();
+    alert(json.success
+      ? 'Email sent!'
+      : 'Error: ' + json.message);
+  });
+
+  loadAll();
 });

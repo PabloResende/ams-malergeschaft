@@ -1,111 +1,155 @@
-// app/views/analytics/index.php
 <?php
+// app/models/Analytics.php
 require_once __DIR__ . '/../../config/Database.php';
 
-$pdo = Database::connect();
-$years = $pdo
-    ->query("SELECT DISTINCT YEAR(start_date) AS year FROM projects ORDER BY year DESC")
-    ->fetchAll(PDO::FETCH_COLUMN);
-$currentYear = date('Y');
-?>
+class Analytics {
+    public static function getStats(int $year, string $quarter = '', string $semester = ''): array {
+        $pdo = Database::connect();
 
-<div class="ml-64 p-6 min-h-screen">
-  <h1 class="text-2xl font-bold mb-6">Painel de Análises</h1>
+        // Período completo
+        $start = "$year-01-01";
+        $end   = "$year-12-31";
 
-  <!-- Filtros -->
-  <form id="filterForm" class="flex flex-wrap gap-4 mb-6">
-    <select id="filterYear" name="year" class="border p-2 rounded">
-      <?php foreach ($years as $year): ?>
-        <option value="<?= $year ?>" <?= $year == $currentYear ? 'selected' : '' ?>>
-          <?= $year ?>
-        </option>
-      <?php endforeach; ?>
-    </select>
-    <select id="filterQuarter" name="quarter" class="border p-2 rounded">
-      <option value="">Todos os Trimestres</option>
-      <option value="1">1º Trimestre</option>
-      <option value="2">2º Trimestre</option>
-      <option value="3">3º Trimestre</option>
-      <option value="4">4º Trimestre</option>
-    </select>
-    <select id="filterSemester" name="semester" class="border p-2 rounded">
-      <option value="">Todos os Semestres</option>
-      <option value="1">1º Semestre</option>
-      <option value="2">2º Semestre</option>
-    </select>
-    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">
-      Filtrar
-    </button>
-  </form>
+        // Ajusta trimestre ou semestre
+        if ($quarter) {
+            $q  = (int)$quarter;
+            $m1 = ($q - 1)*3 + 1;
+            $m3 = $m1 + 2;
+            $start = sprintf("%04d-%02d-01", $year, $m1);
+            $end   = sprintf("%04d-%02d-%02d", $year, $m3,
+                     cal_days_in_month(CAL_GREGORIAN, $m3, $year));
+        } elseif ($semester) {
+            $s = (int)$semester;
+            if ($s === 1) {
+                $start = "$year-01-01";
+                $end   = "$year-06-30";
+            } else {
+                $start = "$year-07-01";
+                $end   = "$year-12-31";
+            }
+        }
 
-  <!-- Indicadores -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-    <div class="bg-white shadow rounded p-4">
-      <div class="text-sm font-medium text-gray-500">Materiais Usados</div>
-      <div id="totalMaterials" class="text-2xl font-bold text-gray-800 mt-1">0</div>
-    </div>
-    <div class="bg-white shadow rounded p-4">
-      <div class="text-sm font-medium text-gray-500">Horas Trabalhadas</div>
-      <div id="totalHours" class="text-2xl font-bold text-gray-800 mt-1">0</div>
-    </div>
-    <div class="bg-white shadow rounded p-4">
-      <div class="text-sm font-medium text-gray-500">
-        Orçamento Planejado vs Usado
-      </div>
-      <div class="relative w-full h-48">
-        <canvas id="chartBudget" class="absolute inset-0 w-full h-full"></canvas>
-      </div>
-    </div>
-  </div>
+        // Gera meses e labels
+        $months    = [];
+        $labels    = [];
+        $dt        = new DateTime($start);
+        $dtEnd     = new DateTime($end);
+        $names     = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+        while ($dt <= $dtEnd) {
+            $m = (int)$dt->format('n');
+            if (!in_array($m,$months,true)) {
+                $months[] = $m;
+                $labels[] = $names[$m-1];
+            }
+            $dt->modify('+1 month');
+        }
 
-  <!-- Gráficos -->
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    <!-- Criados -->
-    <div class="bg-white shadow rounded p-4">
-      <h2 class="text-lg font-semibold mb-2">Projetos Criados por Mês</h2>
-      <div class="relative w-full h-48">
-        <canvas id="chartCreated" class="absolute inset-0 w-full h-full"></canvas>
-      </div>
-    </div>
+        // 1) Criados por mês
+        $in  = implode(',',$months);
+        $sql = "
+          SELECT MONTH(created_at) AS m, COUNT(*) AS cnt
+          FROM projects
+          WHERE created_at BETWEEN :start AND :end
+            AND MONTH(created_at) IN ($in)
+          GROUP BY m
+        ";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(['start'=>$start,'end'=>$end]);
+        $createdData = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
-    <!-- Finalizados -->
-    <div class="bg-white shadow rounded p-4">
-      <h2 class="text-lg font-semibold mb-2">Projetos Finalizados por Mês</h2>
-      <div class="relative w-full h-48">
-        <canvas id="chartCompleted" class="absolute inset-0 w-full h-full"></canvas>
-      </div>
-    </div>
+        // 2) Concluídos por mês
+        $sql = "
+          SELECT MONTH(end_date) AS m, COUNT(*) AS cnt
+          FROM projects
+          WHERE status='completed'
+            AND end_date BETWEEN :start AND :end
+            AND MONTH(end_date) IN ($in)
+          GROUP BY m
+        ";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(['start'=>$start,'end'=>$end]);
+        $completedData = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
-    <!-- Comparação -->
-    <div class="bg-white shadow rounded p-4 lg:col-span-2">
-      <h2 class="text-lg font-semibold mb-2">Criados vs Finalizados</h2>
-      <div class="relative w-full h-48">
-        <canvas id="chartComparison" class="absolute inset-0 w-full h-full"></canvas>
-      </div>
-    </div>
+        // 3) Preenche arrays
+        $created   = [];
+        $completed = [];
+        foreach ($months as $m) {
+            $created[]   = (int)($createdData[$m]   ?? 0);
+            $completed[] = (int)($completedData[$m] ?? 0);
+        }
 
-    <!-- Status -->
-    <div class="bg-white shadow rounded p-4 lg:col-span-2">
-      <h2 class="text-lg font-semibold mb-2">Status dos Projetos</h2>
-      <div class="relative w-full h-48">
-        <canvas id="chartStatus" class="absolute inset-0 w-full h-full"></canvas>
-      </div>
-    </div>
-  </div>
+        // 4) Status
+        $stmt = $pdo->prepare("
+          SELECT status, COUNT(*) AS cnt
+          FROM projects
+          WHERE created_at BETWEEN :start AND :end
+          GROUP BY status
+        ");
+        $stmt->execute(['start'=>$start,'end'=>$end]);
+        $rows = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+        $statuses = [
+            'pending'     => (int)($rows['pending']     ?? 0),
+            'in_progress' => (int)($rows['in_progress'] ?? 0),
+            'completed'   => (int)($rows['completed']   ?? 0),
+        ];
 
-  <!-- Botões -->
-  <div class="flex gap-4 mt-4">
-    <a href="#" id="btnExportPdf" class="bg-gray-700 text-white px-4 py-2 rounded">
-      Exportar PDF
-    </a>
-    <a href="#" id="btnExportExcel" class="bg-gray-700 text-white px-4 py-2 rounded">
-      Exportar Excel
-    </a>
-    <button id="btnSendEmail" class="bg-gray-600 text-white px-4 py-2 rounded">
-      Enviar por E-mail
-    </button>
-  </div>
-</div>
+        // 5) Budget
+        $stmt = $pdo->prepare("
+          SELECT 
+            SUM(budget) AS total,
+            SUM(CASE WHEN status='completed' THEN budget ELSE 0 END) AS used
+          FROM projects
+          WHERE start_date BETWEEN :start AND :end
+        ");
+        $stmt->execute(['start'=>$start,'end'=>$end]);
+        $budg = $stmt->fetch(PDO::FETCH_ASSOC);
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
-<script src="/ams-malergeschaft/public/js/analytics.js"></script>
+        // 6) Total Materials
+        $stmt = $pdo->prepare("
+          SELECT SUM(quantity) AS mat
+          FROM project_resources
+          WHERE resource_type='inventory'
+            AND created_at BETWEEN :start AND :end
+        ");
+        $stmt->execute(['start'=>$start,'end'=>$end]);
+        $materials = (int)$stmt->fetchColumn();
+
+        // 7) Materials Usage por mês
+        $stmt = $pdo->prepare("
+          SELECT MONTH(created_at) AS m, SUM(quantity) AS sumq
+          FROM project_resources
+          WHERE resource_type='inventory'
+            AND created_at BETWEEN :start AND :end
+            AND MONTH(created_at) IN ($in)
+          GROUP BY m
+        ");
+        $stmt->execute(['start'=>$start,'end'=>$end]);
+        $matRows = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+        $materialsUsage = [];
+        foreach ($months as $m) {
+            $materialsUsage[] = (int)($matRows[$m] ?? 0);
+        }
+
+        // 8) Hours
+        $stmt = $pdo->prepare("
+          SELECT SUM(total_hours) AS hrs
+          FROM projects
+          WHERE status='completed'
+            AND end_date BETWEEN :start AND :end
+        ");
+        $stmt->execute(['start'=>$start,'end'=>$end]);
+        $hours = (int)$stmt->fetchColumn();
+
+        return [
+            'labels'         => $labels,
+            'created'        => $created,
+            'completed'      => $completed,
+            'status'         => $statuses,
+            'budget_total'   => (float)($budg['total'] ?? 0),
+            'budget_used'    => (float)($budg['used']  ?? 0),
+            'materials'      => $materials,
+            'materialsUsage' => $materialsUsage,
+            'hours'          => $hours
+        ];
+    }
+}

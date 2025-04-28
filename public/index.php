@@ -156,6 +156,15 @@ switch ($route) {
     case '/analytics/stats':
         $analyticsController->stats();
         break;
+    case '/analytics/exportPdf':
+        $analyticsController->exportPdf();
+        break;
+    case '/analytics/exportExcel':
+        $analyticsController->exportExcel();
+        break;
+    case '/analytics/sendEmail':
+        $analyticsController->sendEmail();
+        break;
     default:
         http_response_code(404);
         echo "404 - Page not found.";

@@ -1,81 +1,100 @@
 <?php
+// app/views/analytics/index.php
+
 require_once __DIR__ . '/../layout/header.php';
-require_once __DIR__ . '/../../../config/Database.php';
+if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+if (!isset($_SESSION['user'])) {
+    header("Location: {$baseUrl}/login");
+    exit;
+}
 
-$pdo = Database::connect();
-$years = $pdo->query("SELECT DISTINCT YEAR(start_date) as year FROM projects ORDER BY year DESC")->fetchAll(PDO::FETCH_COLUMN);
-$currentYear = date('Y');
+$currentYear = (int)date('Y');
+$years = [];
+for ($i = 0; $i <= 10; $i++) {
+    $years[] = $currentYear - $i;
+}
 ?>
+<div class="content-wrapper ml-64 p-6 min-h-screen">
+  <h1 class="text-2xl font-bold mb-6"><?= $langText['analytics'] ?? 'Analytics Dashboard' ?></h1>
 
-<div class="ml-64 p-6">
-  <h1 class="text-2xl font-bold mb-6">Painel de Análises</h1>
-
-  <!-- Filtros -->
-  <form id="filterForm" class="flex flex-wrap gap-4 mb-6">
+  <!-- filtros -->
+  <form id="filterForm" class="flex flex-wrap gap-4 mb-8">
     <select id="filterYear" name="year" class="border p-2 rounded">
-      <?php foreach ($years as $year): ?>
-        <option value="<?= $year ?>" <?= $year == $currentYear ? 'selected' : '' ?>><?= $year ?></option>
+      <?php foreach ($years as $y): ?>
+        <option value="<?= $y ?>" <?= $y === $currentYear ? 'selected' : '' ?>>
+          <?= $y ?>
+        </option>
       <?php endforeach; ?>
     </select>
     <select id="filterQuarter" name="quarter" class="border p-2 rounded">
-      <option value="">Todos os Trimestres</option>
-      <option value="1">1º Trimestre</option>
-      <option value="2">2º Trimestre</option>
-      <option value="3">3º Trimestre</option>
-      <option value="4">4º Trimestre</option>
+      <option value=""><?= $langText['all_quarters']   ?? 'All Quarters' ?></option>
+      <option value="1">Q1</option>
+      <option value="2">Q2</option>
+      <option value="3">Q3</option>
+      <option value="4">Q4</option>
     </select>
     <select id="filterSemester" name="semester" class="border p-2 rounded">
-      <option value="">Todos os Semestres</option>
-      <option value="1">1º Semestre</option>
-      <option value="2">2º Semestre</option>
+      <option value=""><?= $langText['all_semesters'] ?? 'All Semesters' ?></option>
+      <option value="1">S1</option>
+      <option value="2">S2</option>
     </select>
-    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Filtrar</button>
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">
+      <?= $langText['filter'] ?? 'Filter' ?>
+    </button>
   </form>
 
-  <!-- Indicadores -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-    <div class="bg-white shadow rounded p-4">
-      <div class="text-sm font-medium text-gray-500">Materiais Usados</div>
-      <div id="totalMaterials" class="text-2xl font-bold text-gray-800 mt-1">0</div>
-    </div>
-    <div class="bg-white shadow rounded p-4">
-      <div class="text-sm font-medium text-gray-500">Horas Trabalhadas</div>
-      <div id="totalHours" class="text-2xl font-bold text-gray-800 mt-1">0</div>
-    </div>
-    <div class="bg-white shadow rounded p-4">
-      <div class="text-sm font-medium text-gray-500">Orçamento Planejado vs Usado</div>
-      <canvas id="chartBudget" class="w-full h-48"></canvas>
-    </div>
-  </div>
-
-  <!-- Gráficos -->
+  <!-- Somente os 4 gráficos finais -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
     <div class="bg-white shadow rounded p-4">
-      <h2 class="text-lg font-semibold mb-2">Projetos Criados por Mês</h2>
-      <canvas id="chartCreated"></canvas>
+      <h2 class="text-lg font-semibold mb-2">
+        <?= $langText['projects_created'] ?? 'Projects Created by Month' ?>
+      </h2>
+      <div class="w-full h-48">
+        <canvas id="chartCreated" class="w-full h-full"></canvas>
+      </div>
     </div>
     <div class="bg-white shadow rounded p-4">
-      <h2 class="text-lg font-semibold mb-2">Projetos Finalizados por Mês</h2>
-      <canvas id="chartCompleted"></canvas>
+      <h2 class="text-lg font-semibold mb-2">
+        <?= $langText['projects_completed'] ?? 'Projects Completed by Month' ?>
+      </h2>
+      <div class="w-full h-48">
+        <canvas id="chartCompleted" class="w-full h-full"></canvas>
+      </div>
     </div>
     <div class="bg-white shadow rounded p-4 lg:col-span-2">
-      <h2 class="text-lg font-semibold mb-2">Criados vs Finalizados</h2>
-      <canvas id="chartComparison"></canvas>
+      <h2 class="text-lg font-semibold mb-2">
+        <?= $langText['created_vs_completed'] ?? 'Created vs Completed' ?>
+      </h2>
+      <div class="w-full h-48">
+        <canvas id="chartComparison" class="w-full h-full"></canvas>
+      </div>
     </div>
     <div class="bg-white shadow rounded p-4 lg:col-span-2">
-      <h2 class="text-lg font-semibold mb-2">Status dos Projetos</h2>
-      <canvas id="chartStatus"></canvas>
+      <h2 class="text-lg font-semibold mb-2">
+        <?= $langText['project_status'] ?? 'Project Status' ?>
+      </h2>
+      <div class="w-full h-48">
+        <canvas id="chartStatus" class="w-full h-full"></canvas>
+      </div>
     </div>
   </div>
 
-  <!-- Botões -->
+  <!-- ações -->
   <div class="flex gap-4 mt-4">
-    <a href="#" id="btnExportPdf" class="bg-gray-700 text-white px-4 py-2 rounded">Exportar PDF</a>
-    <a href="#" id="btnExportExcel" class="bg-gray-700 text-white px-4 py-2 rounded">Exportar Excel</a>
-    <button id="btnSendEmail" class="bg-gray-600 text-white px-4 py-2 rounded">Enviar por E-mail</button>
+    <a href="#" id="btnExportPdf"   class="bg-gray-700 text-white px-4 py-2 rounded">
+      <?= $langText['export_pdf']   ?? 'Export PDF'   ?>
+    </a>
+    <a href="#" id="btnExportExcel" class="bg-gray-700 text-white px-4 py-2 rounded">
+      <?= $langText['export_excel'] ?? 'Export Excel' ?>
+    </a>
+    <button id="btnSendEmail"       class="bg-gray-600 text-white px-4 py-2 rounded">
+      <?= $langText['send_email']   ?? 'Send by Email'?>
+    </button>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
-<script src="/ams-malergeschaft/public/js/analytics.js"></script>
-
+<script>
+  const apiBase = '<?= $baseUrl ?>/analytics';
+</script>
+<script src="<?= $baseUrl ?>/js/analytics.js"></script>

@@ -27,16 +27,17 @@ class ProjectController {
             'progress'       => $_POST['progress']       ?? 0,
         ];
 
-        $tasks              = json_decode($_POST['tasks']                ?? '[]', true);
-        $employees          = json_decode($_POST['employees']            ?? '[]', true);
-        $inventoryResources = json_decode($_POST['inventoryResources']   ?? '[]', true);
+        // tasks vêm em JSON no hidden "tasks"
+        $tasks     = json_decode($_POST['tasks']     ?? '[]', true);
+        // employees vêm como array via name="employees[]"
+        $employees = $_POST['employees']             ?? [];
 
         if (empty($data['name'])) {
             echo "O nome do projeto é obrigatório.";
             return;
         }
 
-        if (ProjectModel::create($data, $tasks, $employees, $inventoryResources)) {
+        if (ProjectModel::create($data, $tasks, $employees)) {
             header("Location: /ams-malergeschaft/public/projects");
             exit;
         } else {
@@ -74,11 +75,12 @@ class ProjectController {
             return;
         }
 
-        $tasks              = json_decode($_POST['tasks']                ?? '[]', true);
-        $employees          = json_decode($_POST['employees']            ?? '[]', true);
-        $inventoryResources = json_decode($_POST['inventoryResources']   ?? '[]', true);
+        // tasks vêm em JSON no hidden "tasks"
+        $tasks     = json_decode($_POST['tasks']     ?? '[]', true);
+        // employees vêm como array via name="employees[]"
+        $employees = $_POST['employees']             ?? [];
 
-        if (ProjectModel::update($id, $data, $tasks, $employees, $inventoryResources)) {
+        if (ProjectModel::update($id, $data, $tasks, $employees)) {
             header("Location: /ams-malergeschaft/public/projects");
             exit;
         } else {
@@ -94,9 +96,7 @@ class ProjectController {
 
         $id = $_GET['id'];
 
-        // restaura estoque antes de apagar
-        ProjectModel::restoreInventory($id);
-
+        // sem restauração de inventário
         if (ProjectModel::delete($id)) {
             header("Location: /ams-malergeschaft/public/projects");
             exit;
@@ -135,15 +135,6 @@ class ProjectController {
         $empStmt->execute([$id]);
         $employees = $empStmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $invStmt = $pdo->prepare("
-            SELECT i.id, i.name, pr.quantity
-            FROM inventory i
-            JOIN project_resources pr ON pr.resource_id = i.id
-            WHERE pr.project_id = ? AND pr.resource_type = 'inventory'
-        ");
-        $invStmt->execute([$id]);
-        $inventory = $invStmt->fetchAll(PDO::FETCH_ASSOC);
-
         header('Content-Type: application/json');
         echo json_encode([
             'id'             => $project['id'],
@@ -157,9 +148,7 @@ class ProjectController {
             'employee_count' => $project['employee_count'] ?? 0,
             'status'         => $project['status'],
             'tasks'          => $tasks,
-            'employees'      => $employees,
-            'inventory'      => $inventory
+            'employees'      => $employees
         ]);
     }
-
 }

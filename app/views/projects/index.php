@@ -25,11 +25,6 @@ $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $activeEmployees = $pdo
     ->query("SELECT id, name, last_name FROM employees WHERE active = 1")
     ->fetchAll(PDO::FETCH_ASSOC);
-
-// 3) Carrega inventário disponível
-$inventoryItems = $pdo
-    ->query("SELECT id, name, quantity FROM inventory WHERE quantity > 0")
-    ->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <div class="ml-56 pt-20 p-8 relative">
@@ -123,8 +118,6 @@ $inventoryItems = $pdo
     <div class="bg-white rounded-md p-8 w-90 max-h-[90vh] overflow-y-auto mt-10">
       <h3 class="text-xl font-bold mb-4"><?= $langText['add_project'] ?? 'Add Project' ?></h3>
       <form id="projectForm" action="<?= $baseUrl ?>/projects/store" method="POST">
-
-        <!-- Campos básicos -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label class="block text-gray-700"><?= $langText['name'] ?? 'Nome do Projeto' ?></label>
@@ -175,38 +168,16 @@ $inventoryItems = $pdo
           <label class="block text-gray-700"><?= $langText['employees'] ?? 'Employees' ?></label>
           <div id="employeesContainer"></div>
           <div class="flex mt-2">
-            <select id="employeeSelect" class="w-full p-2 border rounded">
-              <option value=""><?= $langText['select_employee'] ?? 'Select an employee' ?></option>
+            <select id="employeeSelect" name="employees[]" class="w-full p-2 border rounded" multiple>
               <?php foreach ($activeEmployees as $emp): ?>
                 <option value="<?= $emp['id'] ?>"><?= htmlspecialchars($emp['name'].' '.$emp['last_name'], ENT_QUOTES, 'UTF-8') ?></option>
               <?php endforeach; ?>
             </select>
-            <button type="button" id="addEmployeeBtn" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded"><?= $langText['add'] ?? 'Add' ?></button>
-          </div>
-        </div>
-
-        <!-- INVENTÁRIO -->
-        <div class="mb-4">
-          <label class="block text-gray-700"><?= $langText['inventory'] ?? 'Inventory' ?></label>
-          <div id="inventoryContainer"></div>
-          <div class="flex mt-2 space-x-2">
-            <select id="inventorySelect" class="flex-1 p-2 border rounded">
-              <option value=""><?= $langText['select_material'] ?? 'Select material' ?></option>
-              <?php foreach ($inventoryItems as $item): ?>
-                <option value="<?= $item['id'] ?>" data-stock="<?= $item['quantity'] ?>">
-                  <?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?> (<?= $langText['available'] ?? 'Available' ?>: <?= $item['quantity'] ?>)
-                </option>
-              <?php endforeach; ?>
-            </select>
-            <input type="number" id="inventoryQuantity" class="p-2 border rounded" placeholder="<?= $langText['quantity'] ?? 'Quantity' ?>" min="1">
-            <button type="button" id="addInventoryBtn" class="bg-blue-500 text-white px-3 py-2 rounded"><?= $langText['add'] ?? 'Add' ?></button>
           </div>
         </div>
 
         <!-- HIDDENS PARA JSON & COUNTS -->
         <input type="hidden" name="tasks" id="tasksData">
-        <input type="hidden" name="employees" id="employeesData">
-        <input type="hidden" name="inventoryResources" id="inventoryData">
         <input type="hidden" name="employee_count" id="employeeCountDataCreate">
 
         <div class="flex justify-end mt-4 space-x-2">
@@ -285,38 +256,16 @@ $inventoryItems = $pdo
           <label class="block text-gray-700"><?= $langText['employees'] ?? 'Employees' ?></label>
           <div id="detailsEmployeesContainer"></div>
           <div class="flex mt-2">
-            <select id="detailsEmployeeSelect" class="w-full p-2 border rounded">
-              <option value=""><?= $langText['select_employee'] ?? 'Select an employee' ?></option>
+            <select id="detailsEmployeeSelect" name="employees[]" class="w-full p-2 border rounded" multiple>
               <?php foreach ($activeEmployees as $emp): ?>
                 <option value="<?= $emp['id'] ?>"><?= htmlspecialchars($emp['name'].' '.$emp['last_name'], ENT_QUOTES, 'UTF-8') ?></option>
               <?php endforeach; ?>
             </select>
-            <button type="button" id="detailsAddEmployeeBtn" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded"><?= $langText['add'] ?? 'Add' ?></button>
-          </div>
-        </div>
-
-        <!-- INVENTÁRIO -->
-        <div class="mb-4">
-          <label class="block text-gray-700"><?= $langText['inventory'] ?? 'Inventory' ?></label>
-          <div id="detailsInventoryContainer"></div>
-          <div class="flex mt-2 space-x-2">
-            <select id="detailsInventorySelect" class="flex-1 p-2 border rounded">
-              <option value=""><?= $langText['select_material'] ?? 'Select material' ?></option>
-              <?php foreach ($inventoryItems as $item): ?>
-                <option value="<?= $item['id'] ?>" data-stock="<?= $item['quantity'] ?>">
-                  <?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?> (<?= $langText['available'] ?? 'Available' ?>: <?= $item['quantity'] ?>)
-                </option>
-              <?php endforeach; ?>
-            </select>
-            <input type="number" id="detailsInventoryQuantity" class="p-2 border rounded" placeholder="<?= $langText['quantity'] ?? 'Quantity' ?>" min="1">
-            <button type="button" id="detailsAddInventoryBtn" class="bg-blue-500 text-white px-3 py-2 rounded"><?= $langText['add'] ?? 'Add' ?></button>
           </div>
         </div>
 
         <!-- HIDDENS PARA JSON & COUNTS -->
         <input type="hidden" name="tasks" id="detailsTasksData">
-        <input type="hidden" name="employees" id="detailsEmployeesData">
-        <input type="hidden" name="inventoryResources" id="detailsInventoryData">
         <input type="hidden" name="employee_count" id="detailsEmployeeCountData">
 
         <div class="flex justify-end mt-4 space-x-2">

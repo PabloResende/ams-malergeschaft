@@ -141,6 +141,25 @@ switch ($route) {
     case '/inventory/delete':
         $inventoryController->delete();
         break;
+    case '/inventory':
+        $inventoryController->index();
+        break;
+    
+    case '/inventory/control':
+        $inventoryController->control();
+        break;
+    
+    case '/inventory/control/store':
+        $inventoryController->storeControl();
+        break;
+    
+    case '/inventory/history':
+        $inventoryController->history();
+        break;
+    
+    case '/inventory/history/details':
+        $inventoryController->historyDetails();
+        break;
     case '/calendar':
         $calendarController->index();
         break;

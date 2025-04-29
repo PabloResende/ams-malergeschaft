@@ -1,4 +1,6 @@
 <?php
+// app/models/ProjectModel.php
+
 require_once __DIR__ . '/../../config/Database.php';
 
 class ProjectModel {
@@ -18,7 +20,12 @@ class ProjectModel {
 
     public static function getTasks($projectId) {
         $pdo = Database::connect();
-        $stmt = $pdo->prepare("SELECT id, description, completed FROM tasks WHERE project_id = ? ORDER BY created_at ASC");
+        $stmt = $pdo->prepare("
+            SELECT id, description, completed
+            FROM tasks
+            WHERE project_id = ?
+            ORDER BY created_at ASC
+        ");
         $stmt->execute([$projectId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -28,8 +35,10 @@ class ProjectModel {
         $stmt = $pdo->prepare("
             SELECT e.id, e.name, e.last_name
             FROM employees e
-            JOIN project_resources pr ON e.id = pr.resource_id
-            WHERE pr.project_id = ? AND pr.resource_type = 'employee'
+            JOIN project_resources pr
+              ON e.id = pr.resource_id
+            WHERE pr.project_id = ?
+              AND pr.resource_type = 'employee'
         ");
         $stmt->execute([$projectId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -38,10 +47,10 @@ class ProjectModel {
     public static function create($data, $tasks = [], $employees = []) {
         $pdo = Database::connect();
         $pdo->beginTransaction();
-
         $stmt = $pdo->prepare("
             INSERT INTO projects
-            (name, location, description, start_date, end_date, total_hours, budget, employee_count, status, progress, created_at)
+              (name, location, description, start_date, end_date,
+               total_hours, budget, employee_count, status, progress, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
         ");
         $ok = $stmt->execute([
@@ -56,7 +65,6 @@ class ProjectModel {
             $data['status'],
             $data['progress']
         ]);
-
         if (!$ok) {
             $pdo->rollBack();
             return false;
@@ -64,16 +72,25 @@ class ProjectModel {
         $projectId = $pdo->lastInsertId();
 
         if (!empty($tasks)) {
-            $ts = $pdo->prepare("INSERT INTO tasks (project_id, description, completed, created_at) VALUES (?, ?, ?, NOW())");
+            $ts = $pdo->prepare("
+                INSERT INTO tasks
+                  (project_id, description, completed, created_at)
+                VALUES (?, ?, ?, NOW())
+            ");
             foreach ($tasks as $t) {
                 if (empty($t['description'])) continue;
-                $ts->execute([$projectId, $t['description'], !empty($t['completed']) ? 1 : 0]);
+                $ts->execute([
+                    $projectId,
+                    $t['description'],
+                    !empty($t['completed']) ? 1 : 0
+                ]);
             }
         }
 
         if (!empty($employees)) {
             $rs = $pdo->prepare("
-                INSERT INTO project_resources (project_id, resource_type, resource_id, quantity, created_at)
+                INSERT INTO project_resources
+                  (project_id, resource_type, resource_id, quantity, created_at)
                 VALUES (?, 'employee', ?, 1, NOW())
             ");
             foreach ($employees as $eid) {
@@ -89,18 +106,21 @@ class ProjectModel {
         $pdo = Database::connect();
         $pdo->beginTransaction();
 
+        // Restaurar recursos anteriores
+        self::restoreInventory($id);
+
         $stmt = $pdo->prepare("
             UPDATE projects SET
-                name           = ?,
-                location       = ?,
-                description    = ?,
-                start_date     = ?,
-                end_date       = ?,
-                total_hours    = ?,
-                budget         = ?,
-                employee_count = ?,
-                status         = ?,
-                progress       = ?
+              name           = ?,
+              location       = ?,
+              description    = ?,
+              start_date     = ?,
+              end_date       = ?,
+              total_hours    = ?,
+              budget         = ?,
+              employee_count = ?,
+              status         = ?,
+              progress       = ?
             WHERE id = ?
         ");
         $stmt->execute([
@@ -117,21 +137,29 @@ class ProjectModel {
             $id
         ]);
 
-        // limpa tarefas e recursos antigos
         $pdo->prepare("DELETE FROM tasks WHERE project_id = ?")->execute([$id]);
         $pdo->prepare("DELETE FROM project_resources WHERE project_id = ?")->execute([$id]);
 
         if (!empty($tasks)) {
-            $ts = $pdo->prepare("INSERT INTO tasks (project_id, description, completed, created_at) VALUES (?, ?, ?, NOW())");
+            $ts = $pdo->prepare("
+                INSERT INTO tasks
+                  (project_id, description, completed, created_at)
+                VALUES (?, ?, ?, NOW())
+            ");
             foreach ($tasks as $t) {
                 if (empty($t['description'])) continue;
-                $ts->execute([$id, $t['description'], !empty($t['completed']) ? 1 : 0]);
+                $ts->execute([
+                    $id,
+                    $t['description'],
+                    !empty($t['completed']) ? 1 : 0
+                ]);
             }
         }
 
         if (!empty($employees)) {
             $rs = $pdo->prepare("
-                INSERT INTO project_resources (project_id, resource_type, resource_id, quantity, created_at)
+                INSERT INTO project_resources
+                  (project_id, resource_type, resource_id, quantity, created_at)
                 VALUES (?, 'employee', ?, 1, NOW())
             ");
             foreach ($employees as $eid) {
@@ -145,7 +173,42 @@ class ProjectModel {
 
     public static function delete($id) {
         $pdo = Database::connect();
-        $stmt = $pdo->prepare("DELETE FROM projects WHERE id = ?");
-        return $stmt->execute([$id]);
+        return $pdo->prepare("DELETE FROM projects WHERE id = ?")
+                   ->execute([$id]);
+    }
+
+    /**
+     * Retorna projetos ativos (in_progress) para uso no controle de estoque.
+     *
+     * @return array
+     */
+    public static function getActiveProjects() {
+        $pdo = Database::connect();
+        $stmt = $pdo->query("
+            SELECT id, name
+            FROM projects
+            WHERE status = 'in_progress'
+            ORDER BY name
+        ");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Restaura inventário antes de atualizar, se esse método ainda existir.
+     */
+    public static function restoreInventory(int $projectId): void {
+        // se estiver usando controle de inventário em ProjectModel
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare("
+            SELECT resource_id, quantity
+            FROM project_resources
+            WHERE project_id = ? AND resource_type = 'inventory'
+        ");
+        $stmt->execute([$projectId]);
+        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $upd   = $pdo->prepare("UPDATE inventory SET quantity = quantity + ? WHERE id = ?");
+        foreach ($items as $it) {
+            $upd->execute([(int)$it['quantity'], $it['resource_id']]);
+        }
     }
 }

@@ -1,8 +1,4 @@
 <?php
-// app/models/Client.php
-
-require_once __DIR__ . '/../../config/Database.php';
-
 // app/models/InventoryModel.php
 require_once __DIR__ . '/../../config/Database.php';
 
@@ -42,5 +38,17 @@ class InventoryModel {
     public function delete($id) {
         $stmt = $this->pdo->prepare("DELETE FROM inventory WHERE id = ?");
         return $stmt->execute([$id]);
+    }
+
+    /** Acrescenta quantidade ao item */
+    public function addQuantity(int $id, int $qty): bool {
+        $stmt = $this->pdo->prepare("UPDATE inventory SET quantity = quantity + ? WHERE id = ?");
+        return $stmt->execute([$qty, $id]);
+    }
+
+    /** Subtrai quantidade do item */
+    public function subtractQuantity(int $id, int $qty): bool {
+        $stmt = $this->pdo->prepare("UPDATE inventory SET quantity = quantity - ? WHERE id = ?");
+        return $stmt->execute([$qty, $id]);
     }
 }

@@ -16,31 +16,115 @@ class InventoryController {
     }
 
     /**
-     * Exibe a lista de itens + modais
+     * GET /inventory
+     * Exibe lista de itens e carrega dados para modais.
      */
     public function index(): void {
-        $filter = $_GET['filter'] ?? 'all';
-        $inventoryItems = $this->inventoryModel->getAll($filter);
-        $allItems       = $this->inventoryModel->getAll('all');
-        $activeProjects = ProjectModel::getActiveProjects();
-        $movements      = $this->historyModel->getAllMovements();
+        $filter          = $_GET['filter'] ?? 'all';
+        $inventoryItems  = $this->inventoryModel->getAll($filter);
+        $allItems        = $this->inventoryModel->getAll('all');
+        $activeProjects  = ProjectModel::getActiveProjects();
+        $movements       = $this->historyModel->getAllMovements();
 
         require_once __DIR__ . '/../views/inventory/index.php';
     }
 
     /**
-     * Processa o formulário de Controle de Estoque
+     * POST /inventory/store
+     * Cria um novo item no estoque.
+     */
+    public function store(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: /ams-malergeschaft/public/inventory");
+            exit;
+        }
+        $type     = $_POST['type']     ?? '';
+        $name     = trim($_POST['name']     ?? '');
+        $quantity = (int)($_POST['quantity'] ?? 0);
+
+        if ($name === '') {
+            echo "Nome do item obrigatório.";
+            return;
+        }
+
+        $this->inventoryModel->insert($type, $name, $quantity);
+        header("Location: /ams-malergeschaft/public/inventory");
+        exit;
+    }
+
+    /**
+     * GET /inventory/edit?id=...
+     * Exibe formulário de edição.
+     */
+    public function edit(): void {
+        if (!isset($_GET['id'])) {
+            echo "Inventory item ID não fornecido.";
+            exit;
+        }
+        $item = $this->inventoryModel->getById((int)$_GET['id']);
+        if (!$item) {
+            echo "Item não encontrado.";
+            exit;
+        }
+        require_once __DIR__ . '/../views/inventory/edit.php';
+    }
+
+    /**
+     * POST /inventory/update
+     * Atualiza um item existente.
+     */
+    public function update(): void {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: /ams-malergeschaft/public/inventory");
+            exit;
+        }
+        $id       = (int)($_POST['id']       ?? 0);
+        $type     = $_POST['type']         ?? '';
+        $name     = trim($_POST['name']     ?? '');
+        $quantity = (int)($_POST['quantity'] ?? 0);
+
+        if ($id < 1 || $name === '') {
+            echo "Dados obrigatórios faltando.";
+            return;
+        }
+
+        $this->inventoryModel->update($id, $type, $name, $quantity);
+        header("Location: /ams-malergeschaft/public/inventory");
+        exit;
+    }
+
+    /**
+     * GET /inventory/delete?id=...
+     * Remove um item do estoque.
+     */
+    public function delete(): void {
+        if (!isset($_GET['id'])) {
+            echo "Inventory item ID não fornecido.";
+            exit;
+        }
+        $this->inventoryModel->delete((int)$_GET['id']);
+        header("Location: /ams-malergeschaft/public/inventory");
+        exit;
+    }
+
+    /**
+     * POST /inventory/control/store
+     * Processa o modal de Controle de Estoque (remoção, adição ou criação).
      */
     public function storeControl(): void {
-        $user       = trim($_POST['user_name'] ?? '');
-        $datetime   = trim($_POST['datetime']  ?? '');
-        $reason     = trim($_POST['reason']    ?? '');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: /ams-malergeschaft/public/inventory");
+            exit;
+        }
+
+        $user       = trim($_POST['user_name']       ?? '');
+        $datetime   = $_POST['datetime']             ?? '';
+        $reason     = $_POST['reason']               ?? '';
         $project_id = $_POST['project_id'] ?: null;
-        $custom     = trim($_POST['custom_reason'] ?? '');
-        $itemsJson  = $_POST['items'] ?? '[]';
+        $custom     = trim($_POST['custom_reason']   ?? '');
+        $itemsJson  = $_POST['items']                ?? '[]';
         $data       = json_decode($itemsJson, true);
 
-        // Validações iniciais
         if ($user === '') {
             echo "O nome do usuário é obrigatório.";
             return;
@@ -51,12 +135,13 @@ class InventoryController {
         }
 
         $pdo = Database::connect();
+        $toHistory = [];
 
-        // Caso CRIAR NOVO ITEM
+        // Se for criar novo item
         if ($reason === 'criar' && isset($data['new_item'])) {
             $ni   = $data['new_item'];
-            $name = trim($ni['name'] ?? '');
-            $type = trim($ni['type'] ?? '');
+            $name = trim($ni['name']     ?? '');
+            $type = trim($ni['type']     ?? '');
             $qty  = (int)($ni['quantity'] ?? 0);
 
             if ($name === '' || $type === '' || $qty < 1) {
@@ -64,20 +149,17 @@ class InventoryController {
                 return;
             }
 
-            // Insere novo item no inventário
-            $ins = $pdo->prepare("
-                INSERT INTO inventory
-                  (type, name, quantity, created_at)
+            // Insere no inventário
+            $stmt = $pdo->prepare("
+                INSERT INTO inventory (type, name, quantity, created_at)
                 VALUES (?, ?, ?, NOW())
             ");
-            $ins->execute([$type, $name, $qty]);
+            $stmt->execute([$type, $name, $qty]);
             $newId = (int)$pdo->lastInsertId();
-
             $toHistory = [ $newId => $qty ];
 
         } else {
-            // Movimento em itens existentes
-            $toHistory = [];
+            // Movimenta itens existentes
             foreach ($data as $id => $c) {
                 $i = (int)$id;
                 $q = (int)$c;
@@ -90,7 +172,7 @@ class InventoryController {
                 return;
             }
 
-            // Atualiza o estoque
+            // Atualiza quantidades
             foreach ($toHistory as $id => $c) {
                 if ($reason === 'adição') {
                     $upd = $pdo->prepare("UPDATE inventory SET quantity = quantity + ? WHERE id = ?");
@@ -101,14 +183,14 @@ class InventoryController {
             }
         }
 
-        // Grava no histórico
+        // Registra no histórico (movimento mestre + detalhes)
         try {
             $this->historyModel->insertMovement(
                 $user,
                 $datetime,
                 $reason,
-                $project_id,
-                $custom,
+                $project_id ? (int)$project_id : null,
+                $custom !== '' ? $custom : null,
                 $toHistory
             );
         } catch (\Exception $e) {
@@ -116,13 +198,13 @@ class InventoryController {
             return;
         }
 
-        // Redireciona
         header("Location: /ams-malergeschaft/public/inventory");
         exit;
     }
 
     /**
-     * Retorna via JSON os detalhes de um movimento (usado no histórico)
+     * GET /inventory/history/details?id=...
+     * Retorna JSON com detalhes de um movimento.
      */
     public function historyDetails(): void {
         $id = $_GET['id'] ?? null;
@@ -131,94 +213,27 @@ class InventoryController {
             echo json_encode(["error" => "ID do movimento não informado"]);
             return;
         }
-        try {
-            $items = $this->historyModel->getMovementItems((int)$id);
-            header('Content-Type: application/json');
-            echo json_encode($items);
-        } catch (\Exception $e) {
-            http_response_code(500);
-            echo json_encode(["error" => "Falha ao buscar detalhes"]);
-        }
+        $details = $this->historyModel->getMovementDetails((int)$id);
+        header('Content-Type: application/json');
+        echo json_encode($details);
     }
 
-
     /**
-     * Exibe formulário de controle de estoque.
+     * GET /inventory/control
+     * (Se você usar view separada; caso contrário, remove.)
      */
-    public function control() {
+    public function control(): void {
         $items          = $this->inventoryModel->getAll('all');
         $activeProjects = ProjectModel::getActiveProjects();
         require_once __DIR__ . '/../views/inventory/control.php';
     }
 
     /**
-     * Exibe histórico de movimentações.
+     * GET /inventory/history
+     * (Se você usar view separada; caso contrário, remove.)
      */
-    public function history() {
+    public function history(): void {
         $movements = $this->historyModel->getAllMovements();
         require_once __DIR__ . '/../views/inventory/history.php';
-    }
-
-    public function store() {
-        $type = $_POST['type'] ?? '';
-        $name = $_POST['name'] ?? '';
-        $quantity = $_POST['quantity'] ?? 0;
-
-        if ($this->inventoryModel->insert($type, $name, $quantity)) {
-            header("Location: /ams-malergeschaft/public/inventory");
-            exit;
-        } else {
-            echo "Error storing inventory item.";
-        }
-    }
-
-    public function edit() {
-        if (!isset($_GET['id'])) {
-            echo "Inventory item ID not provided.";
-            exit;
-        }
-
-        $item = $this->inventoryModel->getById($_GET['id']);
-        if (!$item) {
-            echo "Inventory item not found.";
-            exit;
-        }
-
-        require_once __DIR__ . '/../views/inventory/edit.php';
-    }
-
-    public function update() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $id = $_POST['id'] ?? '';
-            $type = $_POST['type'] ?? '';
-            $name = $_POST['name'] ?? '';
-            $quantity = $_POST['quantity'] ?? 0;
-
-            if (empty($id) || empty($name)) {
-                echo "Required fields missing.";
-                exit;
-            }
-
-            if ($this->inventoryModel->update($id, $type, $name, $quantity)) {
-                header("Location: /ams-malergeschaft/public/inventory");
-                exit;
-            } else {
-                echo "Error updating inventory item.";
-            }
-        }
-    }
-
-    public function delete() {
-        if (!isset($_GET['id'])) {
-            echo "Inventory item ID not provided.";
-            exit;
-        }
-
-        if ($this->inventoryModel->delete($_GET['id'])) {
-            header("Location: /ams-malergeschaft/public/inventory");
-            exit;
-        } else {
-            echo "Error deleting inventory item.";
-        }
     }
 }

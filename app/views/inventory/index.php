@@ -18,12 +18,12 @@ if ($filter !== 'all') {
 }
 $inventoryItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// 2) Para o modal de controle
+// 2) Dados para modal de controle
 $invModel       = new InventoryModel();
 $allItems       = $invModel->getAll('all');
 $activeProjects = ProjectModel::getActiveProjects();
 
-// 3) Para o modal de histórico
+// 3) Dados para modal de histórico
 $histModel = new InventoryHistoryModel();
 $movements = $histModel->getAllMovements();
 
@@ -32,39 +32,33 @@ $baseUrl = '/ams-malergeschaft/public';
 <div class="ml-56 pt-20 p-8">
   <h2 class="text-2xl font-bold mb-4"><?= $langText['inventory'] ?? 'Inventory' ?></h2>
 
-  <!-- filtros + botões alinhados -->
   <div class="flex justify-between mb-6">
-    <!-- filtros coloridos -->
     <div class="flex space-x-2">
       <a href="<?= $baseUrl ?>/inventory?filter=all"
-         class="px-3 py-1 rounded-full border <?= $filter=='all' ? 'bg-gray-300' : 'bg-white' ?>">All</a>
+         class="px-3 py-1 rounded-full border <?= $filter==='all' ? 'bg-gray-300' : 'bg-white' ?>">All</a>
       <a href="<?= $baseUrl ?>/inventory?filter=material"
-         class="px-3 py-1 rounded-full border <?= $filter=='material' ? 'bg-blue-200 text-blue-800' : 'bg-white' ?>">
+         class="px-3 py-1 rounded-full border <?= $filter==='material' ? 'bg-blue-200 text-blue-800' : 'bg-white' ?>">
         Material
       </a>
       <a href="<?= $baseUrl ?>/inventory?filter=equipment"
-         class="px-3 py-1 rounded-full border <?= $filter=='equipment' ? 'bg-purple-200 text-purple-800' : 'bg-white' ?>">
+         class="px-3 py-1 rounded-full border <?= $filter==='equipment' ? 'bg-purple-200 text-purple-800' : 'bg-white' ?>">
         Equipment
       </a>
       <a href="<?= $baseUrl ?>/inventory?filter=rented"
-         class="px-3 py-1 rounded-full border <?= $filter=='rented' ? 'bg-yellow-200 text-yellow-800' : 'bg-white' ?>">
+         class="px-3 py-1 rounded-full border <?= $filter==='rented' ? 'bg-yellow-200 text-yellow-800' : 'bg-white' ?>">
         Rented
       </a>
     </div>
-    <!-- botões de modal -->
     <div class="flex space-x-2">
-      <button id="openControlModal"
-              class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded">
+      <button id="openControlModal" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded">
         Controle de Estoque
       </button>
-      <button id="openHistoryModal"
-              class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded">
+      <button id="openHistoryModal" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded">
         Histórico de Estoque
       </button>
     </div>
   </div>
 
-  <!-- grid de itens -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <?php if (empty($inventoryItems)): ?>
       <p><?= $langText['no_inventory'] ?? 'No inventory items found.' ?></p>
@@ -111,7 +105,8 @@ $baseUrl = '/ams-malergeschaft/public';
         </div>
         <div>
           <label class="block text-gray-700">Motivo</label>
-          <select name="reason" id="reasonSelect" class="w-full p-2 border rounded">
+          <select name="reason" id="reasonSelect"
+                  class="w-full p-2 border rounded">
             <option value="">-- Selecione --</option>
             <option value="projeto">Projeto</option>
             <option value="perda">Perda</option>
@@ -136,7 +131,8 @@ $baseUrl = '/ams-malergeschaft/public';
 
       <div id="customReasonDiv" class="hidden mb-4">
         <label class="block text-gray-700">Descreva o motivo</label>
-        <input type="text" name="custom_reason" class="w-full p-2 border rounded">
+        <input type="text" name="custom_reason"
+               class="w-full p-2 border rounded">
       </div>
 
       <div id="newItemDiv" class="hidden mb-6">
@@ -174,7 +170,8 @@ $baseUrl = '/ams-malergeschaft/public';
                    class="mr-2 item-checkbox"
                    data-max="<?= (int)$it['quantity'] ?>"
                    value="<?= htmlspecialchars($it['id'], ENT_QUOTES) ?>">
-            <span class="flex-1"><?= htmlspecialchars($it['name'], ENT_QUOTES) ?>
+            <span class="flex-1">
+              <?= htmlspecialchars($it['name'], ENT_QUOTES) ?>
               (<?= (int)$it['quantity'] ?> disponíveis)
             </span>
             <input type="number"
@@ -224,15 +221,14 @@ $baseUrl = '/ams-malergeschaft/public';
             <span class="font-semibold"><?= htmlspecialchars($m['user_name'], ENT_QUOTES) ?></span>
             &mdash; <?= htmlspecialchars($m['datetime'], ENT_QUOTES) ?>
           </div>
-          <span class="arrow text-black ml-2 cursor-pointer">▶</span>
+          <span class="arrow text-gray-600 text-xl cursor-pointer select-none">▸</span>
         </div>
         <div class="history-details mt-2 hidden"></div>
       </div>
     <?php endforeach; endif; ?>
-
   </div>
 </div>
 
-<!-- Exponha baseUrl para o JS externo -->
 <script>window.baseUrl = '<?= $baseUrl ?>';</script>
 <script src="<?= $baseUrl ?>/js/inventory_control.js"></script>
+<?php require_once __DIR__ . '/../layout/footer.php'; ?>

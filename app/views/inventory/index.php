@@ -231,4 +231,3 @@ $baseUrl = '/ams-malergeschaft/public';
 
 <script>window.baseUrl = '<?= $baseUrl ?>';</script>
 <script src="<?= $baseUrl ?>/js/inventory_control.js"></script>
-<?php require_once __DIR__ . '/../layout/footer.php'; ?>

@@ -1,13 +1,14 @@
 <?php
 // app/controllers/InventoryController.php
 
+require_once __DIR__ . '/../../config/Database.php';
 require_once __DIR__ . '/../models/Inventory.php';
 require_once __DIR__ . '/../models/InventoryHistoryModel.php';
 require_once __DIR__ . '/../models/Project.php';
 
 class InventoryController {
-    private $inventoryModel;
-    private $historyModel;
+    private InventoryModel        $inventoryModel;
+    private InventoryHistoryModel $historyModel;
 
     public function __construct() {
         $this->inventoryModel = new InventoryModel();
@@ -15,13 +16,131 @@ class InventoryController {
     }
 
     /**
-     * Lista principal de inventário.
+     * Exibe a lista de itens + modais
      */
-    public function index() {
+    public function index(): void {
         $filter = $_GET['filter'] ?? 'all';
-        $items  = $this->inventoryModel->getAll($filter);
+        $inventoryItems = $this->inventoryModel->getAll($filter);
+        $allItems       = $this->inventoryModel->getAll('all');
+        $activeProjects = ProjectModel::getActiveProjects();
+        $movements      = $this->historyModel->getAllMovements();
+
         require_once __DIR__ . '/../views/inventory/index.php';
     }
+
+    /**
+     * Processa o formulário de Controle de Estoque
+     */
+    public function storeControl(): void {
+        $user       = trim($_POST['user_name'] ?? '');
+        $datetime   = trim($_POST['datetime']  ?? '');
+        $reason     = trim($_POST['reason']    ?? '');
+        $project_id = $_POST['project_id'] ?: null;
+        $custom     = trim($_POST['custom_reason'] ?? '');
+        $itemsJson  = $_POST['items'] ?? '[]';
+        $data       = json_decode($itemsJson, true);
+
+        // Validações iniciais
+        if ($user === '') {
+            echo "O nome do usuário é obrigatório.";
+            return;
+        }
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            echo "Formato de dados inválido.";
+            return;
+        }
+
+        $pdo = Database::connect();
+
+        // Caso CRIAR NOVO ITEM
+        if ($reason === 'criar' && isset($data['new_item'])) {
+            $ni   = $data['new_item'];
+            $name = trim($ni['name'] ?? '');
+            $type = trim($ni['type'] ?? '');
+            $qty  = (int)($ni['quantity'] ?? 0);
+
+            if ($name === '' || $type === '' || $qty < 1) {
+                echo "Nome, tipo e quantidade do novo item são obrigatórios.";
+                return;
+            }
+
+            // Insere novo item no inventário
+            $ins = $pdo->prepare("
+                INSERT INTO inventory
+                  (type, name, quantity, created_at)
+                VALUES (?, ?, ?, NOW())
+            ");
+            $ins->execute([$type, $name, $qty]);
+            $newId = (int)$pdo->lastInsertId();
+
+            $toHistory = [ $newId => $qty ];
+
+        } else {
+            // Movimento em itens existentes
+            $toHistory = [];
+            foreach ($data as $id => $c) {
+                $i = (int)$id;
+                $q = (int)$c;
+                if ($i > 0 && $q > 0) {
+                    $toHistory[$i] = $q;
+                }
+            }
+            if (empty($toHistory)) {
+                echo "Selecione ao menos um item com quantidade válida.";
+                return;
+            }
+
+            // Atualiza o estoque
+            foreach ($toHistory as $id => $c) {
+                if ($reason === 'adição') {
+                    $upd = $pdo->prepare("UPDATE inventory SET quantity = quantity + ? WHERE id = ?");
+                } else {
+                    $upd = $pdo->prepare("UPDATE inventory SET quantity = quantity - ? WHERE id = ?");
+                }
+                $upd->execute([$c, $id]);
+            }
+        }
+
+        // Grava no histórico
+        try {
+            $this->historyModel->insertMovement(
+                $user,
+                $datetime,
+                $reason,
+                $project_id,
+                $custom,
+                $toHistory
+            );
+        } catch (\Exception $e) {
+            echo "Erro ao registrar movimentação: " . $e->getMessage();
+            return;
+        }
+
+        // Redireciona
+        header("Location: /ams-malergeschaft/public/inventory");
+        exit;
+    }
+
+    /**
+     * Retorna via JSON os detalhes de um movimento (usado no histórico)
+     */
+    public function historyDetails(): void {
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(["error" => "ID do movimento não informado"]);
+            return;
+        }
+        try {
+            $items = $this->historyModel->getMovementItems((int)$id);
+            header('Content-Type: application/json');
+            echo json_encode($items);
+        } catch (\Exception $e) {
+            http_response_code(500);
+            echo json_encode(["error" => "Falha ao buscar detalhes"]);
+        }
+    }
+
 
     /**
      * Exibe formulário de controle de estoque.
@@ -33,54 +152,11 @@ class InventoryController {
     }
 
     /**
-     * Processa registro de movimentação e atualiza estoque.
-     */
-    public function storeControl() {
-        $userName  = trim($_POST['user_name']    ?? '');
-        $datetime  = $_POST['datetime']          ?? date('Y-m-d H:i:s');
-        $reason    = $_POST['reason']            ?? 'outros';
-        $custom    = trim($_POST['custom_reason'] ?? '');
-        $projectId = $_POST['project_id'] ?: null;
-        $items     = json_decode($_POST['items'] ?? '[]', true);
-
-        if ($userName === '' || !is_array($items) || empty($items)) {
-            echo "Preencha seu nome e selecione ao menos um item.";
-            exit;
-        }
-
-        $this->historyModel->insertMovement(
-            $userName,
-            $datetime,
-            $reason,
-            $custom !== '' ? $custom : null,
-            $projectId,
-            $items
-        );
-
-        header("Location: /ams-malergeschaft/public/inventory");
-        exit;
-    }
-
-    /**
      * Exibe histórico de movimentações.
      */
     public function history() {
         $movements = $this->historyModel->getAllMovements();
         require_once __DIR__ . '/../views/inventory/history.php';
-    }
-
-    /**
-     * Retorna detalhes de um movimento (JSON).
-     */
-    public function historyDetails() {
-        $id = $_GET['id'] ?? null;
-        if (!$id) {
-            http_response_code(400);
-            exit(json_encode(['error' => 'Missing ID']));
-        }
-        $details = $this->historyModel->getMovementDetails($id);
-        header('Content-Type: application/json');
-        echo json_encode($details);
     }
 
     public function store() {

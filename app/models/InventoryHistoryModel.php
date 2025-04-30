@@ -4,98 +4,86 @@
 require_once __DIR__ . '/../../config/Database.php';
 
 class InventoryHistoryModel {
-    private $pdo;
-
-    public function __construct() {
-        $this->pdo = Database::connect();
-    }
-
     /**
-     * Insere movimentos de inventário e atualiza estoque.
+     * Registra no histórico uma linha por item movimentado.
      *
-     * @param string      $userName       Nome de quem fez a movimentação
-     * @param string      $datetime       Data e hora, formato 'Y-m-d H:i:s'
-     * @param string      $reason         'projeto', 'perda' ou 'outros'
-     * @param string|null $customReason   Motivo personalizado (se 'outros')
-     * @param int|null    $projectId      ID de projeto (se 'projeto')
-     * @param array       $items          [ item_id => quantidade, ... ]
+     * @param string $user         Nome do usuário
+     * @param string $datetime     Timestamp da movimentação
+     * @param string $reason       Motivo ('projeto','perda','adição','outros','criar')
+     * @param int|null $project_id ID do projeto caso motivo='projeto'
+     * @param string|null $custom  Texto livre caso motivo='outros'
+     * @param array $items         [ item_id => quantidade, ... ]
+     * @return bool
+     * @throws Exception
      */
-    public function insertMovement($userName, $datetime, $reason, $customReason, $projectId, array $items) {
-        $insert = $this->pdo->prepare("
-            INSERT INTO inventory_movements
-              (user_name, datetime, reason, custom_reason, project_id, item_id, quantity)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ");
-        $update = $this->pdo->prepare("
-            UPDATE inventory SET quantity = quantity - ? WHERE id = ?
-        ");
+    public function insertMovement(
+        string $user,
+        string $datetime,
+        string $reason,
+        ?int $project_id,
+        ?string $custom,
+        array $items
+    ): bool {
+        $pdo = Database::connect();
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare("
+                INSERT INTO inventory_movements
+                  (user_name, datetime, reason, project_id, custom_reason, item_id, quantity)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
 
-        foreach ($items as $itemId => $qty) {
-            $insert->execute([
-                $userName,
-                $datetime,
-                $reason,
-                $customReason,
-                $projectId,
-                $itemId,
-                $qty
-            ]);
-            $update->execute([$qty, $itemId]);
+            foreach ($items as $item_id => $qty) {
+                $stmt->execute([
+                    $user,
+                    $datetime,
+                    $reason,
+                    $project_id,
+                    $custom,
+                    $item_id,
+                    $qty
+                ]);
+            }
+
+            $pdo->commit();
+            return true;
+        } catch (\Exception $e) {
+            $pdo->rollBack();
+            throw $e;
         }
     }
 
     /**
-     * Retorna todas as movimentações, agrupadas por movimento.
-     * Cada linha agrupa todos os itens daquele registro.
+     * Retorna todos os movimentos (sem detalhes de itens).
      *
      * @return array
      */
-    public function getAllMovements() {
-        $sql = "
-          SELECT
-            m.id,
-            m.user_name,
-            m.datetime,
-            m.reason,
-            m.custom_reason,
-            m.project_id,
-            p.name AS project_name,
-            GROUP_CONCAT(CONCAT(i.name,' (',m.quantity,')') SEPARATOR ', ') AS items
-          FROM inventory_movements m
-          LEFT JOIN projects p ON p.id = m.project_id
-          JOIN inventory i ON i.id = m.item_id
-          GROUP BY m.id
-          ORDER BY m.datetime DESC
-        ";
-        return $this->pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    public function getAllMovements(): array {
+        $pdo = Database::connect();
+        $stmt = $pdo->query("
+            SELECT DISTINCT
+               id, user_name, datetime, reason, project_id, custom_reason
+            FROM inventory_movements
+            ORDER BY datetime DESC
+        ");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
-     * Retorna detalhes disjuntos de um movimento (um registro por item).
+     * Retorna os itens de um movimento específico.
      *
-     * @param int $id  ID do movimento
+     * @param int $movementId
      * @return array
      */
-    public function getMovementDetails($id) {
-        $sql = "
-          SELECT
-            m.id,
-            m.user_name,
-            m.datetime,
-            m.reason,
-            m.custom_reason,
-            m.project_id,
-            p.name AS project_name,
-            i.id   AS item_id,
-            i.name AS item_name,
-            m.quantity
-          FROM inventory_movements m
-          LEFT JOIN projects p ON p.id = m.project_id
-          JOIN inventory i ON i.id = m.item_id
-          WHERE m.id = ?
-        ";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([$id]);
+    public function getMovementItems(int $movementId): array {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare("
+            SELECT i.name AS item_name, m.quantity
+            FROM inventory_movements m
+            JOIN inventory i ON m.item_id = i.id
+            WHERE m.id = ?
+        ");
+        $stmt->execute([$movementId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

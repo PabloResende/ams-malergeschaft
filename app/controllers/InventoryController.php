@@ -107,22 +107,18 @@ class InventoryController {
         exit;
     }
 
-    /**
-     * POST /inventory/control/store
-     * Processa o modal de Controle de Estoque (remoção, adição ou criação).
-     */
     public function storeControl(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: /ams-malergeschaft/public/inventory");
             exit;
         }
 
-        $user       = trim($_POST['user_name']       ?? '');
-        $datetime   = $_POST['datetime']             ?? '';
-        $reason     = $_POST['reason']               ?? '';
+        $user       = trim($_POST['user_name']     ?? '');
+        $datetime   = $_POST['datetime']           ?? '';
+        $reason     = $_POST['reason']             ?? '';
         $project_id = $_POST['project_id'] ?: null;
-        $custom     = trim($_POST['custom_reason']   ?? '');
-        $itemsJson  = $_POST['items']                ?? '[]';
+        $custom     = trim($_POST['custom_reason'] ?? '');
+        $itemsJson  = $_POST['items']              ?? '[]';
         $data       = json_decode($itemsJson, true);
 
         if ($user === '') {
@@ -134,56 +130,55 @@ class InventoryController {
             return;
         }
 
-        $pdo = Database::connect();
+        // conecta e processa
+        $pdo       = Database::connect();
         $toHistory = [];
 
-        // Se for criar novo item
         if ($reason === 'criar' && isset($data['new_item'])) {
+            // criar novo item
             $ni   = $data['new_item'];
             $name = trim($ni['name']     ?? '');
             $type = trim($ni['type']     ?? '');
             $qty  = (int)($ni['quantity'] ?? 0);
 
             if ($name === '' || $type === '' || $qty < 1) {
-                echo "Nome, tipo e quantidade do novo item são obrigatórios.";
+                echo "Preencha nome, tipo e quantidade do novo item.";
                 return;
             }
 
-            // Insere no inventário
-            $stmt = $pdo->prepare("
+            $ins = $pdo->prepare("
                 INSERT INTO inventory (type, name, quantity, created_at)
                 VALUES (?, ?, ?, NOW())
             ");
-            $stmt->execute([$type, $name, $qty]);
-            $newId = (int)$pdo->lastInsertId();
-            $toHistory = [ $newId => $qty ];
-
+            $ins->execute([$type, $name, $qty]);
+            $newId       = (int)$pdo->lastInsertId();
+            $toHistory   = [ $newId => $qty ];
         } else {
-            // Movimenta itens existentes
-            foreach ($data as $id => $c) {
+            // movimentar itens existentes
+            foreach ($data as $id => $qty) {
                 $i = (int)$id;
-                $q = (int)$c;
+                $q = (int)$qty;
                 if ($i > 0 && $q > 0) {
                     $toHistory[$i] = $q;
                 }
             }
             if (empty($toHistory)) {
-                echo "Selecione ao menos um item com quantidade válida.";
+                echo "Selecione ao menos um item.";
                 return;
             }
 
-            // Atualiza quantidades
-            foreach ($toHistory as $id => $c) {
+            // atualiza estoque
+            foreach ($toHistory as $id => $q) {
                 if ($reason === 'adição') {
                     $upd = $pdo->prepare("UPDATE inventory SET quantity = quantity + ? WHERE id = ?");
                 } else {
                     $upd = $pdo->prepare("UPDATE inventory SET quantity = quantity - ? WHERE id = ?");
                 }
-                $upd->execute([$c, $id]);
+                $upd->execute([$q, $id]);
             }
         }
 
-        // Registra no histórico (movimento mestre + detalhes)
+        // grava histórico
         try {
             $this->historyModel->insertMovement(
                 $user,
@@ -204,7 +199,6 @@ class InventoryController {
 
     /**
      * GET /inventory/history/details?id=...
-     * Retorna JSON com detalhes de um movimento.
      */
     public function historyDetails(): void {
         $id = $_GET['id'] ?? null;
@@ -213,9 +207,9 @@ class InventoryController {
             echo json_encode(["error" => "ID do movimento não informado"]);
             return;
         }
-        $details = $this->historyModel->getMovementDetails((int)$id);
+        $data = $this->historyModel->getMovementWithDetails((int)$id);
         header('Content-Type: application/json');
-        echo json_encode($details);
+        echo json_encode($data);
     }
 
     /**

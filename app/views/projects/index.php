@@ -59,23 +59,22 @@ $baseUrl = '/ams-malergeschaft/public';
           // Tag de status
           switch ($project['status'] ?? '') {
             case 'in_progress':
-              $tag = '<span class="bg-blue-500 text-white px-3 py-1 rounded-full text-[12px] font-semibold">'
-                   . htmlspecialchars($langText['active'] ?? 'Active', ENT_QUOTES, 'UTF-8') . '</span>';
-              break;
+              $tagClass = 'bg-blue-500'; $tagText = $langText['active'] ?? 'Active'; break;
             case 'pending':
-              $tag = '<span class="bg-yellow-500 text-white px-3 py-1 rounded-full text-[12px] font-semibold">'
-                   . htmlspecialchars($langText['pending'] ?? 'Pending', ENT_QUOTES, 'UTF-8') . '</span>';
-              break;
+              $tagClass = 'bg-yellow-500'; $tagText = $langText['pending'] ?? 'Pending'; break;
             default:
-              $tag = '<span class="bg-green-500 text-white px-3 py-1 rounded-full text-[12px] font-semibold">'
-                   . htmlspecialchars($langText['completed'] ?? 'Completed', ENT_QUOTES, 'UTF-8') . '</span>';
+              $tagClass = 'bg-green-500'; $tagText = $langText['completed'] ?? 'Completed'; break;
           }
+          $tag = "<span class=\"{$tagClass} text-white px-3 py-1 rounded-full text-[12px] font-semibold\">"
+               . htmlspecialchars($tagText, ENT_QUOTES, 'UTF-8')
+               . "</span>";
+
           // Progresso real
           $tStmt = $pdo->prepare("SELECT completed FROM tasks WHERE project_id = ?");
-          $tStmt->execute([ $project['id'] ]);
-          $tasks = $tStmt->fetchAll(PDO::FETCH_ASSOC);
-          $done = array_reduce($tasks, fn($c,$t) => $c + (int)$t['completed'], 0);
-          $progress = count($tasks) ? round($done / count($tasks) * 100) : 0;
+          $tStmt->execute([$project['id']]);
+          $tasksData = $tStmt->fetchAll(PDO::FETCH_ASSOC);
+          $done = array_reduce($tasksData, fn($c,$t) => $c + (int)$t['completed'], 0);
+          $progress = count($tasksData) ? round($done / count($tasksData) * 100) : 0;
         ?>
         <div
           class="project-item cursor-pointer bg-white p-6 rounded-xl shadow hover:shadow-md transition-all"
@@ -117,7 +116,8 @@ $baseUrl = '/ams-malergeschaft/public';
 
   <!-- Modal de Criação -->
   <div id="projectModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-    <div class="bg-white rounded-md p-8 w-90 max-h-[90vh] overflow-y-auto mt-10">
+    <div class="bg-white rounded-md p-8 w-90 max-h-[90vh] overflow-y-auto mt-10 relative">
+      <button type="button" id="closeModal" class="absolute top-4 right-4 text-gray-700 text-2xl">&times;</button>
       <h3 class="text-xl font-bold mb-4"><?= htmlspecialchars($langText['add_project'] ?? 'Add Project', ENT_QUOTES, 'UTF-8') ?></h3>
       <form id="projectForm" action="<?= $baseUrl ?>/projects/store" method="POST">
         <!-- Campos básicos -->
@@ -262,16 +262,27 @@ $baseUrl = '/ams-malergeschaft/public';
           <label class="block text-gray-700"><?= htmlspecialchars($langText['employees'] ?? 'Employees', ENT_QUOTES, 'UTF-8') ?></label>
           <div id="detailsEmployeesContainer"></div>
           <div class="flex mt-2">
-            <select id="detailsEmployeeSelect" name="employees[]" class="w-full p-2 border rounded" multiple>
+            <select id="detailsEmployeeSelect" name="employees[]" class="w-full p-2 border rounded">
+              <option value=""><?= htmlspecialchars($langText['select_employee'] ?? 'Select an employee', ENT_QUOTES, 'UTF-8') ?></option>
               <?php foreach ($activeEmployees as $emp): ?>
                 <option value="<?= htmlspecialchars($emp['id'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($emp['name'].' '.$emp['last_name'], ENT_QUOTES, 'UTF-8') ?></option>
               <?php endforeach; ?>
             </select>
+            <button type="button" id="detailsAddEmployeeBtn" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded"><?= htmlspecialchars($langText['add'] ?? 'Add', ENT_QUOTES, 'UTF-8') ?></button>
+          </div>
+        </div>
+
+        <!-- INVENTÁRIO ALOCADO -->
+        <div class="mb-4">
+          <label class="block text-gray-700"><?= htmlspecialchars($langText['inventory'] ?? 'Inventory', ENT_QUOTES, 'UTF-8') ?></label>
+          <div id="detailsInventoryContainer" class="space-y-1 text-sm text-gray-800">
+            <!-- preenchido via JS -->
           </div>
         </div>
 
         <!-- HIDDENS PARA JSON & COUNTS -->
         <input type="hidden" name="tasks" id="detailsTasksData">
+        <input type="hidden" name="employees" id="detailsEmployeesData">
         <input type="hidden" name="employee_count" id="detailsEmployeeCountData">
 
         <div class="flex justify-end mt-4 space-x-2">

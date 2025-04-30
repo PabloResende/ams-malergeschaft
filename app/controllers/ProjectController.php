@@ -111,44 +111,59 @@ class ProjectController {
             http_response_code(400);
             exit(json_encode(["error" => "Missing project ID"]));
         }
-
+    
         $pdo = Database::connect();
+        // dados do projeto
         $stmt = $pdo->prepare("SELECT * FROM projects WHERE id = ?");
         $stmt->execute([$id]);
         $project = $stmt->fetch(PDO::FETCH_ASSOC);
-
         if (!$project) {
             http_response_code(404);
             exit(json_encode(["error" => "Project not found"]));
         }
-
+    
+        // tasks
         $taskStmt = $pdo->prepare("SELECT description, completed FROM tasks WHERE project_id = ?");
         $taskStmt->execute([$id]);
         $tasks = $taskStmt->fetchAll(PDO::FETCH_ASSOC);
-
+    
+        // employees
         $empStmt = $pdo->prepare("
             SELECT e.id, e.name, e.last_name
             FROM employees e
-            JOIN project_resources pr ON pr.resource_id = e.id
+            JOIN project_resources pr
+              ON pr.resource_id = e.id
             WHERE pr.project_id = ? AND pr.resource_type = 'employee'
         ");
         $empStmt->execute([$id]);
         $employees = $empStmt->fetchAll(PDO::FETCH_ASSOC);
-
+    
+        // *** inventário alocado ***
+        $invStmt = $pdo->prepare("
+            SELECT i.id, i.name, pr.quantity
+            FROM inventory i
+            JOIN project_resources pr
+              ON pr.resource_id = i.id
+            WHERE pr.project_id = ? AND pr.resource_type = 'inventory'
+        ");
+        $invStmt->execute([$id]);
+        $inventory = $invStmt->fetchAll(PDO::FETCH_ASSOC);
+    
         header('Content-Type: application/json');
         echo json_encode([
             'id'             => $project['id'],
             'name'           => $project['name'],
-            'location'       => $project['location']       ?? '',
-            'description'    => $project['description']    ?? '',
+            'location'       => $project['location']     ?? '',
+            'description'    => $project['description']  ?? '',
             'start_date'     => $project['start_date'],
             'end_date'       => $project['end_date'],
             'total_hours'    => $project['total_hours'],
-            'budget'         => $project['budget']         ?? 0,
+            'budget'         => $project['budget']       ?? 0,
             'employee_count' => $project['employee_count'] ?? 0,
             'status'         => $project['status'],
             'tasks'          => $tasks,
-            'employees'      => $employees
+            'employees'      => $employees,
+            'inventory'      => $inventory          // <--- aqui!
         ]);
-    }
+    }    
 }

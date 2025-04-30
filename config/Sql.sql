@@ -104,3 +104,28 @@ CREATE TABLE reminders (
     color VARCHAR(20) DEFAULT '#00ff00',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+
+CREATE TABLE inventory_movements (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_name    VARCHAR(255)          NOT NULL,
+  datetime     DATETIME              NOT NULL,
+  reason       ENUM('projeto','perda','adição','outros','criar') NOT NULL,
+  project_id   INT                    NULL,
+  custom_reason TEXT                  NULL,
+  created_at   TIMESTAMP  DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (project_id) REFERENCES projects(id)
+);
+
+
+CREATE TABLE inventory_movement_details (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  movement_id  INT                   NOT NULL,
+  item_id      INT                   NOT NULL,
+  quantity     INT                   NOT NULL,
+  FOREIGN KEY (movement_id)
+    REFERENCES inventory_movements(id)
+    ON DELETE CASCADE,
+  FOREIGN KEY (item_id)
+    REFERENCES inventory(id)
+);

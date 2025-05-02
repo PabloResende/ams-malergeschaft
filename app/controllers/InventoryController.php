@@ -107,6 +107,10 @@ class InventoryController {
         exit;
     }
 
+    /**
+     * POST /inventory/control/store
+     * Processa alocação, adição, perda ou criação de itens.
+     */
     public function storeControl(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: /ams-malergeschaft/public/inventory");
@@ -130,12 +134,11 @@ class InventoryController {
             return;
         }
 
-        // conecta e processa
         $pdo       = Database::connect();
         $toHistory = [];
 
+        // Caso de criar novo item
         if ($reason === 'criar' && isset($data['new_item'])) {
-            // criar novo item
             $ni   = $data['new_item'];
             $name = trim($ni['name']     ?? '');
             $type = trim($ni['type']     ?? '');
@@ -151,10 +154,11 @@ class InventoryController {
                 VALUES (?, ?, ?, NOW())
             ");
             $ins->execute([$type, $name, $qty]);
-            $newId       = (int)$pdo->lastInsertId();
-            $toHistory   = [ $newId => $qty ];
+            $newId     = (int)$pdo->lastInsertId();
+            $toHistory = [ $newId => $qty ];
+
         } else {
-            // movimentar itens existentes
+            // Movimentação de itens existentes
             foreach ($data as $id => $qty) {
                 $i = (int)$id;
                 $q = (int)$qty;
@@ -167,7 +171,7 @@ class InventoryController {
                 return;
             }
 
-            // atualiza estoque
+            // Atualiza estoque
             foreach ($toHistory as $id => $q) {
                 if ($reason === 'adição') {
                     $upd = $pdo->prepare("UPDATE inventory SET quantity = quantity + ? WHERE id = ?");
@@ -176,9 +180,41 @@ class InventoryController {
                 }
                 $upd->execute([$q, $id]);
             }
+
+            // Aloca itens em project_resources quando for motivo 'projeto'
+            if ($reason === 'projeto' && $project_id) {
+                foreach ($toHistory as $id => $q) {
+                    // Verifica se já existe registro
+                    $prCheck = $pdo->prepare("
+                        SELECT id, quantity
+                        FROM project_resources
+                        WHERE project_id = ? AND resource_type = 'inventory' AND resource_id = ?
+                    ");
+                    $prCheck->execute([$project_id, $id]);
+                    $prRow = $prCheck->fetch(PDO::FETCH_ASSOC);
+                    if ($prRow) {
+                        // Incrementa quantidade
+                        $newQty = (int)$prRow['quantity'] + $q;
+                        $prUpd = $pdo->prepare("
+                            UPDATE project_resources
+                            SET quantity = ?
+                            WHERE id = ?
+                        ");
+                        $prUpd->execute([$newQty, $prRow['id']]);
+                    } else {
+                        // Insere nova alocação
+                        $prIns = $pdo->prepare("
+                            INSERT INTO project_resources
+                              (project_id, resource_type, resource_id, quantity, created_at)
+                            VALUES (?, 'inventory', ?, ?, NOW())
+                        ");
+                        $prIns->execute([$project_id, $id, $q]);
+                    }
+                }
+            }
         }
 
-        // grava histórico
+        // Registra histórico de movimentação
         try {
             $this->historyModel->insertMovement(
                 $user,
@@ -214,7 +250,6 @@ class InventoryController {
 
     /**
      * GET /inventory/control
-     * (Se você usar view separada; caso contrário, remove.)
      */
     public function control(): void {
         $items          = $this->inventoryModel->getAll('all');
@@ -224,7 +259,6 @@ class InventoryController {
 
     /**
      * GET /inventory/history
-     * (Se você usar view separada; caso contrário, remove.)
      */
     public function history(): void {
         $movements = $this->historyModel->getAllMovements();

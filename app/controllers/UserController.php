@@ -11,7 +11,6 @@ class UserController
         $this->userModel = new UserModel();
     }
 
-    // Página de login
     public function login()
     {
         if (isset($_SESSION['user'])) {
@@ -21,7 +20,6 @@ class UserController
         require __DIR__ . '/../views/auth/login.php';
     }
 
-    // Página de registro
     public function register()
     {
         if (isset($_SESSION['user'])) {
@@ -31,7 +29,6 @@ class UserController
         require __DIR__ . '/../views/auth/register.php';
     }
 
-    // Lógica de autenticação
     public function authenticate()
     {
         $email = $_POST['email'] ?? '';
@@ -48,7 +45,6 @@ class UserController
         $this->redirect('/login');
     }
 
-    // Lógica de logout
     public function logout()
     {
         unset($_SESSION['user']);
@@ -56,7 +52,6 @@ class UserController
         $this->redirect('/login');
     }
 
-    // Página de dashboard (após login)
     public function dashboard()
     {
         require_once __DIR__ . '/../models/Project.php';
@@ -66,39 +61,41 @@ class UserController
         require __DIR__ . '/../views/dashboard/index.php';
     }
 
-    // Página de perfil
     public function profile()
     {
         require __DIR__ . '/../views/profile/profile.php';
     }
 
-    // Lógica de criação de novo usuário
     public function store()
     {
-        $name = $_POST['name'] ?? '';
-        $email = $_POST['email'] ?? '';
+        $name = trim($_POST['name'] ?? '');
+        $email = filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL);
         $password = $_POST['password'] ?? '';
         $confirm = $_POST['confirm'] ?? '';
-
+    
         if ($password !== $confirm) {
             $_SESSION['error'] = "Senhas não coincidem.";
             $this->redirect('/register');
         }
-
+    
         if ($this->userModel->findByEmail($email)) {
             $_SESSION['error'] = "Email já cadastrado.";
             $this->redirect('/register');
         }
-
+    
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-
-        $this->userModel->create($name, $email, $hashedPassword);
-
-        $_SESSION['success'] = "Cadastro realizado com sucesso!";
-        $this->redirect('/login');
+    
+        $created = $this->userModel->create($name, $email, $hashedPassword);
+    
+        if ($created) {
+            // Sucesso: redireciona para login com parâmetro na URL
+            $this->redirect('/login?success=1');
+        } else {
+            $_SESSION['error'] = "Erro ao cadastrar. Tente novamente.";
+            $this->redirect('/register');
+        }
     }
 
-    // Redirecionamento com base no caminho
     private function redirect(string $path)
     {
         $basePath = '/ams-malergeschaft/public';

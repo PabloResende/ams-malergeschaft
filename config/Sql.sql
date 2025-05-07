@@ -11,11 +11,14 @@ CREATE TABLE users (
 CREATE TABLE projects (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
+    location VARCHAR(255),
     client_name VARCHAR(255) NOT NULL,
     description TEXT,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     total_hours INT DEFAULT 0,
+    budget DECIMAL(10, 2) DEFAULT 0.00,
+    employee_count INT DEFAULT 0,
     status ENUM('pending', 'in_progress', 'completed') DEFAULT 'pending',
     progress INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

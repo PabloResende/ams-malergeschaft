@@ -1,298 +1,102 @@
-<?php
-// app/views/projects/index.php
-require_once __DIR__ . '/../layout/header.php';
-require_once __DIR__ . '/../../../config/Database.php';
+<form id="projectDetailsForm" action="<?= $baseUrl ?>/projects/update" method="POST">
+  <input type="hidden" name="id" id="detailsProjectId">
 
-$pdo = Database::connect();
-
-// 1) Carrega projetos com filtro
-$filter = $_GET['filter'] ?? '';
-$query = "SELECT * FROM projects";
-if ($filter === 'active') {
-    $query .= " WHERE status = 'in_progress'";
-} elseif ($filter === 'pending') {
-    $query .= " WHERE status = 'pending'";
-} elseif ($filter === 'completed') {
-    $query .= " WHERE status = 'completed'";
-}
-$query .= $filter === 'active'
-    ? " ORDER BY end_date ASC"
-    : " ORDER BY created_at DESC";
-$stmt = $pdo->prepare($query);
-$stmt->execute();
-$projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// 2) Carrega funcionários ativos
-$activeEmployees = $pdo
-    ->query("SELECT id, name, last_name FROM employees WHERE active = 1")
-    ->fetchAll(PDO::FETCH_ASSOC);
-
-$baseUrl = '/ams-malergeschaft/public';
-?>
-<div class="ml-56 pt-20 p-8 relative">
-  <h1 class="text-2xl font-bold mb-4"><?= htmlspecialchars($langText['projects'] ?? 'Projects', ENT_QUOTES, 'UTF-8') ?></h1>
-
-  <!-- filtros -->
-  <div class="mb-6">
-    <span class="mr-4 font-semibold"><?= htmlspecialchars($langText['filter_by_status'] ?? 'Filter by status:', ENT_QUOTES, 'UTF-8') ?></span>
-    <a href="<?= $baseUrl ?>/projects" class="mr-2 px-3 py-1 rounded-full border <?= $filter=='' ? 'bg-gray-300' : 'bg-white' ?>">
-      <?= htmlspecialchars($langText['all'] ?? 'All', ENT_QUOTES, 'UTF-8') ?>
-    </a>
-    <a href="<?= $baseUrl ?>/projects?filter=active" class="mr-2 px-3 py-1 rounded-full border <?= $filter=='active' ? 'bg-blue-200 text-blue-800' : 'bg-white' ?>">
-      <?= htmlspecialchars($langText['active'] ?? 'Active', ENT_QUOTES, 'UTF-8') ?>
-    </a>
-    <a href="<?= $baseUrl ?>/projects?filter=pending" class="mr-2 px-3 py-1 rounded-full border <?= $filter=='pending' ? 'bg-yellow-200 text-yellow-800' : 'bg-white' ?>">
-      <?= htmlspecialchars($langText['pending'] ?? 'Pending', ENT_QUOTES, 'UTF-8') ?>
-    </a>
-    <a href="<?= $baseUrl ?>/projects?filter=completed" class="mr-2 px-3 py-1 rounded-full border <?= $filter=='completed' ? 'bg-green-200 text-green-800' : 'bg-white' ?>">
-      <?= htmlspecialchars($langText['completed'] ?? 'Completed', ENT_QUOTES, 'UTF-8') ?>
-    </a>
+  <!-- PROGRESSO DINÂMICO -->
+  <div class="mb-4">
+    <label class="block text-gray-700"><?= $langText['progress'] ?? 'Progress' ?></label>
+    <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
+      <div id="detailsProgressBar" class="bg-blue-500 h-2 rounded-full" style="width:0%;"></div>
+    </div>
+    <span id="detailsProgressText" class="text-sm text-gray-600">0%</span>
   </div>
 
-  <!-- Grid de cards -->
-  <div id="projectsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-    <?php if (empty($projects)): ?>
-      <p><?= htmlspecialchars($langText['no_projects_available'] ?? 'No projects available.', ENT_QUOTES, 'UTF-8') ?></p>
-    <?php else: ?>
-      <?php foreach ($projects as $project): ?>
-        <?php
-          // Tag de status
-          switch ($project['status'] ?? '') {
-            case 'in_progress':
-              $tagClass = 'bg-blue-500'; $tagText = $langText['active'] ?? 'Active'; break;
-            case 'pending':
-              $tagClass = 'bg-yellow-500'; $tagText = $langText['pending'] ?? 'Pending'; break;
-            default:
-              $tagClass = 'bg-green-500'; $tagText = $langText['completed'] ?? 'Completed'; break;
-          }
-          $tag = "<span class=\"{$tagClass} text-white px-3 py-1 rounded-full text-[12px] font-semibold\">"
-               . htmlspecialchars($tagText, ENT_QUOTES, 'UTF-8')
-               . "</span>";
-
-          // Progresso real
-          $tStmt = $pdo->prepare("SELECT completed FROM tasks WHERE project_id = ?");
-          $tStmt->execute([$project['id']]);
-          $tasksData = $tStmt->fetchAll(PDO::FETCH_ASSOC);
-          $done = array_reduce($tasksData, fn($c,$t) => $c + (int)$t['completed'], 0);
-          $progress = count($tasksData) ? round($done / count($tasksData) * 100) : 0;
-        ?>
-        <div
-          class="project-item cursor-pointer bg-white p-6 rounded-xl shadow hover:shadow-md transition-all"
-          data-project-id="<?= htmlspecialchars($project['id'], ENT_QUOTES, 'UTF-8') ?>"
-        >
-          <div class="flex items-center justify-between mb-2">
-            <h4 class="text-xl font-bold flex-1"><?= htmlspecialchars($project['name'] ?? '', ENT_QUOTES, 'UTF-8') ?></h4>
-            <?= $tag ?>
-          </div>
-
-          <p class="text-sm text-gray-600 mb-1">
-            <span class="font-semibold"><?= htmlspecialchars($langText['location'] ?? 'Location', ENT_QUOTES, 'UTF-8') ?>:</span>
-            <?= htmlspecialchars($project['location'] ?? '', ENT_QUOTES, 'UTF-8') ?>
-          </p>
-          <p class="text-sm text-gray-600 mb-2">
-            <span class="font-semibold"><?= htmlspecialchars($langText['budget'] ?? 'Budget', ENT_QUOTES, 'UTF-8') ?>:</span>
-            <?= number_format((float)($project['budget'] ?? 0), 2, ',', '.') ?>
-          </p>
-
-          <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
-            <div class="bg-blue-500 h-2 rounded-full" style="width:<?= $progress ?>%;"></div>
-          </div>
-
-          <p class="text-sm text-gray-600">
-            <?= htmlspecialchars($langText['employee_count'] ?? 'Funcionários', ENT_QUOTES, 'UTF-8') ?>: <?= (int)($project['employee_count'] ?? 0) ?> |
-            <?= htmlspecialchars($langText['progress'] ?? 'Progress', ENT_QUOTES, 'UTF-8') ?>: <?= $progress ?>%
-          </p>
-        </div>
-      <?php endforeach; ?>
-    <?php endif; ?>
-  </div>
-
-  <!-- Botão flutuante de criar -->
-  <button type="button" id="addProjectBtn" class="fixed bottom-8 right-8 bg-green-500 text-white rounded-full p-4 shadow-lg hover:bg-green-600">
-    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-    </svg>
-  </button>
-
-  <!-- Modal de Criação -->
-  <div id="projectModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-    <div class="bg-white rounded-md p-8 w-90 max-h-[90vh] overflow-y-auto mt-10 relative">
-      <button type="button" id="closeModal" class="absolute top-4 right-4 text-gray-700 text-2xl">&times;</button>
-      <h3 class="text-xl font-bold mb-4"><?= htmlspecialchars($langText['add_project'] ?? 'Add Project', ENT_QUOTES, 'UTF-8') ?></h3>
-      <form id="projectForm" action="<?= $baseUrl ?>/projects/store" method="POST">
-        <!-- Campos básicos -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label class="block text-gray-700"><?= htmlspecialchars($langText['name'] ?? 'Nome do Projeto', ENT_QUOTES, 'UTF-8') ?></label>
-            <input type="text" name="name" class="w-full p-2 border rounded" required>
-          </div>
-          <div>
-            <label class="block text-gray-700"><?= htmlspecialchars($langText['location'] ?? 'Localização / Endereço', ENT_QUOTES, 'UTF-8') ?></label>
-            <input type="text" name="location" class="w-full p-2 border rounded">
-          </div>
-          <div>
-            <label class="block text-gray-700"><?= htmlspecialchars($langText['total_hours'] ?? 'Quantidade de Horas', ENT_QUOTES, 'UTF-8') ?></label>
-            <input type="number" name="total_hours" class="w-full p-2 border rounded" required>
-          </div>
-          <div>
-            <label class="block text-gray-700"><?= htmlspecialchars($langText['budget'] ?? 'Budget', ENT_QUOTES, 'UTF-8') ?></label>
-            <input type="number" name="budget" step="0.01" class="w-full p-2 border rounded">
-          </div>
-          <div>
-            <label class="block text-gray-700"><?= htmlspecialchars($langText['start_date'] ?? 'Data de Início', ENT_QUOTES, 'UTF-8') ?></label>
-            <input type="date" name="start_date" class="w-full p-2 border rounded" required>
-          </div>
-          <div>
-            <label class="block text-gray-700"><?= htmlspecialchars($langText['end_date'] ?? 'Data de Término', ENT_QUOTES, 'UTF-8') ?></label>
-            <input type="date" name="end_date" class="w-full p-2 border rounded" required>
-          </div>
-          <div>
-            <label class="block text-gray-700"><?= htmlspecialchars($langText['status'] ?? 'Status', ENT_QUOTES, 'UTF-8') ?></label>
-            <select name="status" class="w-full p-2 border rounded">
-              <option value="in_progress"><?= htmlspecialchars($langText['in_progress'] ?? 'In Progress', ENT_QUOTES, 'UTF-8') ?></option>
-              <option value="pending"><?= htmlspecialchars($langText['pending'] ?? 'Pending', ENT_QUOTES, 'UTF-8') ?></option>
-              <option value="completed"><?= htmlspecialchars($langText['completed'] ?? 'Completed', ENT_QUOTES, 'UTF-8') ?></option>
-            </select>
-          </div>
-        </div>
-
-        <!-- TAREFAS -->
-        <div class="mb-4">
-          <label class="block text-gray-700"><?= htmlspecialchars($langText['tasks'] ?? 'Tasks', ENT_QUOTES, 'UTF-8') ?></label>
-          <div id="tasksContainer"></div>
-          <div class="flex mt-2">
-            <input type="text" id="newTaskInput" class="w-full p-2 border rounded" placeholder="<?= htmlspecialchars($langText['task_placeholder'] ?? 'Task description', ENT_QUOTES, 'UTF-8') ?>">
-            <button type="button" id="addTaskBtn" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded"><?= htmlspecialchars($langText['add'] ?? 'Add', ENT_QUOTES, 'UTF-8') ?></button>
-          </div>
-        </div>
-
-        <!-- FUNCIONÁRIOS -->
-        <div class="mb-4">
-          <label class="block text-gray-700"><?= htmlspecialchars($langText['employees'] ?? 'Employees', ENT_QUOTES, 'UTF-8') ?></label>
-          <div id="employeesContainer"></div>
-          <div class="flex mt-2">
-            <select id="employeeSelect" class="w-full p-2 border rounded">
-              <option value=""><?= htmlspecialchars($langText['select_employee'] ?? 'Select an employee', ENT_QUOTES, 'UTF-8') ?></option>
-              <?php foreach ($activeEmployees as $emp): ?>
-                <option value="<?= htmlspecialchars($emp['id'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($emp['name'].' '.$emp['last_name'], ENT_QUOTES, 'UTF-8') ?></option>
-              <?php endforeach; ?>
-            </select>
-            <button type="button" id="addEmployeeBtn" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded"><?= htmlspecialchars($langText['add'] ?? 'Add', ENT_QUOTES, 'UTF-8') ?></button>
-          </div>
-        </div>
-
-        <!-- HIDDENS PARA JSON & COUNTS -->
-        <input type="hidden" name="tasks" id="tasksData">
-        <input type="hidden" name="employees" id="employeesData">
-        <input type="hidden" name="employee_count" id="employeeCountDataCreate">
-
-        <div class="flex justify-end mt-4 space-x-2">
-          <button type="button" id="closeModal" class="px-4 py-2 border rounded"><?= htmlspecialchars($langText['cancel'] ?? 'Cancel', ENT_QUOTES, 'UTF-8') ?></button>
-          <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded"><?= htmlspecialchars($langText['submit'] ?? 'Submit', ENT_QUOTES, 'UTF-8') ?></button>
-        </div>
-      </form>
+  <!-- Campos editáveis -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div>
+      <label class="block text-gray-700"><?= $langText['name'] ?? 'Nome do Projeto' ?></label>
+      <input type="text" name="name" id="detailsProjectName" class="w-full p-2 border rounded">
+    </div>
+    <div>
+      <label class="block text-gray-700"><?= $langText['location'] ?? 'Localização / Endereço' ?></label>
+      <input type="text" name="location" id="detailsProjectLocation" class="w-full p-2 border rounded">
+    </div>
+    <div>
+      <label class="block text-gray-700"><?= $langText['total_hours'] ?? 'Quantidade de Horas' ?></label>
+      <input type="number" name="total_hours" id="detailsProjectTotalHours" class="w-full p-2 border rounded">
+    </div>
+    <div>
+      <label class="block text-gray-700"><?= $langText['budget'] ?? 'Budget' ?></label>
+      <input type="number" name="budget" step="0.01" id="detailsProjectBudget" class="w-full p-2 border rounded">
+    </div>
+    <div>
+      <label class="block text-gray-700"><?= $langText['start_date'] ?? 'Data de Início' ?></label>
+      <input type="date" name="start_date" id="detailsProjectStartDate" class="w-full p-2 border rounded">
+    </div>
+    <div>
+      <label class="block text-gray-700"><?= $langText['end_date'] ?? 'Data de Término' ?></label>
+      <input type="date" name="end_date" id="detailsProjectEndDate" class="w-full p-2 border rounded">
+    </div>
+    <div>
+      <label class="block text-gray-700"><?= $langText['status'] ?? 'Status' ?></label>
+      <select name="status" id="detailsProjectStatus" class="w-full p-2 border rounded">
+        <option value="in_progress"><?= $langText['in_progress'] ?? 'In Progress' ?></option>
+        <option value="pending"><?= $langText['pending'] ?? 'Pending' ?></option>
+        <option value="completed"><?= $langText['completed'] ?? 'Completed' ?></option>
+      </select>
     </div>
   </div>
 
-  <!-- Modal de Detalhes / Edição -->
-  <div id="projectDetailsModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
-    <div class="bg-white rounded-md p-8 w-90 max-h-[90vh] overflow-y-auto mt-10 relative">
-      <button type="button" id="closeProjectDetailsModal" class="absolute top-2 right-2 text-gray-700 text-2xl">&times;</button>
-      <h3 class="text-xl font-bold mb-4"><?= htmlspecialchars($langText['project_details'] ?? 'Project Details', ENT_QUOTES, 'UTF-8') ?></h3>
-      <form id="projectDetailsForm" action="<?= $baseUrl ?>/projects/update" method="POST">
-        <input type="hidden" name="id" id="detailsProjectId">
-
-        <!-- PROGRESSO DINÂMICO -->
-        <div class="mb-4">
-          <label class="block text-gray-700"><?= htmlspecialchars($langText['progress'] ?? 'Progress', ENT_QUOTES, 'UTF-8') ?></label>
-          <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
-            <div id="detailsProgressBar" class="bg-blue-500 h-2 rounded-full" style="width:0%;"></div>
-          </div>
-          <span id="detailsProgressText" class="text-sm text-gray-600">0%</span>
-        </div>
-
-        <!-- Campos editáveis -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label class="block text-gray-700"><?= htmlspecialchars($langText['name'] ?? 'Nome do Projeto', ENT_QUOTES, 'UTF-8') ?></label>
-            <input type="text" name="name" id="detailsProjectName" class="w-full p-2 border rounded">
-          </div>
-          <div>
-            <label class="block text-gray-700"><?= htmlspecialchars($langText['location'] ?? 'Localização / Endereço', ENT_QUOTES, 'UTF-8') ?></label>
-            <input type="text" name="location" id="detailsProjectLocation" class="w-full p-2 border rounded">
-          </div>
-          <div>
-            <label class="block text-gray-700"><?= htmlspecialchars($langText['total_hours'] ?? 'Quantidade de Horas', ENT_QUOTES, 'UTF-8') ?></label>
-            <input type="number" name="total_hours" id="detailsProjectTotalHours" class="w-full p-2 border rounded">
-          </div>
-          <div>
-            <label class="block text-gray-700"><?= htmlspecialchars($langText['budget'] ?? 'Budget', ENT_QUOTES, 'UTF-8') ?></label>
-            <input type="number" name="budget" step="0.01" id="detailsProjectBudget" class="w-full p-2 border rounded">
-          </div>
-          <div>
-            <label class="block text-gray-700"><?= htmlspecialchars($langText['start_date'] ?? 'Data de Início', ENT_QUOTES, 'UTF-8') ?></label>
-            <input type="date" name="start_date" id="detailsProjectStartDate" class="w-full p-2 border rounded">
-          </div>
-          <div>
-            <label class="block text-gray-700"><?= htmlspecialchars($langText['end_date'] ?? 'Data de Término', ENT_QUOTES, 'UTF-8') ?></label>
-            <input type="date" name="end_date" id="detailsProjectEndDate" class="w-full p-2 border rounded">
-          </div>
-          <div>
-            <label class="block text-gray-700"><?= htmlspecialchars($langText['status'] ?? 'Status', ENT_QUOTES, 'UTF-8') ?></label>
-            <select name="status" id="detailsProjectStatus" class="w-full p-2 border rounded">
-              <option value="in_progress"><?= htmlspecialchars($langText['in_progress'] ?? 'In Progress', ENT_QUOTES, 'UTF-8') ?></option>
-              <option value="pending"><?= htmlspecialchars($langText['pending'] ?? 'Pending', ENT_QUOTES, 'UTF-8') ?></option>
-              <option value="completed"><?= htmlspecialchars($langText['completed'] ?? 'Completed', ENT_QUOTES, 'UTF-8') ?></option>
-            </select>
-          </div>
-        </div>
-
-        <!-- TAREFAS -->
-        <div class="mb-4">
-          <label class="block text-gray-700"><?= htmlspecialchars($langText['tasks'] ?? 'Tasks', ENT_QUOTES, 'UTF-8') ?></label>
-          <div id="detailsTasksContainer"></div>
-          <div class="flex mt-2">
-            <input type="text" id="detailsNewTaskInput" class="w-full p-2 border rounded" placeholder="<?= htmlspecialchars($langText['task_placeholder'] ?? 'Task description', ENT_QUOTES, 'UTF-8') ?>">
-            <button type="button" id="detailsAddTaskBtn" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded"><?= htmlspecialchars($langText['add'] ?? 'Add', ENT_QUOTES, 'UTF-8') ?></button>
-          </div>
-        </div>
-
-        <!-- FUNCIONÁRIOS -->
-        <div class="mb-4">
-          <label class="block text-gray-700"><?= htmlspecialchars($langText['employees'] ?? 'Employees', ENT_QUOTES, 'UTF-8') ?></label>
-          <div id="detailsEmployeesContainer"></div>
-          <div class="flex mt-2">
-            <select id="detailsEmployeeSelect" name="employees[]" class="w-full p-2 border rounded">
-              <option value=""><?= htmlspecialchars($langText['select_employee'] ?? 'Select an employee', ENT_QUOTES, 'UTF-8') ?></option>
-              <?php foreach ($activeEmployees as $emp): ?>
-                <option value="<?= htmlspecialchars($emp['id'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($emp['name'].' '.$emp['last_name'], ENT_QUOTES, 'UTF-8') ?></option>
-              <?php endforeach; ?>
-            </select>
-            <button type="button" id="detailsAddEmployeeBtn" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded"><?= htmlspecialchars($langText['add'] ?? 'Add', ENT_QUOTES, 'UTF-8') ?></button>
-          </div>
-        </div>
-
-        <!-- INVENTÁRIO ALOCADO -->
-        <div class="mb-4">
-          <label class="block text-gray-700"><?= htmlspecialchars($langText['inventory'] ?? 'Inventory', ENT_QUOTES, 'UTF-8') ?></label>
-          <div id="detailsInventoryContainer" class="space-y-1 text-sm text-gray-800">
-            <!-- preenchido via JS -->
-          </div>
-        </div>
-
-        <!-- HIDDENS PARA JSON & COUNTS -->
-        <input type="hidden" name="tasks" id="detailsTasksData">
-        <input type="hidden" name="employees" id="detailsEmployeesData">
-        <input type="hidden" name="employee_count" id="detailsEmployeeCountData">
-
-        <div class="flex justify-end mt-4 space-x-2">
-          <button type="button" id="cancelDetailsBtn" class="px-4 py-2 border rounded"><?= htmlspecialchars($langText['cancel'] ?? 'Cancel', ENT_QUOTES, 'UTF-8') ?></button>
-          <button type="button" id="deleteProjectBtn" class="px-4 py-2 border rounded text-red-600"><?= htmlspecialchars($langText['delete'] ?? 'Delete', ENT_QUOTES, 'UTF-8') ?></button>
-          <button type="submit" id="saveDetailsBtn" class="hidden bg-green-500 text-white px-4 py-2 rounded"><?= htmlspecialchars($langText['save_changes'] ?? 'Save Changes', ENT_QUOTES, 'UTF-8') ?></button>
-        </div>
-      </form>
+  <!-- TAREFAS -->
+  <div class="mb-4">
+    <label class="block text-gray-700"><?= $langText['tasks'] ?? 'Tasks' ?></label>
+    <div id="detailsTasksContainer"></div>
+    <div class="flex mt-2">
+      <input type="text" id="detailsNewTaskInput" class="w-full p-2 border rounded" placeholder="<?= $langText['task_placeholder'] ?? 'Task description' ?>">
+      <button type="button" id="detailsAddTaskBtn" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded"><?= $langText['add'] ?? 'Add' ?></button>
     </div>
   </div>
-</div>
 
-<script defer src="<?= $baseUrl ?>/js/projects.js"></script>
+  <!-- FUNCIONÁRIOS -->
+  <div class="mb-4">
+    <label class="block text-gray-700"><?= $langText['employees'] ?? 'Employees' ?></label>
+    <div id="detailsEmployeesContainer" class="space-y-1 text-sm text-gray-800">
+      <!-- Funcionários alocados serão renderizados aqui -->
+    </div>
+    <div class="flex mt-2">
+      <select id="detailsEmployeeSelect" name="employees[]" class="w-full p-2 border rounded">
+        <option value=""><?= $langText['select_employee'] ?? 'Select an employee' ?></option>
+        <?php foreach ($activeEmployees as $emp): ?>
+          <option value="<?= htmlspecialchars($emp['id']) ?>">
+            <?= htmlspecialchars($emp['name'] . ' ' . $emp['last_name']) ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
+      <button type="button" id="detailsAddEmployeeBtn" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded"><?= $langText['add'] ?? 'Add' ?></button>
+    </div>
+  </div>
+
+  <!-- INVENTÁRIO ALOCADO -->
+  <div class="mb-4">
+    <label class="block text-gray-700"><?= $langText['inventory'] ?? 'Inventory' ?></label>
+    <div id="detailsInventoryContainer" class="space-y-1 text-sm text-gray-800">
+      <!-- Inventário alocado renderizado via JS -->
+    </div>
+  </div>
+
+  <!-- HIDDENS PARA JSON & CONTAGEM -->
+  <input type="hidden" name="tasks" id="detailsTasksData">
+  <input type="hidden" name="employees" id="detailsEmployeesData">
+  <input type="hidden" name="employee_count" id="detailsEmployeeCountData">
+
+  <div class="flex justify-end mt-4 space-x-2">
+    <button type="button" id="cancelDetailsBtn" class="px-4 py-2 border rounded">
+      <?= $langText['cancel'] ?? 'Cancel' ?>
+    </button>
+    <button type="button" id="deleteProjectBtn" class="px-4 py-2 border rounded text-red-600">
+      <?= $langText['delete'] ?? 'Delete' ?>
+    </button>
+    <button type="submit" id="saveDetailsBtn" class="hidden bg-green-500 text-white px-4 py-2 rounded">
+      <?= $langText['save_changes'] ?? 'Save Changes' ?>
+    </button>
+  </div>
+</form>

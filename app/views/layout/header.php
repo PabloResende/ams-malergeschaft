@@ -87,6 +87,15 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false || s
                         </a>
                     </li>
                     <li class="mb-4">
+                      <a href="<?= $baseUrl ?>/finance" class="flex items-center space-x-2 hover:text-gray-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                          <line x1="1" y1="10" x2="23" y2="10"></line>
+                        </svg>
+                        <span><?= $langText['finance'] ?? 'Financeiro' ?></span>
+                      </a>
+                    </li>
+                    <li class="mb-4">
                         <a href="<?= $baseUrl ?>/projects" class="flex items-center space-x-2 hover:text-gray-300">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path d="M9 12h6M12 9v6M4 21h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2Z"></path>
@@ -138,15 +147,6 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false || s
                             </svg>
                             <span><?= $langText['analytics'] ?? 'Análises' ?></span>
                         </a>
-                    </li>
-                    <li class="mb-4">
-                      <a href="<?= $baseUrl ?>/finance" class="flex items-center space-x-2 hover:text-gray-300">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                          <line x1="1" y1="10" x2="23" y2="10"></line>
-                        </svg>
-                        <span><?= $langText['finance'] ?? 'Financeiro' ?></span>
-                      </a>
                     </li>
                 </ul>
             </nav>

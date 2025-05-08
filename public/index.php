@@ -189,17 +189,16 @@ switch ($route) {
         $analyticsController->sendEmail();
         break;
     case '/finance':
-        $paymentController->form();
+        $paymentController->pos();
         break;
-    case '/finance/checkout':
-        $paymentController->checkout();
+    case '/finance/generate-link':
+        $paymentController->generateLink();
         break;
-    case '/finance/webhook':
-        $paymentController->webhook();
+    case '/finance/generate-invoice':
+        $paymentController->generateInvoice();
         break;
-    case '/invoice/generate':
-        $invoiceId = $_GET['id'] ?? null;
-        $invoiceController->generate($invoiceId);
+    case '/finance/send-email':
+        $paymentController->sendEmail();
         break;
     default:
         http_response_code(404);

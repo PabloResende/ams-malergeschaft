@@ -2,6 +2,7 @@
 class StripeClient {
     private $secret;
     private $base;
+
     public function __construct() {
         $cfg = require __DIR__ . '/../config/env.php';
         $this->secret = $cfg['stripe_secret'];
@@ -17,22 +18,35 @@ class StripeClient {
             curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
         }
         $resp = curl_exec($ch);
-        $err  = curl_error($ch);
+        if ($err = curl_error($ch)) {
+            curl_close($ch);
+            throw new \Exception("Stripe cURL error: $err");
+        }
         curl_close($ch);
-        if ($err) throw new \Exception("Stripe cURL error: $err");
         return json_decode($resp, true);
     }
 
-    public function createPaymentIntent(int $amountCentavos) {
+    public function createCheckoutSession(int $amount, string $successUrl, string $cancelUrl) {
         $cfg = require __DIR__ . '/../config/env.php';
-        return $this->request('POST', '/payment_intents', [
-            'amount'               => $amountCentavos,
-            'currency'             => $cfg['currency'],
+        return $this->request('POST', '/checkout/sessions', [
             'payment_method_types[]' => 'card',
+            'line_items[0][price_data][currency]'      => $cfg['currency'],
+            'line_items[0][price_data][unit_amount]'   => $amount,
+            'line_items[0][price_data][product_data][name]' => 'Cobrança',
+            'line_items[0][quantity]'                  => 1,
+            'mode'                    => 'payment',
+            'success_url'             => $successUrl,
+            'cancel_url'              => $cancelUrl,
         ]);
     }
 
-    public function retrievePaymentIntent(string $id) {
-        return $this->request('GET', "/payment_intents/$id");
+    public function createPaymentLink(int $amount) {
+        $cfg = require __DIR__ . '/../config/env.php';
+        return $this->request('POST', '/payment_links', [
+            'line_items[0][price_data][currency]'      => $cfg['currency'],
+            'line_items[0][price_data][unit_amount]'   => $amount,
+            'line_items[0][price_data][product_data][name]' => 'Cobrança',
+            'line_items[0][quantity]'                  => 1,
+        ]);
     }
 }

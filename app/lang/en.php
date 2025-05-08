@@ -50,7 +50,7 @@ return [
     // Dashboard
     // ---------------------------
     'welcome_dashboard'     => 'Welcome to your Dashboard',
-    'view_profile'          => 'View Profile',  
+    'view_profile'          => 'View Profile',
     'projects_overview'     => 'Projects Overview',
     'track_and_manage'      => 'Track and manage your renovation projects efficiently',
     'vs_last_month'         => 'vs last month',
@@ -61,6 +61,8 @@ return [
     'notifications'         => 'Notifications',
     'not_new_notifications' => 'No new notifications',
     'clients'               => 'Clients',
+    'active_clients'        => 'Active Clients',
+    'tasks'                 => 'Tasks',
 
     // ---------------------------
     // Projects
@@ -135,6 +137,11 @@ return [
     'select'                => '-- Select --',
     'cancel'                => 'Cancel',
     'save'                  => 'Save',
+    'submit'                => 'Submit',
+    'welcome'               => 'Welcome',
+    'upcoming_reminders'    => 'Upcoming Reminders',
+    'all_quarters'          => 'All Quarters',
+    'all_semesters'         => 'All Semesters',
 
     // ---------------------------
     // Export & Documents

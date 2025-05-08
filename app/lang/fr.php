@@ -61,6 +61,8 @@ return [
     'notifications'         => 'Notifications',
     'not_new_notifications' => 'Pas de nouvelles notifications',
     'clients'               => 'Clients',
+    'active_clients'        => 'Clients actifs',
+    'tasks'                 => 'Tâches',
 
     // ---------------------------
     // Projets
@@ -135,6 +137,11 @@ return [
     'select'                => '-- Sélectionner --',
     'cancel'                => 'Annuler',
     'save'                  => 'Enregistrer',
+    'submit'                => 'Envoyer',
+    'welcome'               => 'Bienvenue',
+    'upcoming_reminders'    => 'Rappels à venir',
+    'all_quarters'          => 'Tous les Trimestres',
+    'all_semesters'         => 'Tous les Semestres',
 
     // ---------------------------
     // Export & Documents

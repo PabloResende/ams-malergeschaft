@@ -5,44 +5,56 @@ require_once __DIR__ . '/../../../config/Database.php';
 $pdo = Database::connect();
 $baseUrl = '/ams-malergeschaft/public';
 
-// ——— 1) Métricas de Projetos ———
-// Projetos no mês atual
+// === Mensagem de boas-vindas ===
+$userName = $_SESSION['user']['name'] ?? '';
+?>
+
+<div class="ml-56 pt-20 p-8">
+  <h1 class="text-3xl font-bold mb-6">
+    <?= htmlspecialchars($langText['welcome'] ?? 'Bem-vindo', ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars($userName, ENT_QUOTES, 'UTF-8') ?>!
+  </h1>
+
+<?php
+// ——— 1) Projetos ———
+// Métricas atuais
 $stmt = $pdo->query("
-  SELECT 
-    SUM(status = 'in_progress') AS active_projects,
-    SUM(status = 'completed') AS completed_projects,
-    SUM(total_hours)           AS total_hours
+  SELECT
+    SUM(status = 'in_progress') AS active,
+    SUM(status = 'completed')   AS completed,
+    SUM(total_hours)            AS hours
   FROM projects
 ");
-$metrics = $stmt->fetch(PDO::FETCH_ASSOC);
-$activeProjectsCount   = $metrics['active_projects']    ?? 0;
-$completedProjectsCount= $metrics['completed_projects'] ?? 0;
-$totalHours            = $metrics['total_hours']        ?? 0;
+$M = $stmt->fetch(PDO::FETCH_ASSOC);
+$curActive    = (int)($M['active']   ?? 0);
+$curCompleted = (int)($M['completed']?? 0);
+$curHours     = (int)($M['hours']    ?? 0);
 
-// Projetos mês anterior
+// Métricas mês anterior
 $stmt = $pdo->query("
-  SELECT 
-    SUM(status = 'in_progress') AS active_last,
-    SUM(status = 'completed')   AS completed_last,
-    SUM(total_hours)            AS hours_last
+  SELECT
+    SUM(status = 'in_progress') AS active,
+    SUM(status = 'completed')   AS completed,
+    SUM(total_hours)            AS hours
   FROM projects
   WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
 ");
-$last = $stmt->fetch(PDO::FETCH_ASSOC);
-$activeLast     = $last['active_last']    ?? 0;
-$completedLast  = $last['completed_last'] ?? 0;
-$hoursLast      = $last['hours_last']     ?? 0;
+$L = $stmt->fetch(PDO::FETCH_ASSOC);
+$prevActive    = (int)($L['active']   ?? 0);
+$prevCompleted = (int)($L['completed']?? 0);
+$prevHours     = (int)($L['hours']    ?? 0);
 
-// Variações percentuais
-function pct($cur,$prev){
-  if($prev==0) return $cur>0?100:0;
-  return round((($cur-$prev)/$prev)*100,1);
+// Função de % real
+function pctChange(int $cur, int $prev): float {
+    if ($prev === 0) {
+        return $cur > 0 ? 100.0 : 0.0;
+    }
+    return round((($cur - $prev) / $prev) * 100, 1);
 }
-$activePct    = pct($activeProjectsCount, $activeLast);
-$completedPct = pct($completedProjectsCount, $completedLast);
-$hoursPct     = pct($totalHours,             $hoursLast);
+$pctActive    = pctChange($curActive,    $prevActive);
+$pctCompleted = pctChange($curCompleted, $prevCompleted);
+$pctHours     = pctChange($curHours,     $prevHours);
 
-// Detalhe dos projetos ativos para o grid
+// Projetos ativos limitados
 $stmt = $pdo->query("
   SELECT p.*, c.name AS client_name
   FROM projects p
@@ -54,80 +66,91 @@ $stmt = $pdo->query("
 $activeProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
-// ——— 2) Métricas de Clientes ———
+// ——— 2) Clientes (mês atual vs mês anterior) ———
 $stmt = $pdo->query("
-  SELECT 
-    COUNT(*)       AS total_clients,
-    SUM(loyalty_points) AS total_points
+  SELECT
+    SUM(active = 1)       AS cur_clients,
+    SUM(loyalty_points)   AS cur_points
   FROM client
-  WHERE active = 1
 ");
-$cli = $stmt->fetch(PDO::FETCH_ASSOC);
-$totalClients = $cli['total_clients'] ?? 0;
-$totalPoints  = $cli['total_points']  ?? 0;
+$C1 = $stmt->fetch(PDO::FETCH_ASSOC);
 
-
-// ——— 3) Métricas de Inventário ———
 $stmt = $pdo->query("
-  SELECT 
-    COUNT(*)   AS skus,
-    SUM(quantity) AS total_stock
+  SELECT
+    SUM(active = 1)       AS prev_clients,
+    SUM(loyalty_points)   AS prev_points
+  FROM client
+  WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
+");
+$C2 = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$curClients  = (int)($C1['cur_clients'] ?? 0);
+$prevClients = (int)($C2['prev_clients'] ?? 0);
+$pctClients  = pctChange($curClients, $prevClients);
+
+
+// ——— 3) Inventário (mês atual vs mês anterior) ———
+$stmt = $pdo->query("
+  SELECT
+    COUNT(*)       AS cur_skus,
+    SUM(quantity) AS cur_stock
   FROM inventory
 ");
-$inv = $stmt->fetch(PDO::FETCH_ASSOC);
-$totalSKUs   = $inv['skus']        ?? 0;
-$totalStock  = $inv['total_stock'] ?? 0;
+$I1 = $stmt->fetch(PDO::FETCH_ASSOC);
 
-
-// ——— 4) Métricas de Tarefas ———
 $stmt = $pdo->query("
-  SELECT 
-    SUM(completed = 0) AS pending_tasks,
-    SUM(completed = 1) AS done_tasks
+  SELECT
+    COUNT(*)       AS prev_skus,
+    SUM(quantity) AS prev_stock
+  FROM inventory
+  WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
+");
+$I2 = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$curSKUs   = (int)($I1['cur_skus']   ?? 0);
+$prevSKUs  = (int)($I2['prev_skus']  ?? 0);
+$pctSKUs   = pctChange($curSKUs, $prevSKUs);
+
+
+// ——— 4) Tarefas pendentes (comparativo com mês anterior) ———
+$stmt = $pdo->query("
+  SELECT
+    SUM(completed = 0) AS cur_pending
   FROM tasks
 ");
-$tsk = $stmt->fetch(PDO::FETCH_ASSOC);
-$pendingTasks = $tsk['pending_tasks'] ?? 0;
+$T1 = $stmt->fetch(PDO::FETCH_ASSOC);
 
-
-// ——— 5) Métricas de Lembretes ———
 $stmt = $pdo->query("
-  SELECT COUNT(*) AS upcoming_reminders
+  SELECT
+    SUM(completed = 0) AS prev_pending
+  FROM tasks
+  WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
+");
+$T2 = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$curPending = (int)($T1['cur_pending'] ?? 0);
+$prevPending= (int)($T2['prev_pending']?? 0);
+$pctPending = pctChange($curPending, $prevPending);
+
+
+// ——— 5) Lembretes futuros (sem comparativo) ———
+$stmt = $pdo->query("
+  SELECT COUNT(*) AS upcoming
   FROM reminders
   WHERE reminder_date >= CURRENT_DATE()
 ");
-$rem = $stmt->fetch(PDO::FETCH_ASSOC);
-$upcomingReminders = $rem['upcoming_reminders'] ?? 0;
+$R = $stmt->fetch(PDO::FETCH_ASSOC);
+$upcoming = (int)($R['upcoming'] ?? 0);
 ?>
 
-<div class="ml-56 pt-20 p-8">
-
-  <!-- === Cards de Projetos === -->
+  <!-- === Cards Principais === -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-    <?php 
-      $cards = [
-        [
-          'title' => $langText['active_projects']   ?? 'Active Projects',
-          'value' => $activeProjectsCount,
-          'pct'   => $activePct,
-        ],
-        [
-          'title' => $langText['total_hours']       ?? 'Total Hours',
-          'value' => $totalHours . 'h',
-          'pct'   => $hoursPct,
-        ],
-        [
-          'title' => $langText['team_members']      ?? 'Team Members',
-          'value' => $pdo->query("SELECT COUNT(*) FROM employees WHERE active=1")->fetchColumn(),
-          'pct'   => $activePct,
-        ],
-        [
-          'title' => $langText['completed_projects'] ?? 'Completed Projects',
-          'value' => $completedProjectsCount,
-          'pct'   => $completedPct,
-        ]
-      ];
-      foreach($cards as $c): ?>
+    <?php foreach ([
+      ['title'=>$langText['active_projects']   ?? 'Active Projects','value'=>$curActive,'pct'=>$pctActive],
+      ['title'=>$langText['total_hours']       ?? 'Total Hours','value'=>$curHours.'h','pct'=>$pctHours],
+      ['title'=>$langText['team_members']      ?? 'Team Members','value'=>$pdo->query("SELECT COUNT(*) FROM employees WHERE active=1")->fetchColumn(),'pct'=>$pctClients],
+      ['title'=>$langText['completed_projects']?? 'Completed Projects','value'=>$curCompleted,'pct'=>$pctCompleted],
+    ] as $c): ?>
       <div class="bg-white p-4 rounded-lg shadow flex flex-col items-center">
         <h3 class="text-lg font-semibold mb-2"><?= $c['title'] ?></h3>
         <p class="text-3xl font-bold"><?= $c['value'] ?></p>
@@ -142,24 +165,31 @@ $upcomingReminders = $rem['upcoming_reminders'] ?? 0;
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
     <div class="bg-white p-4 rounded-lg shadow">
       <h3 class="font-semibold"><?= $langText['active_clients'] ?? 'Active Clients' ?></h3>
-      <p class="text-2xl font-bold"><?= $totalClients ?></p>
-      <p class="text-sm"><?= $langText['total_loyalty_points'] ?? 'Total Loyalty Points' ?>: <?= $totalPoints ?></p>
+      <p class="text-2xl font-bold"><?= $curClients ?></p>
+      <p class="text-sm <?= $pctClients>=0?'text-green-500':'text-red-500' ?>">
+        <?= $pctClients>=0?'+':'' ?><?= $pctClients ?>% <?= $langText['vs_last_month'] ?? 'vs last month' ?>
+      </p>
     </div>
     <div class="bg-white p-4 rounded-lg shadow">
       <h3 class="font-semibold"><?= $langText['inventory_items'] ?? 'Inventory SKUs' ?></h3>
-      <p class="text-2xl font-bold"><?= $totalSKUs ?></p>
-      <p class="text-sm"><?= $langText['total_stock'] ?? 'Total Stock' ?>: <?= $totalStock ?></p>
+      <p class="text-2xl font-bold"><?= $curSKUs ?></p>
+      <p class="text-sm <?= $pctSKUs>=0?'text-green-500':'text-red-500' ?>">
+        <?= $pctSKUs>=0?'+':'' ?><?= $pctSKUs ?>% <?= $langText['vs_last_month'] ?? 'vs last month' ?>
+      </p>
     </div>
     <div class="bg-white p-4 rounded-lg shadow">
       <h3 class="font-semibold"><?= $langText['pending_tasks'] ?? 'Pending Tasks' ?></h3>
-      <p class="text-2xl font-bold"><?= $pendingTasks ?></p>
+      <p class="text-2xl font-bold"><?= $curPending ?></p>
+      <p class="text-sm <?= $pctPending>=0?'text-green-500':'text-red-500' ?>">
+        <?= $pctPending>=0?'+':'' ?><?= $pctPending ?>% <?= $langText['vs_last_month'] ?? 'vs last month' ?>
+      </p>
     </div>
     <div class="bg-white p-4 rounded-lg shadow">
       <h3 class="font-semibold"><?= $langText['upcoming_reminders'] ?? 'Upcoming Reminders' ?></h3>
-      <p class="text-2xl font-bold"><?= $upcomingReminders ?></p>
+      <p class="text-2xl font-bold"><?= $upcoming ?></p>
+      <!-- sem comparativo para lembretes -->
     </div>
   </div>
-
 
   <!-- === Grid de Projetos Ativos === -->
   <div class="mt-12">
@@ -170,17 +200,16 @@ $upcomingReminders = $rem['upcoming_reminders'] ?? 0;
       <?php else: ?>
         <?php foreach ($activeProjects as $project): ?>
           <?php
-            // status tag
             switch ($project['status']) {
               case 'in_progress': $c='bg-blue-500';  $t=$langText['active']   ?? 'Active';   break;
               case 'pending':     $c='bg-yellow-500';$t=$langText['pending']  ?? 'Pending';  break;
               default:            $c='bg-green-500'; $t=$langText['completed']?? 'Completed';break;
             }
-            // progresso via tasks
             $tStmt = $pdo->prepare("SELECT completed FROM tasks WHERE project_id=?");
             $tStmt->execute([$project['id']]);
-            $d = array_sum(array_column($tStmt->fetchAll(), 'completed'));
-            $pr = $tStmt->rowCount()? round($d/$tStmt->rowCount()*100):0;
+            $done = array_sum(array_column($tStmt->fetchAll(), 'completed'));
+            $totalTasks = $tStmt->rowCount();
+            $pr = $totalTasks ? round($done/$totalTasks*100) : 0;
           ?>
           <div
             class="project-item bg-white p-6 rounded-xl shadow hover:shadow-md transition-all cursor-pointer"

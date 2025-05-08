@@ -6,189 +6,239 @@ require_once __DIR__ . '/../../../config/Database.php';
 
 $pdo     = Database::connect();
 $clients = $pdo->query("SELECT * FROM client ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
-
-// Base URL usada no JS
 $baseUrl = '/ams-malergeschaft/public';
 ?>
-
 <div class="ml-56 pt-20 p-4">
-  <h1 class="text-2xl font-bold mb-4">
+  <h1 class="text-3xl font-extrabold mb-6">
     <?= $langText['clients_list'] ?? 'Clients List' ?>
   </h1>
 
-  <!-- Grid de cards -->
-  <div id="clientsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <!-- Grid de clientes -->
+  <div id="clientsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
     <?php if (empty($clients)): ?>
-      <p><?= $langText['no_clients_available'] ?? 'No clients available.' ?></p>
+      <p class="text-gray-500"><?= $langText['no_clients_available'] ?? 'No clients available.' ?></p>
     <?php else: ?>
       <?php foreach ($clients as $c): ?>
         <div
-          class="client-item bg-white p-4 rounded-lg shadow flex flex-col cursor-pointer"
+          class="client-item bg-white rounded-lg overflow-hidden shadow hover:shadow-xl transition-shadow cursor-pointer"
           data-id="<?= $c['id'] ?>"
         >
-          <div class="flex items-center">
-            <div class="w-20 flex-shrink-0">
-              <img
-                src="<?= !empty($c['profile_picture'])
-                  ? $baseUrl . '/uploads/' . $c['profile_picture']
-                  : 'https://via.placeholder.com/96x128' ?>"
-                alt="<?= htmlspecialchars($c['name'], ENT_QUOTES) ?>"
-                class="w-full h-auto object-cover rounded-lg"
-              >
-            </div>
-            <div class="ml-4 flex-1">
-              <h2 class="text-xl font-bold"><?= htmlspecialchars($c['name'], ENT_QUOTES) ?></h2>
-              <p class="text-sm text-gray-600">
-                <?= $langText['loyalty_points'] ?? 'Loyalty Points' ?>:
-                <span class="font-semibold"><?= (int)$c['loyalty_points'] ?></span>
-              </p>
-            </div>
+          <img
+            src="<?= !empty($c['profile_picture'])
+              ? $baseUrl . '/uploads/' . $c['profile_picture']
+              : 'https://via.placeholder.com/400x240' ?>"
+            alt="<?= htmlspecialchars($c['name'], ENT_QUOTES) ?>"
+            class="w-full h-40 object-cover"
+          >
+          <div class="p-4">
+            <h2 class="text-xl font-semibold mb-1"><?= htmlspecialchars($c['name'], ENT_QUOTES) ?></h2>
+            <p class="text-sm text-gray-600">
+              <?= $langText['loyalty_points'] ?? 'Loyalty Points' ?>:
+              <span class="font-medium"><?= (int)$c['loyalty_points'] ?></span>
+            </p>
           </div>
         </div>
       <?php endforeach; ?>
     <?php endif; ?>
   </div>
 
-  <!-- Botão para criar novo -->
+  <!-- Botão flutuante de adicionar -->
   <button
     id="addClientBtn"
-    class="fixed bottom-8 right-8 bg-green-500 text-white rounded-full p-4 shadow-lg hover:bg-green-600"
-    aria-label="Criar novo cliente"
+    class="fixed bottom-8 right-8 bg-green-500 hover:bg-green-600 text-white rounded-full p-4 shadow-lg focus:outline-none"
+    aria-label="Add client"
   >
-    <svg class="w-6 h-6" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
   </button>
+</div>
 
-  <!-- Modal de Criação -->
+<!-- Modal de Criação -->
+<div
+  id="createModal"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden"
+  aria-modal="true" role="dialog"
+>
   <div
-    id="clientModal"
-    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden"
-    aria-modal="true" role="dialog"
+    id="createModalContent"
+    class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"
   >
-    <div class="bg-white rounded-md p-8 w-90 max-h-[80vh] overflow-y-auto mt-10 relative">
-      <button
-        type="button"
-        id="closeCreateModal"
-        class="absolute top-4 right-4 text-gray-700 text-2xl"
-        aria-label="Fechar criação"
-      >&times;</button>
+    <button
+      type="button"
+      id="closeCreateModal"
+      class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl focus:outline-none"
+      aria-label="Close"
+    >&times;</button>
 
-      <h2 class="text-2xl font-bold mb-4"><?= $langText['create_client'] ?? 'Create Client' ?></h2>
-      <form action="<?= $baseUrl ?>/clients/store" method="POST" enctype="multipart/form-data" class="space-y-4">
-        <!-- campos do formulário -->
-        <div>
-          <label for="clientName" class="block mb-2"><?= $langText['name'] ?? 'Name' ?></label>
-          <input id="clientName" name="name" type="text" required class="w-full border p-2 rounded focus:outline-none focus:ring"/>
-        </div>
-        <div>
-          <label for="clientAddress" class="block mb-2"><?= $langText['address'] ?? 'Address' ?></label>
-          <input id="clientAddress" name="address" type="text" class="w-full border p-2 rounded focus:outline-none focus:ring"/>
-        </div>
-        <div>
-          <label for="clientAbout" class="block mb-2"><?= $langText['about_me'] ?? 'About Me' ?></label>
-          <textarea id="clientAbout" name="about" rows="4" class="w-full border p-2 rounded focus:outline-none focus:ring"></textarea>
-        </div>
-        <div>
-          <label for="clientPhone" class="block mb-2"><?= $langText['phone'] ?? 'Phone' ?></label>
-          <input id="clientPhone" name="phone" type="text" class="w-full border p-2 rounded focus:outline-none focus:ring"/>
-        </div>
-        <div>
-          <label for="clientProfilePicture" class="block mb-2"><?= $langText['profile_picture'] ?? 'Profile Picture' ?></label>
-          <input id="clientProfilePicture" name="profile_picture" type="file" accept="image/*" class="w-full border p-2 rounded focus:outline-none focus:ring"/>
-        </div>
-        <div class="flex justify-end">
-          <button type="button" id="cancelCreate" class="mr-2 px-4 py-2 border rounded hover:bg-gray-100">
-            <?= $langText['cancel'] ?? 'Cancel' ?>
-          </button>
-          <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-            <?= $langText['submit'] ?? 'Submit' ?>
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal de Detalhes -->
-  <div
-    id="clientDetailsModal"
-    class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden"
-    aria-modal="true" role="dialog"
-  >
-    <div class="bg-white rounded-md p-8 w-90 max-h-[80vh] overflow-y-auto mt-10 relative">
-      <button
-        type="button"
-        id="closeDetailsX"
-        class="absolute top-4 right-4 text-gray-700 text-2xl"
-        aria-label="Fechar detalhes"
-      >&times;</button>
-
-      <h2 class="text-2xl font-bold mb-4"><?= $langText['client_details'] ?? 'Client Details' ?></h2>
-
-      <p class="mb-4"><strong><?= $langText['name'] ?? 'Name' ?>:</strong> <span id="detailsClientName">—</span></p>
-      <p class="mb-4"><strong><?= $langText['address'] ?? 'Address' ?>:</strong> <span id="detailsClientAddress">—</span></p>
-      <p class="mb-4"><strong><?= $langText['about_me'] ?? 'About Me' ?>:</strong> <span id="detailsClientAbout">—</span></p>
-      <p class="mb-4"><strong><?= $langText['phone'] ?? 'Phone' ?>:</strong> <span id="detailsClientPhone">—</span></p>
-      <p class="mb-4"><strong><?= $langText['loyalty_points'] ?? 'Loyalty Points' ?>:</strong> <span id="detailsClientLoyalty">0</span></p>
-      <p class="mb-6"><strong><?= $langText['projects_done'] ?? 'Projects Done' ?>:</strong> <span id="detailsClientProjects">0</span></p>
-
-      <div class="flex justify-end">
-        <button id="closeDetailsBtn" class="px-4 py-2 border rounded hover:bg-gray-100">
-          <?= $langText['close'] ?? 'Close' ?>
+    <h2 class="text-2xl font-bold mb-4"><?= $langText['create_client'] ?? 'Create Client' ?></h2>
+    <form action="<?= $baseUrl ?>/clients/store" method="POST" enctype="multipart/form-data" class="space-y-4">
+      <div>
+        <label for="newName" class="block mb-1 font-medium"><?= $langText['name'] ?? 'Name' ?></label>
+        <input id="newName" name="name" type="text" required
+               class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"/>
+      </div>
+      <div>
+        <label for="newAddress" class="block mb-1 font-medium"><?= $langText['address'] ?? 'Address' ?></label>
+        <input id="newAddress" name="address" type="text"
+               class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"/>
+      </div>
+      <div>
+        <label for="newAbout" class="block mb-1 font-medium"><?= $langText['about_me'] ?? 'About Me' ?></label>
+        <textarea id="newAbout" name="about" rows="3"
+                  class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"></textarea>
+      </div>
+      <div>
+        <label for="newPhone" class="block mb-1 font-medium"><?= $langText['phone'] ?? 'Phone' ?></label>
+        <input id="newPhone" name="phone" type="text"
+               class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"/>
+      </div>
+      <div>
+        <label for="newProfilePicture" class="block mb-1 font-medium"><?= $langText['profile_picture'] ?? 'Profile Picture' ?></label>
+        <input id="newProfilePicture" name="profile_picture" type="file" accept="image/*"
+               class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"/>
+      </div>
+      <div class="flex justify-end space-x-2 pt-4">
+        <button type="button" id="cancelCreate"
+                class="px-4 py-2 border rounded hover:bg-gray-100 focus:outline-none">
+          <?= $langText['cancel'] ?? 'Cancel' ?>
+        </button>
+        <button type="submit"
+                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded focus:outline-none">
+          <?= $langText['submit'] ?? 'Submit' ?>
         </button>
       </div>
-    </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal de Detalhes / Edição -->
+<div
+  id="detailsModal"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden"
+  aria-modal="true" role="dialog"
+>
+  <div
+    id="detailsModalContent"
+    class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"
+  >
+    <button
+      type="button"
+      id="closeDetailsModal"
+      class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl focus:outline-none"
+      aria-label="Close"
+    >&times;</button>
+
+    <h2 class="text-2xl font-bold mb-4"><?= $langText['client_details'] ?? 'Client Details' ?></h2>
+    <form id="detailsForm" action="<?= $baseUrl ?>/clients/update" method="POST" class="space-y-4">
+      <input type="hidden" name="id" id="detailId" value="">
+
+      <div>
+        <label for="detailName" class="block mb-1 font-medium"><?= $langText['name'] ?? 'Name' ?></label>
+        <input id="detailName" name="name" type="text" required
+               class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"/>
+      </div>
+      <div>
+        <label for="detailAddress" class="block mb-1 font-medium"><?= $langText['address'] ?? 'Address' ?></label>
+        <input id="detailAddress" name="address" type="text"
+               class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"/>
+      </div>
+      <div>
+        <label for="detailAbout" class="block mb-1 font-medium"><?= $langText['about_me'] ?? 'About Me' ?></label>
+        <textarea id="detailAbout" name="about" rows="3"
+                  class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"></textarea>
+      </div>
+      <div>
+        <label for="detailPhone" class="block mb-1 font-medium"><?= $langText['phone'] ?? 'Phone' ?></label>
+        <input id="detailPhone" name="phone" type="text"
+               class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"/>
+      </div>
+
+      <div class="flex justify-between items-center pt-4">
+        <div class="text-sm text-gray-600">
+          <?= $langText['loyalty_points'] ?? 'Loyalty Points' ?>:
+          <span id="detailLoyalty">0</span><br>
+          <?= $langText['projects_done'] ?? 'Projects Done' ?>:
+          <span id="detailProjects">0</span>
+        </div>
+        <div class="space-x-2">
+          <button type="button" id="cancelDetails"
+                  class="px-4 py-2 border rounded hover:bg-gray-100 focus:outline-none">
+            <?= $langText['cancel'] ?? 'Cancel' ?>
+          </button>
+          <button type="submit"
+                  class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded focus:outline-none">
+            <?= $langText['save_changes'] ?? 'Save Changes' ?>
+          </button>
+        </div>
+      </div>
+    </form>
   </div>
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const baseUrl = '<?= $baseUrl ?>';
-    console.log('→ clientes.js carregado, baseUrl=', baseUrl);
+document.addEventListener('DOMContentLoaded', () => {
+  const baseUrl = '<?= $baseUrl ?>';
 
-    // criação
-    document.getElementById('addClientBtn').addEventListener('click', () => {
-      document.getElementById('clientModal').classList.remove('hidden');
+  // helpers
+  function closeModal(modal) {
+    modal.classList.add('hidden');
+  }
+  function onClickOutside(modal, content, closeFn) {
+    modal.addEventListener('click', e => {
+      if (e.target === modal) closeFn();
     });
-    ['closeCreateModal','cancelCreate'].forEach(id =>
-      document.getElementById(id).addEventListener('click', () => {
-        document.getElementById('clientModal').classList.add('hidden');
-      })
-    );
+  }
 
-    // detalhes
-    const detailsModal = document.getElementById('clientDetailsModal');
-    ['closeDetailsX','closeDetailsBtn'].forEach(id =>
-      document.getElementById(id).addEventListener('click', () => {
-        detailsModal.classList.add('hidden');
-      })
-    );
+  // create modal
+  const createModal = document.getElementById('createModal');
+  document.getElementById('addClientBtn').addEventListener('click', () => {
+    createModal.classList.remove('hidden');
+  });
+  ['closeCreateModal','cancelCreate'].forEach(id =>
+    document.getElementById(id).addEventListener('click', () => closeModal(createModal))
+  );
+  onClickOutside(createModal, document.getElementById('createModalContent'),
+    () => closeModal(createModal)
+  );
 
-    document.querySelectorAll('.client-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const id = item.dataset.id;
-        console.log('→ clicou em client-item id=', id);
-        fetch(`${baseUrl}/clients/show?id=${encodeURIComponent(id)}`, {
-          credentials: 'same-origin'
-        })
-        .then(res => {
-          console.log('→ status', res.status);
-          if (!res.ok) throw new Error(res.statusText);
-          return res.json();
-        })
-        .then(data => {
-          console.log('→ data', data);
-          document.getElementById('detailsClientName').textContent    = data.name;
-          document.getElementById('detailsClientAddress').textContent = data.address || '—';
-          document.getElementById('detailsClientAbout').textContent   = data.about   || '—';
-          document.getElementById('detailsClientPhone').textContent   = data.phone   || '—';
-          document.getElementById('detailsClientLoyalty').textContent = data.loyalty_points;
-          document.getElementById('detailsClientProjects').textContent= data.project_count;
-          detailsModal.classList.remove('hidden');
-        })
-        .catch(err => {
-          console.error('→ erro ao carregar detalhes:', err);
-          alert('Não foi possível carregar detalhes do cliente:\n' + err.message);
-        });
+  // details/edit modal
+  const detailsModal    = document.getElementById('detailsModal');
+  const detailsContent  = document.getElementById('detailsModalContent');
+  const detailForm      = document.getElementById('detailsForm');
+  ['closeDetailsModal','cancelDetails'].forEach(id =>
+    document.getElementById(id).addEventListener('click', () => closeModal(detailsModal))
+  );
+  onClickOutside(detailsModal, detailsContent, () => closeModal(detailsModal));
+
+  // open details modal on card click
+  document.querySelectorAll('.client-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const id = item.dataset.id;
+      fetch(`${baseUrl}/clients/show?id=${encodeURIComponent(id)}`, {
+        credentials: 'same-origin'
+      })
+      .then(res => {
+        if (!res.ok) throw new Error(res.statusText);
+        return res.json();
+      })
+      .then(data => {
+        // fill form
+        detailForm.id.value        = data.id;
+        detailForm.name.value      = data.name;
+        detailForm.address.value   = data.address   || '';
+        detailForm.about.value     = data.about     || '';
+        detailForm.phone.value     = data.phone     || '';
+        document.getElementById('detailLoyalty').textContent  = data.loyalty_points;
+        document.getElementById('detailProjects').textContent = data.project_count;
+
+        detailsModal.classList.remove('hidden');
+      })
+      .catch(err => {
+        console.error('Erro ao carregar detalhes:', err);
+        alert('Não foi possível carregar detalhes do cliente.');
       });
     });
   });
+});
 </script>

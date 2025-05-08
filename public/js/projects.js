@@ -1,5 +1,3 @@
-// public/js/projects.js
-
 const baseUrl = window.location.origin + '/ams-malergeschaft/public';
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -7,7 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const addProjectBtn       = document.getElementById("addProjectBtn");
   const projectModal        = document.getElementById("projectModal");
   const closeModalBtns      = document.querySelectorAll("#closeModal, #closeProjectModal");
-  const projectForm         = document.getElementById("projectForm");
   const tasksContainer      = document.getElementById("tasksContainer");
   const employeesContainer  = document.getElementById("employeesContainer");
   const newTaskInput        = document.getElementById("newTaskInput");
@@ -148,43 +145,27 @@ document.addEventListener("DOMContentLoaded", () => {
     fetch(`${baseUrl}/projects/show?id=${projectId}`, {
       credentials: 'same-origin'
     })
-      .then(res => {
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        return res.json();
-      })
+      .then(res => res.ok ? res.json() : Promise.reject(res.status))
       .then(data => {
-        if (data.error) {
-          alert(data.error);
-          return;
-        }
-
-        // cliente
-        document.getElementById("detailsProjectClientName")
-                .textContent = data.client_name || '—';
+        if (data.error) return alert(data.error);
 
         // preencher formulário
-        detailsProjectIdInput.value                 = data.id;
-        detailsProjectNameInput.value               = data.name;
-        detailsProjectLocation.value                = data.location;
-        detailsProjectStartDate.value               = data.start_date;
-        detailsProjectEndDate.value                 = data.end_date;
-        detailsProjectStatus.value                  = data.status;
+        detailsProjectIdInput.value     = data.id;
+        detailsProjectNameInput.value   = data.name;
+        detailsProjectLocation.value    = data.location;
+        detailsProjectStartDate.value   = data.start_date;
+        detailsProjectEndDate.value     = data.end_date;
+        detailsProjectStatus.value      = data.status;
 
-        // progresso
-        const prog = data.progress || 0;
-        detailsProgressBar.style.width  = prog + '%';
-        detailsProgressText.textContent = prog + '%';
-
-        // tasks
+        // tarefas
         detailTasks = (data.tasks || []).map(t => ({
           id: t.id,
           description: t.description,
           completed: !!t.completed
         }));
         renderDetailTasks();
-        detailsTasksData.value = JSON.stringify(detailTasks);
 
-        // employees
+        // funcionários
         detailEmployees = (data.employees || []).map(e => ({
           id: e.id,
           text: e.name + ' ' + e.last_name
@@ -193,7 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
         detailsEmployeesData.value = JSON.stringify(detailEmployees.map(e => e.id));
         detailsEmployeeCount.value = detailEmployees.length;
 
-        // inventory
+        // estoque
         detailInventory = data.inventory || [];
         renderDetailInventory();
 
@@ -209,29 +190,56 @@ document.addEventListener("DOMContentLoaded", () => {
     detailsModal.classList.add("hidden");
   }
 
-  // detalhar tarefas
+  // adicionar nova task no detalhe
   detailsAddTaskBtn.addEventListener("click", () => {
     const desc = detailsNewTaskInput.value.trim();
     if (!desc) return;
     detailTasks.push({ id: Date.now(), description: desc, completed: false });
+    detailsNewTaskInput.value = "";
     renderDetailTasks();
-    detailsTasksData.value = JSON.stringify(detailTasks);
   });
 
+  // render + event delegation para checkboxes
   function renderDetailTasks() {
     detailsTasksContainer.innerHTML = "";
-    detailTasks.forEach(t => {
+    detailTasks.forEach((t, idx) => {
       const div = document.createElement("div");
       div.className = "flex items-center mb-2";
       div.innerHTML = `
-        <input type="checkbox" ${t.completed ? 'checked' : ''} disabled class="mr-2">
+        <input type="checkbox" data-idx="${idx}" ${t.completed ? 'checked' : ''} class="mr-2">
         <span class="flex-1">${t.description}</span>
       `;
       detailsTasksContainer.appendChild(div);
     });
+    // atualiza hidden + progresso
+    detailsTasksData.value = JSON.stringify(detailTasks);
+    updateProgress();
   }
 
-  // detalhar funcionários
+  // delega clique nas checkboxes
+  detailsTasksContainer.addEventListener("change", e => {
+    if (e.target.matches('input[type="checkbox"]')) {
+      const idx = e.target.dataset.idx;
+      detailTasks[idx].completed = e.target.checked;
+      detailsTasksData.value = JSON.stringify(detailTasks);
+      updateProgress();
+    }
+  });
+
+  function updateProgress() {
+    const total = detailTasks.length;
+    const done  = detailTasks.filter(t => t.completed).length;
+    const pct   = total ? Math.round(done / total * 100) : 0;
+    detailsProgressBar.style.width  = pct + '%';
+    detailsProgressText.textContent = pct + '%';
+
+    // marca como concluído se 100%
+    if (total > 0 && done === total) {
+      detailsProjectStatus.value = 'completed';
+    }
+  }
+
+  // render + remoção de funcionários
   detailsAddEmployeeBtn.addEventListener("click", () => {
     const empId   = detailsEmployeeSelect.value;
     const empText = detailsEmployeeSelect.options[detailsEmployeeSelect.selectedIndex].text;
@@ -263,7 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  // detalhar inventário
+  // render de inventário
   function renderDetailInventory() {
     detailsInventoryContainer.innerHTML = "";
     if (detailInventory.length === 0) {

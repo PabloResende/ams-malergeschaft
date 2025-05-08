@@ -1,115 +1,97 @@
-document.addEventListener("DOMContentLoaded", function () {
-  // Mobile Menu
-  const sidebar = document.getElementById('sidebar');
-  const mobileMenuButton = document.getElementById('mobileMenuButton');
-  const contentOverlay = document.getElementById('contentOverlay');
+// public/js/header.js
 
-  if (mobileMenuButton && sidebar && contentOverlay) {
+document.addEventListener('DOMContentLoaded', function () {
+  // ===== Mobile Menu =====
+  const sidebar          = document.getElementById('sidebar');
+  const mobileMenuButton = document.getElementById('mobileMenuButton');
+  const contentOverlay   = document.getElementById('contentOverlay');
+  if (sidebar && mobileMenuButton && contentOverlay) {
     const toggleMenu = () => {
       sidebar.classList.toggle('sidebar-open');
       contentOverlay.classList.toggle('hidden');
       document.body.classList.toggle('overflow-hidden');
     };
-
-    mobileMenuButton.addEventListener('click', (e) => {
+    mobileMenuButton.addEventListener('click', function (e) {
       e.stopPropagation();
       toggleMenu();
     });
-
     contentOverlay.addEventListener('click', toggleMenu);
-    
-    // Fechar menu ao clicar nos links
-    document.querySelectorAll('#sidebar a').forEach(link => {
+    sidebar.querySelectorAll('a').forEach(link => {
       link.addEventListener('click', toggleMenu);
     });
   }
 
-  // Idioma
+  // ===== Language Dropdown =====
   const langButton = document.getElementById('language-button');
-  const langMenu = document.getElementById('language-menu');
-
+  const langMenu   = document.getElementById('language-menu');
   if (langButton && langMenu) {
-    langButton.addEventListener('click', (e) => {
+    langButton.addEventListener('click', function (e) {
       e.stopPropagation();
       langMenu.classList.toggle('hidden');
     });
-
-    document.addEventListener('click', (e) => {
-      if (!langButton.contains(e.target) && !langMenu.contains(e.target)) {
-        langMenu.classList.add('hidden');
-      }
-    });
   }
 
-  // Notificações
-  const notificationBtn = document.getElementById('notificationBtn');
-  const notificationList = document.getElementById('notificationList');
-  const notificationDot = document.getElementById('notificationDot');
+  // ===== Notifications Dropdown =====
+  // suporta tanto IDs quanto classes
+  const notificationButtons = [
+    document.getElementById('notificationBtn'),
+    ...document.querySelectorAll('.notification-btn')
+  ].filter(Boolean);
 
-  if (notificationBtn && notificationList && notificationDot) {
-    notificationBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      notificationList.classList.toggle('hidden');
-      notificationDot.classList.add('hidden');
-    });
+  notificationButtons.forEach(btn => {
+    const list = btn.parentElement.querySelector('.notification-list') 
+               || document.getElementById('notificationList');
+    const dot  = btn.querySelector('.notification-dot') 
+               || document.getElementById('notificationDot');
 
-    // Verificar notificações
-    const notificationItems = document.querySelectorAll('#notificationList ul li');
-    const hasNotifications = notificationItems.length > 0 && 
-      !notificationItems[0].classList.contains('text-gray-500');
-
-    notificationDot.classList.toggle('hidden', !hasNotifications);
-  }
-
-  // Fechar menus ao clicar fora
-  document.addEventListener('click', function(e) {
-    if (notificationList && !notificationBtn.contains(e.target) && !notificationList.contains(e.target)) {
-      notificationList.classList.add('hidden');
+    if (!list) {
+      console.warn('Notification list not found for', btn);
+      return;
     }
-  });
-});
 
-// Adicione esta verificação para prevenir erros
-if (notificationItems.length > 0) {
-  const hasNotifications = !notificationItems[0].classList.contains('text-gray-500');
-  notificationDot.classList.toggle('hidden', !hasNotifications);
-}
+    // abre/fecha ao clicar no botão
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
 
-document.addEventListener("DOMContentLoaded", function () {
-  // Dropdown de Idioma
-  const langButton = document.getElementById('language-button');
-  const langMenu = document.getElementById('language-menu');
-  if (langButton && langMenu) {
-    langButton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      langMenu.classList.toggle('hidden');
+      // fecha outras listas abertas
+      document.querySelectorAll('.notification-list, #notificationList').forEach(l => {
+        if (l !== list) l.classList.add('hidden');
+      });
+
+      // toggle desta lista
+      list.classList.toggle('hidden');
+
+      // esconde o dot
+      if (dot) dot.classList.add('hidden');
     });
-    document.addEventListener('click', (e) => {
-      if (!langButton.contains(e.target) && !langMenu.contains(e.target)) {
-        langMenu.classList.add('hidden');
-      }
-    });
-  }
-  
-  // Notificações
-  const notificationBtn = document.getElementById('notificationBtn');
-  const notificationList = document.getElementById('notificationList');
-  const notificationDot = document.getElementById('notificationDot');
-  if (notificationBtn && notificationList && notificationDot) {
-    notificationBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      notificationList.classList.toggle('hidden');
-      notificationDot.classList.add('hidden');
-    });
-    const notificationItems = document.querySelectorAll('#notificationList ul li');
-    const hasNotifications = notificationItems.length > 0 && 
-      !notificationItems[0].classList.contains('text-gray-500');
-    notificationDot.classList.toggle('hidden', !hasNotifications);
-  }
-  
-  document.addEventListener('click', function(e) {
-    if (notificationList && !notificationBtn.contains(e.target) && !notificationList.contains(e.target)) {
-      notificationList.classList.add('hidden');
-    }
   });
+
+  // evita fechar quando clicar dentro da lista
+  document.querySelectorAll('.notification-list, #notificationList').forEach(list => {
+    list.addEventListener('click', function (e) {
+      e.stopPropagation();
+    });
+  });
+
+  // ===== Close dropdowns on outside click =====
+  document.addEventListener('click', function () {
+    // fecha language menu
+    if (langMenu) langMenu.classList.add('hidden');
+    // fecha notifications
+    document.querySelectorAll('.notification-list, #notificationList').forEach(l => {
+      l.classList.add('hidden');
+    });
+  });
+
+  // ===== Initialize notification dot visibility =====
+  const firstList = document.querySelector('.notification-list') 
+                 || document.getElementById('notificationList');
+  const firstDot  = document.querySelector('.notification-dot') 
+                 || document.getElementById('notificationDot');
+  if (firstList && firstDot) {
+    const items = firstList.querySelectorAll('li');
+    const hasNotifications = items.length > 0
+      && !items[0].classList.contains('text-gray-500');
+    firstDot.classList.toggle('hidden', !hasNotifications);
+  }
 });

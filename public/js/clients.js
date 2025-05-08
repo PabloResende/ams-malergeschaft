@@ -1,56 +1,79 @@
-const addClientBtn = document.getElementById("addClientBtn");
-const clientModal = document.getElementById("clientModal");
-const closeClientModal = document.getElementById("closeClientModal");
+// public/js/clients.js
 
-addClientBtn.addEventListener("click", function () {
-  clientModal.classList.remove("hidden");
-});
+document.addEventListener('DOMContentLoaded', () => {
+  // Base URL
+  const baseUrl = window.location.origin + '/ams-malergeschaft/public';
 
-closeClientModal.addEventListener("click", function () {
-  clientModal.classList.add("hidden");
-});
+  // ——— Modal de Criação ———
+  const addClientBtn     = document.getElementById('addClientBtn');
+  const clientModal      = document.getElementById('clientModal');
+  const closeClientModal = document.getElementById('closeClientModal');
 
-window.addEventListener("click", function (event) {
-  if (event.target === clientModal) {
-    clientModal.classList.add("hidden");
-  }
-});
-
-const editButtons = document.querySelectorAll(".editClientBtn");
-const clientEditModal = document.getElementById("clientEditModal");
-const closeClientEditModal = document.getElementById("closeClientEditModal");
-
-// Função para preencher os dados do modal
-editButtons.forEach((button) => {
-  button.addEventListener("click", function () {
-    document.getElementById("editClientId").value =
-      this.getAttribute("data-id");
-    document.getElementById("editClientName").value =
-      this.getAttribute("data-name");
-    document.getElementById("editClientRole").value =
-      this.getAttribute("data-role");
-    document.getElementById("editClientBirthDate").value =
-      this.getAttribute("data-birth_date");
-    document.getElementById("editClientStartDate").value =
-      this.getAttribute("data-start_date");
-    document.getElementById("editClientAddress").value =
-      this.getAttribute("data-address");
-    document.getElementById("editClientAbout").value =
-      this.getAttribute("data-about");
-    document.getElementById("editClientPhone").value =
-      this.getAttribute("data-phone");
-    clientEditModal.classList.remove("hidden");
-    document.getElementById("editClientActive").checked =
-      this.getAttribute("data-active") === "1";
+  addClientBtn.addEventListener('click', () => {
+    clientModal.classList.remove('hidden');
   });
-});
 
-closeClientEditModal.addEventListener("click", function () {
-  clientEditModal.classList.add("hidden");
-});
+  closeClientModal.addEventListener('click', () => {
+    clientModal.classList.add('hidden');
+  });
 
-window.addEventListener("click", function (event) {
-  if (event.target === clientEditModal) {
-    clientEditModal.classList.add("hidden");
+  window.addEventListener('click', e => {
+    if (e.target === clientModal) {
+      clientModal.classList.add('hidden');
+    }
+  });
+
+  // ——— Modal de Detalhes ———
+  const clientsContainer     = document.getElementById('clientsContainer');
+  const detailsModal         = document.getElementById('clientDetailsModal');
+  const closeDetailsX        = document.getElementById('closeClientDetailsModal');
+  const closeDetailsBtn      = document.getElementById('closeClientDetailsBtn');
+
+  // Delegação de evento para abrir detalhes
+  clientsContainer.addEventListener('click', e => {
+    const item = e.target.closest('.client-item');
+    if (!item) return;
+
+    const id = item.dataset.id;
+    fetch(`${baseUrl}/clients/show?id=${id}`, {
+      credentials: 'same-origin'
+    })
+      .then(res => {
+        if (!res.ok) throw new Error(`Status ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        if (data.error) {
+          alert(data.error);
+          return;
+        }
+        // Preencher campos do modal
+        document.getElementById('detailsClientName').textContent     = data.name;
+        document.getElementById('detailsClientAddress').textContent  = data.address || '—';
+        document.getElementById('detailsClientAbout').textContent    = data.about   || '—';
+        document.getElementById('detailsClientPhone').textContent    = data.phone   || '—';
+        document.getElementById('detailsClientLoyalty').textContent  = data.loyalty_points;
+        document.getElementById('detailsClientProjects').textContent = data.project_count;
+        // Exibir modal
+        detailsModal.classList.remove('hidden');
+      })
+      .catch(err => {
+        console.error('Erro ao carregar detalhes:', err);
+        alert('Não foi possível carregar detalhes do cliente.');
+      });
+  });
+
+  // Função para fechar modal de detalhes
+  function closeDetails() {
+    detailsModal.classList.add('hidden');
   }
+
+  closeDetailsX.addEventListener('click', closeDetails);
+  closeDetailsBtn.addEventListener('click', closeDetails);
+
+  window.addEventListener('click', e => {
+    if (e.target === detailsModal) {
+      closeDetails();
+    }
+  });
 });

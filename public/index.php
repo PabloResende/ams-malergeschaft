@@ -117,6 +117,9 @@ switch ($route) {
     case '/clients/store':
         $clientsController->store();
         break;
+    case '/clients/show':
+        $clientsController->show();
+        break;
     case '/clients/edit':
         $clientsController->edit();
         break;

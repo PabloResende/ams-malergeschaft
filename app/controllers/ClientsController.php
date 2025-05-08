@@ -37,6 +37,33 @@ class ClientsController {
         }
     }
 
+    public function show()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+
+        if (!isset($_GET['id'])) {
+            echo json_encode(['error' => 'ID não fornecido']);
+            exit;
+        }
+        $id = (int) $_GET['id'];
+
+        $client = Client::find($id);
+        if (!$client) {
+            echo json_encode(['error' => 'Cliente não encontrado']);
+            exit;
+        }
+
+        // opcional: contar quantos projetos este client já fez
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare("SELECT COUNT(*) AS cnt FROM projects WHERE client_id = ?");
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $client['project_count'] = (int)($row['cnt'] ?? 0);
+
+        echo json_encode($client);
+        exit;
+    }
+
     public function edit() {
         if (!isset($_GET['id'])) {
             echo "ID não fornecido.";

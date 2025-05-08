@@ -89,56 +89,63 @@ $isLoggedIn = isset($_SESSION['user']);
         <ul>
           <li class="mb-4">
             <a href="<?= $baseUrl ?>/dashboard" class="flex items-center space-x-2 hover:text-gray-300">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M3 10h11M9 21V6M21 16H9M15 3h6v6"/>
+              <!-- Heroicon: Home -->
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7m-9 2v8m4-8v8m5-2h-2a4 4 0 01-4-4V9" />
               </svg>
               <span><?= $langText['dashboard'] ?? 'Painel de Controle' ?></span>
             </a>
           </li>
           <li class="mb-4">
             <a href="<?= $baseUrl ?>/projects" class="flex items-center space-x-2 hover:text-gray-300">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M9 12h6M12 9v6M4 21h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H4v12Z"/>
+              <!-- Heroicon: Briefcase -->
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2m-8 0h8m-9 4h10m-10 4h10m-9 4h8a2 2 0 002-2v-2H5v2a2 2 0 002 2z" />
               </svg>
               <span><?= $langText['projects'] ?? 'Projetos' ?></span>
             </a>
           </li>
           <li class="mb-4">
             <a href="<?= $baseUrl ?>/employees" class="flex items-center space-x-2 hover:text-gray-300">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M8 7a4 4 0 1 1 8 0M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/>
+              <!-- Heroicon: Users -->
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M16 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
               <span><?= $langText['employees'] ?? 'Funcionários' ?></span>
             </a>
           </li>
           <li class="mb-4">
             <a href="<?= $baseUrl ?>/inventory" class="flex items-center space-x-2 hover:text-gray-300">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
+              <!-- Heroicon: Cube -->
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0v6l-8 4-8-4V7m16 6l-8 4m0 0l-8-4" />
               </svg>
               <span><?= $langText['inventory'] ?? 'Estoque' ?></span>
             </a>
           </li>
           <li class="mb-4">
             <a href="<?= $baseUrl ?>/calendar" class="flex items-center space-x-2 hover:text-gray-300">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+              <!-- Heroicon: Calendar -->
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10m-2 8H7a2 2 0 01-2-2V9a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2z" />
               </svg>
               <span><?= $langText['calendar'] ?? 'Calendário' ?></span>
             </a>
           </li>
           <li class="mb-4">
             <a href="<?= $baseUrl ?>/clients" class="flex items-center space-x-2 hover:text-gray-300">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M8 7a4 4 0 1 1 8 0M4 21v-2a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v2"/>
+              <!-- Heroicon: User Group -->
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M12 7a4 4 0 110 8 4 4 0 010-8z" />
               </svg>
               <span><?= $langText['clients'] ?? 'Clientes' ?></span>
             </a>
           </li>
           <li class="mb-4">
             <a href="<?= $baseUrl ?>/analytics" class="flex items-center space-x-2 hover:text-gray-300">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path d="M9 19v-6a2 2 0 0 0-2-2H5v6a2 2 0 0 0 2 2h2m2 0v-10h2v10m2 0v-4h2v4"/>
+              <!-- Heroicon: Chart Bar -->
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v18h18M12 13v6m-4-4v4m8-8v8m-4-12v12" />
               </svg>
               <span><?= $langText['analytics'] ?? 'Análises' ?></span>
             </a>
@@ -154,7 +161,6 @@ $isLoggedIn = isset($_SESSION['user']);
         <span class="text-xl text-gray-600">Malergeschäft</span>
       </div>
       <div class="flex items-center space-x-4">
-
         <!-- Novo Projeto -->
         <a href="<?= $baseUrl ?>/projects?openModal=true" class="bg-green-500 text-white px-3 py-2 rounded hover:bg-green-600">
           <?= $langText['new_project'] ?? 'Novo Projeto +' ?>
@@ -163,8 +169,9 @@ $isLoggedIn = isset($_SESSION['user']);
         <!-- Notificações -->
         <div class="relative">
           <button id="notificationBtn" class="relative bg-transparent focus:outline-none">
-            <svg class="w-8 h-8 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2a6 6 0 0 0-6 6v5H5a1 1 0 0 0 0 2h14a1 1 0 0 0 0-2h-1V8a6 6 0 0 0-6-6zM8 20a4 4 0 0 0 8 0H8z"/>
+            <!-- Heroicon: Bell -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0h6z" />
             </svg>
             <?php if ($notifications): ?>
               <span id="notificationDot" class="absolute top-0 right-0 bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px]">
@@ -187,7 +194,7 @@ $isLoggedIn = isset($_SESSION['user']);
               <?php endif; ?>
             </ul>
           </div>
-        </div> 
+        </div>
 
         <!-- Idioma -->
         <div class="relative">
@@ -200,7 +207,7 @@ $isLoggedIn = isset($_SESSION['user']);
               </a>
             <?php endforeach; ?>
           </div>
-        </div> 
+        </div>
 
       </div>
     </nav>
@@ -211,8 +218,9 @@ $isLoggedIn = isset($_SESSION['user']);
     <!-- Top Navbar Mobile -->
     <nav class="fixed top-0 left-0 right-0 bg-white h-14 flex items-center justify-between px-4 shadow z-50">
       <button id="mobileMenuButton" class="focus:outline-none">
-        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path d="M4 6h16M4 12h16M4 18h16"/>
+        <!-- Heroicon: Bars 3 -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
       <div class="flex items-center space-x-2">
@@ -223,8 +231,9 @@ $isLoggedIn = isset($_SESSION['user']);
         <!-- Notificações Mobile -->
         <div class="relative">
           <button id="notificationBtnMobile" class="relative bg-transparent focus:outline-none">
-            <svg class="w-8 h-8 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2a6 6 0 0 0-6 6v5H5a1 1 0 0 0 0 2h14a1 1 0 0 0 0-2h-1V8a6 6 0 0 0-6-6zM8 20a4 4 0 0 0 8 0H8z"/>
+            <!-- Heroicon: Bell -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0h6z" />
             </svg>
             <?php if ($notifications): ?>
               <span class="absolute top-0 right-0 bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px]">
@@ -265,34 +274,69 @@ $isLoggedIn = isset($_SESSION['user']);
     <!-- Bottom Navbar Mobile -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white bottom-nav z-50">
       <ul class="flex justify-around">
-        <li><a href="<?= $baseUrl ?>/dashboard" class="flex flex-col items-center py-2 text-gray-700">
-          <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10h11M9 21V6M21 16H9M15 3h6v6"/></svg>
-          <span class="text-xs"><?= $langText['dashboard'] ?? 'Painel' ?></span>
-        </a></li>
-        <li><a href="<?= $baseUrl ?>/projects" class="flex flex-col items-center py-2 text-gray-700">
-          <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12h6M12 9v6M4 21h16"/></svg>
-          <span class="text-xs"><?= $langText['projects'] ?? 'Projetos' ?></span>
-        </a></li>
-        <li><a href="<?= $baseUrl ?>/employees" class="flex flex-col items-center py-2 text-gray-700">
-          <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7a4 4 0 1 1 8 0M4 21"/></svg>
-          <span class="text-xs"><?= $langText['employees'] ?? 'Funcionários' ?></span>
-        </a></li>
-        <li><a href="<?= $baseUrl ?>/inventory" class="flex flex-col items-center py-2 text-gray-700">
-          <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
-          <span class="text-xs"><?= $langText['inventory'] ?? 'Estoque' ?></span>
-        </a></li>
-        <li><a href="<?= $baseUrl ?>/calendar" class="flex flex-col items-center py-2 text-gray-700">
-          <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <span class="text-xs"><?= $langText['calendar'] ?? 'Calendário' ?></span>
-        </a></li>
-        <li><a href="<?= $baseUrl ?>/clients" class="flex flex-col items-center py-2 text-gray-700">
-          <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7a4 4 0 1 1 8 0M4 21"/></svg>
-          <span class="text-xs"><?= $langText['clients'] ?? 'Clientes' ?></span>
-        </a></li>
-        <li><a href="<?= $baseUrl ?>/analytics" class="flex flex-col items-center py-2 text-gray-700">
-          <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 19v-6"/></svg>
-          <span class="text-xs"><?= $langText['analytics'] ?? 'Análises' ?></span>
-        </a></li>
+        <li>
+          <a href="<?= $baseUrl ?>/dashboard" class="flex flex-col items-center py-2 text-gray-700">
+            <!-- Heroicon: Home -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7m-9 2v8m4-8v8m5-2h-2a4 4 0 01-4-4V9" />
+            </svg>
+            <span class="text-xs"><?= $langText['dashboard'] ?? 'Painel' ?></span>
+          </a>
+        </li>
+        <li>
+          <a href="<?= $baseUrl ?>/projects" class="flex flex-col items-center py-2 text-gray-700">
+            <!-- Heroicon: Briefcase -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2m-8 0h8m-9 4h10m-10 4h10m-9 4h8a2 2 0 002-2v-2H5v2a2 2 0 002 2z" />
+            </svg>
+            <span class="text-xs"><?= $langText['projects'] ?? 'Projetos' ?></span>
+          </a>
+        </li>
+        <li>
+          <a href="<?= $baseUrl ?>/employees" class="flex flex-col items-center py-2 text-gray-700">
+            <!-- Heroicon: Users -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M16 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            <span class="text-xs"><?= $langText['employees'] ?? 'Funcionários' ?></span>
+          </a>
+        </li>
+        <li>
+          <a href="<?= $baseUrl ?>/inventory" class="flex flex-col items-center py-2 text-gray-700">
+            <!-- Heroicon: Cube -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0v6l-8 4-8-4V7m16 6l-8 4m0 0l-8-4" />
+            </svg>
+            <span class="text-xs"><?= $langText['inventory'] ?? 'Estoque' ?></span>
+          </a>
+        </li>
+        <li>
+          <a href="<?= $baseUrl ?>/calendar" class="flex flex-col items-center py-2 text-gray-700">
+            <!-- Heroicon: Calendar -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10m-2 8H7a2 2 0 01-2-2V9a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2z" />
+            </svg>
+            <span class="text-xs"><?= $langText['calendar'] ?? 'Calendário' ?></span>
+          </a>
+        </li>
+        <li>
+          <a href="<?= $baseUrl ?>/clients" class="flex flex-col items-center py-2 text-gray-700">
+            <!-- Heroicon: User Group -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M12 7a4 4 0 110 8 4 4 0 010-8z" />
+            </svg>
+            <span class="text-xs"><?= $langText['clients'] ?? 'Clientes' ?></span>
+          </a>
+        </li>
+        <li>
+          <a href="<?= $baseUrl ?>/analytics" class="flex flex-col items-center py-2 text-gray-700">
+            <!-- Heroicon: Chart Bar -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v18h18M12 13v6m-4-4v4m8-8v8m-4-12v12" />
+            </svg>
+            <span class="text-xs"><?= $langText['analytics'] ?? 'Análises' ?></span>
+          </a>
+        </li>
       </ul>
     </nav>
   </div>

@@ -2,261 +2,254 @@ const baseUrl = window.location.origin + '/ams-malergeschaft/public';
 
 document.addEventListener("DOMContentLoaded", () => {
   // —————— Modal de Criação ——————
-  const projectModal  = document.getElementById("projectModal");
-  const addProjectBtn = document.getElementById("addProjectBtn");
-  const closeModal    = document.getElementById("closeModal");
+  const projectModal        = document.getElementById("projectModal");
+  const addProjectBtn       = document.getElementById("addProjectBtn");
+  const closeModalBtns      = document.querySelectorAll("#closeModal");
+  const projectForm         = document.getElementById("projectForm");
+  const tasksContainer      = document.getElementById("tasksContainer");
+  const employeesContainer  = document.getElementById("employeesContainer");
+  const newTaskInput        = document.getElementById("newTaskInput");
+  const addTaskBtn          = document.getElementById("addTaskBtn");
+  const employeeSelect      = document.getElementById("employeeSelect");
+  const addEmployeeBtn      = document.getElementById("addEmployeeBtn");
+  const tasksDataInput      = document.getElementById("tasksData");
+  const employeesDataInput  = document.getElementById("employeesData");
+  const employeeCountCreate = document.getElementById("employeeCountDataCreate");
 
+  let createTasks     = [];
+  let createEmployees = [];
+
+  // abre/fecha modal criação
   addProjectBtn.addEventListener("click", () => projectModal.classList.remove("hidden"));
-  closeModal.addEventListener("click",   () => projectModal.classList.add("hidden"));
+  closeModalBtns.forEach(btn => btn.addEventListener("click", () => {
+    projectModal.classList.add("hidden");
+    createTasks = [];
+    createEmployees = [];
+    tasksContainer.innerHTML = "";
+    employeesContainer.innerHTML = "";
+    syncCreateData();
+  }));
   window.addEventListener("click", e => {
-    if (e.target === projectModal) projectModal.classList.add("hidden");
+    if (e.target === projectModal) closeModalBtns[0].click();
   });
 
-  // Tasks & Employees (Criação)
-  const tasksContainer     = document.getElementById("tasksContainer");
-  const employeesContainer = document.getElementById("employeesContainer");
-  const newTaskInput       = document.getElementById("newTaskInput");
-  const addTaskBtn         = document.getElementById("addTaskBtn");
-  const employeeSelect     = document.getElementById("employeeSelect");
-  const tasksData          = document.getElementById("tasksData");
-  const employeesData      = document.getElementById("employeesData");
-  const empCountDataCreate = document.getElementById("employeeCountDataCreate");
-
-  let taskList     = [];
-  let employeeList = [];
-
-  function renderTasks() {
-    tasksContainer.innerHTML = "";
-    taskList.forEach((t,i) => {
-      const row = document.createElement("div");
-      row.className = "flex items-center mb-2";
-      row.innerHTML = `<input type="checkbox" class="mr-2" ${t.completed ? "checked" : ""}>
-                       <span>${t.description}</span>`;
-      row.querySelector("input").addEventListener("change", e => {
-        taskList[i].completed = e.target.checked;
-      });
-      tasksContainer.appendChild(row);
-    });
-  }
-
-  function renderEmployees() {
-    employeesContainer.innerHTML = "";
-    employeeList.forEach((e,i) => {
-      const row = document.createElement("div");
-      row.className = "flex items-center mb-2";
-      row.innerHTML = `<span class="flex-1">${e.name}</span>
-                       <button class="ml-2 text-red-500">&times;</button>`;
-      row.querySelector("button").addEventListener("click", () => {
-        employeeList.splice(i,1);
-        renderEmployees();
-      });
-      employeesContainer.appendChild(row);
-    });
-  }
-
+  // adicionar task
   addTaskBtn.addEventListener("click", () => {
     const desc = newTaskInput.value.trim();
     if (!desc) return;
-    taskList.push({ description: desc, completed: false });
+    const id = Date.now();
+    createTasks.push({ id, description: desc, completed: false });
+    renderCreateTasks();
     newTaskInput.value = "";
-    renderTasks();
+    syncCreateData();
   });
 
-  employeeSelect.addEventListener("change", () => {
-    const id   = employeeSelect.value;
-    const name = employeeSelect.selectedOptions[0]?.text;
-    if (!id || employeeList.some(e => e.id === id)) return;
-    fetch(`${baseUrl}/employees/checkAllocation`, {
-      method: "POST",
-      headers: { "Content-Type":"application/json" },
-      body: JSON.stringify({ emp_id:id })
-    })
-    .then(r=>r.json())
-    .then(j=>{
-      if (j.allocated) alert(`Já alocado em ${j.count} projeto(s)!`);
-      employeeList.push({ id,name });
-      renderEmployees();
+  function renderCreateTasks() {
+    tasksContainer.innerHTML = "";
+    createTasks.forEach(t => {
+      const div = document.createElement("div");
+      div.className = "flex items-center mb-2";
+      div.innerHTML = `
+        <span class="flex-1">${t.description}</span>
+        <button data-id="${t.id}" class="remove-task text-red-500">×</button>
+      `;
+      tasksContainer.appendChild(div);
     });
+    tasksContainer.querySelectorAll(".remove-task").forEach(btn =>
+      btn.addEventListener("click", () => {
+        createTasks = createTasks.filter(t => t.id != btn.dataset.id);
+        renderCreateTasks();
+        syncCreateData();
+      })
+    );
+    // atualiza checkboxes se quiser permitir edição direta
+  }
+
+  // adicionar funcionário
+  addEmployeeBtn.addEventListener("click", () => {
+    const empId = employeeSelect.value;
+    const empText = employeeSelect.options[employeeSelect.selectedIndex].text;
+    if (!empId || createEmployees.find(e => e.id == empId)) return;
+    createEmployees.push({ id: empId, text: empText });
+    renderCreateEmployees();
+    syncCreateData();
   });
 
-  document.getElementById("projectForm")
-    .addEventListener("submit", () => {
-      tasksData.value     = JSON.stringify(taskList);
-      employeesData.value = JSON.stringify(employeeList.map(e=>e.id));
-      empCountDataCreate.value = employeeList.length;
+  function renderCreateEmployees() {
+    employeesContainer.innerHTML = "";
+    createEmployees.forEach(e => {
+      const div = document.createElement("div");
+      div.className = "flex items-center mb-2";
+      div.innerHTML = `
+        <span class="flex-1">${e.text}</span>
+        <button data-id="${e.id}" class="remove-emp text-red-500">×</button>
+      `;
+      employeesContainer.appendChild(div);
     });
+    employeesContainer.querySelectorAll(".remove-emp").forEach(btn =>
+      btn.addEventListener("click", () => {
+        createEmployees = createEmployees.filter(e => e.id != btn.dataset.id);
+        renderCreateEmployees();
+        syncCreateData();
+      })
+    );
+  }
+
+  // sincroniza hidden inputs
+  function syncCreateData() {
+    tasksDataInput.value      = JSON.stringify(createTasks);
+    employeesDataInput.value  = JSON.stringify(createEmployees.map(e => e.id));
+    employeeCountCreate.value = createEmployees.length;
+  }
 
   // —————— Modal de Detalhes / Edição ——————
-  const detailsModal            = document.getElementById("projectDetailsModal");
-  const closeDetailsBtn         = document.getElementById("closeProjectDetailsModal");
-  const cancelDetailsBtn        = document.getElementById("cancelDetailsBtn");
-  const deleteProjectBtn        = document.getElementById("deleteProjectBtn");
-  const saveDetailsBtn          = document.getElementById("saveDetailsBtn");
-  const detailsForm             = document.getElementById("projectDetailsForm");
+  const detailsModal             = document.getElementById("projectDetailsModal");
+  const closeDetailsBtn          = document.getElementById("closeProjectDetailsModal");
+  const cancelDetailsBtn         = document.getElementById("cancelDetailsBtn");
+  const projectItems             = document.querySelectorAll(".project-item");
+  const detailsForm              = document.getElementById("projectDetailsForm");
+  const detailsTasksContainer    = document.getElementById("detailsTasksContainer");
+  const detailsEmployeesContainer= document.getElementById("detailsEmployeesContainer");
+  const detailsInventoryContainer= document.getElementById("detailsInventoryContainer");
+  const detailsNewTaskInput      = document.getElementById("detailsNewTaskInput");
+  const detailsAddTaskBtn        = document.getElementById("detailsAddTaskBtn");
+  const detailsEmployeeSelect    = document.getElementById("detailsEmployeeSelect");
+  const detailsAddEmployeeBtn    = document.getElementById("detailsAddEmployeeBtn");
+  const detailsTasksData         = document.getElementById("detailsTasksData");
+  const detailsEmployeesData     = document.getElementById("detailsEmployeesData");
+  const detailsEmployeeCount     = document.getElementById("detailsEmployeeCountData");
+  const detailsProjectIdInput    = document.getElementById("detailsProjectId");
+  const detailsProgressBar       = document.getElementById("detailsProgressBar");
+  const detailsProgressText      = document.getElementById("detailsProgressText");
 
-  const detailsProjectIdEl      = document.getElementById("detailsProjectId");
-  const detailsProjectStatusEl  = document.getElementById("detailsProjectStatus");
-  const detailsProgressBar      = document.getElementById("detailsProgressBar");
-  const detailsProgressText     = document.getElementById("detailsProgressText");
-  const detailsTasksContainer   = document.getElementById("detailsTasksContainer");
-  const detailsEmployeesContainer = document.getElementById("detailsEmployeesContainer");
-  const detailsInventoryContainer = document.getElementById("detailsInventoryContainer");
+  let detailTasks      = [];
+  let detailEmployees  = [];
+  let detailInventory  = [];
 
-  const detailsNewTaskInput     = document.getElementById("detailsNewTaskInput");
-  const detailsAddTaskBtn       = document.getElementById("detailsAddTaskBtn");
-  const detailsEmployeeSelect   = document.getElementById("detailsEmployeeSelect");
-  const detailsAddEmployeeBtn   = document.getElementById("detailsAddEmployeeBtn");
+  // abre modal detalhes
+  projectItems.forEach(item =>
+    item.addEventListener("click", () => loadDetails(item.dataset.projectId))
+  );
+  closeDetailsBtn.addEventListener("click", closeDetails);
+  cancelDetailsBtn.addEventListener("click", closeDetails);
+  window.addEventListener("click", e => {
+    if (e.target === detailsModal) closeDetails();
+  });
 
-  const detailsTasksData        = document.getElementById("detailsTasksData");
-  const detailsEmployeesData    = document.getElementById("detailsEmployeesData");
-  const detailsEmpCountData     = document.getElementById("detailsEmployeeCountData");
+  function loadDetails(projectId) {
+    fetch(`${baseUrl}/projects/show?id=${projectId}`)
+      .then(res => res.json())
+      .then(data => {
+        // campos fixos
+        detailsProjectIdInput.value                   = data.id;
+        document.getElementById("detailsProjectName").value      = data.name;
+        document.getElementById("detailsProjectLocation").value  = data.location;
+        document.getElementById("detailsProjectTotalHours").value= data.total_hours;
+        document.getElementById("detailsProjectBudget").value    = data.budget;
+        document.getElementById("detailsProjectStartDate").value = data.start_date;
+        document.getElementById("detailsProjectEndDate").value   = data.end_date;
+        document.getElementById("detailsProjectStatus").value    = data.status;
 
-  let detailsTaskList     = [];
-  let detailsEmployeeList = [];
+        // progresso
+        const prog = data.progress ?? 0;
+        detailsProgressBar.style.width = prog + '%';
+        detailsProgressText.textContent = prog + '%';
 
-  function updateDetailsProgress() {
-    const total = detailsTaskList.length;
-    const done  = detailsTaskList.filter(t=>t.completed).length;
-    const pct   = total ? Math.round(done/total*100) : 0;
-    detailsProgressBar.style.width = pct + "%";
-    detailsProgressText.innerText  = pct + "%";
-    detailsProjectStatusEl.disabled = pct < 100;
-    let h = detailsForm.querySelector("input[name=progress]");
-    if (!h) {
-      h = document.createElement("input");
-      h.type = "hidden";
-      h.name = "progress";
-      detailsForm.appendChild(h);
-    }
-    h.value = pct;
+        // tasks
+        detailTasks = (data.tasks || []).map((t,i) => ({
+          id: i,
+          description: t.description,
+          completed: !!t.completed
+        }));
+        renderDetailTasks();
+
+        // funcionários
+        detailEmployees = (data.employees || []).map(e => ({
+          id: e.id,
+          text: e.name + ' ' + e.last_name
+        }));
+        renderDetailEmployees();
+
+        // inventário
+        detailInventory = data.inventory || [];
+        renderDetailInventory();
+
+        // mostra modal
+        detailsModal.classList.remove("hidden");
+      })
+      .catch(err => {
+        console.error("Erro ao carregar detalhes:", err);
+        alert("Não foi possível carregar detalhes do projeto.");
+      });
   }
 
-  function renderDetailsTasks() {
+  function closeDetails() {
+    detailsModal.classList.add("hidden");
+  }
+
+  // renderiza tasks no modal detalhes
+  detailsAddTaskBtn.addEventListener("click", () => {
+    const desc = detailsNewTaskInput.value.trim();
+    if (!desc) return;
+    detailTasks.push({ id: Date.now(), description: desc, completed: false });
+    renderDetailTasks();
+  });
+
+  function renderDetailTasks() {
     detailsTasksContainer.innerHTML = "";
-    detailsTaskList.forEach((t,i) => {
-      const row = document.createElement("div");
-      row.className = "flex items-center mb-2";
-      row.innerHTML = `
-        <input type="checkbox" class="mr-2" ${t.completed?"checked":""}>
+    detailTasks.forEach(t => {
+      const div = document.createElement("div");
+      div.className = "flex items-center mb-2";
+      div.innerHTML = `
+        <input type="checkbox" ${t.completed ? 'checked' : ''} disabled class="mr-2">
         <span class="flex-1">${t.description}</span>
-        <button class="ml-2 text-red-500">&times;</button>
       `;
-      row.querySelector("input").addEventListener("change", e=>{
-        detailsTaskList[i].completed = e.target.checked;
-        updateDetailsProgress();
-      });
-      row.querySelector("button").addEventListener("click", ()=>{
-        detailsTaskList.splice(i,1);
-        renderDetailsTasks();
-      });
-      detailsTasksContainer.appendChild(row);
+      detailsTasksContainer.appendChild(div);
     });
-    updateDetailsProgress();
+    detailsTasksData.value = JSON.stringify(detailTasks);
   }
 
-  function renderDetailsEmployees() {
+  // renderiza funcionários no modal detalhes
+  detailsAddEmployeeBtn.addEventListener("click", () => {
+    const empId = detailsEmployeeSelect.value;
+    const empText = detailsEmployeeSelect.options[detailsEmployeeSelect.selectedIndex].text;
+    if (!empId || detailEmployees.find(e => e.id == empId)) return;
+    detailEmployees.push({ id: empId, text: empText });
+    renderDetailEmployees();
+  });
+
+  function renderDetailEmployees() {
     detailsEmployeesContainer.innerHTML = "";
-    detailsEmployeeList.forEach((e,i)=>{
-      const row = document.createElement("div");
-      row.className = "flex items-center mb-2";
-      row.innerHTML = `<span class="flex-1">${e.name}</span><button class="ml-2 text-red-500">&times;</button>`;
-      row.querySelector("button").addEventListener("click", ()=>{
-        detailsEmployeeList.splice(i,1);
-        renderDetailsEmployees();
-      });
-      detailsEmployeesContainer.appendChild(row);
+    detailEmployees.forEach(e => {
+      const div = document.createElement("div");
+      div.className = "flex items-center mb-2";
+      div.innerHTML = `
+        <span class="flex-1">${e.text}</span>
+        <button data-id="${e.id}" class="remove-detail-emp text-red-500">×</button>
+      `;
+      detailsEmployeesContainer.appendChild(div);
     });
-    detailsEmpCountData.value = detailsEmployeeList.length;
+    detailsEmployeesContainer.querySelectorAll(".remove-detail-emp").forEach(btn =>
+      btn.addEventListener("click", () => {
+        detailEmployees = detailEmployees.filter(e => e.id != btn.dataset.id);
+        renderDetailEmployees();
+      })
+    );
+    detailsEmployeesData.value = JSON.stringify(detailEmployees.map(e => e.id));
+    detailsEmployeeCount.value = detailEmployees.length;
   }
 
-  function renderDetailsInventory(invList) {
+  // renderiza inventário no modal detalhes
+  function renderDetailInventory() {
     detailsInventoryContainer.innerHTML = "";
-    if (!invList.length) {
-      detailsInventoryContainer.innerHTML = `<p class="text-sm text-gray-600">— Nenhum item alocado</p>`;
+    if (detailInventory.length === 0) {
+      detailsInventoryContainer.textContent = '— Nenhum item alocado';
       return;
     }
-    invList.forEach(it=>{
+    detailInventory.forEach(i => {
       const div = document.createElement("div");
-      div.className = "text-sm text-gray-800 flex justify-between";
-      div.innerHTML = `<span>${it.name}</span><span>Qtd: ${it.quantity}</span>`;
+      div.textContent = `${i.name} (qtde: ${i.quantity})`;
       detailsInventoryContainer.appendChild(div);
     });
   }
-
-  closeDetailsBtn.addEventListener("click", ()=> detailsModal.classList.add("hidden"));
-  cancelDetailsBtn.addEventListener("click", ()=> detailsModal.classList.add("hidden"));
-  window.addEventListener("click", e=>{
-    if (e.target === detailsModal) detailsModal.classList.add("hidden");
-  });
-
-  deleteProjectBtn.addEventListener("click", ()=>{
-    if (!confirm("Deseja realmente excluir este projeto?")) return;
-    const id = detailsProjectIdEl.value;
-    window.location.href = `${baseUrl}/projects/delete?id=${id}`;
-  });
-
-  detailsAddTaskBtn.addEventListener("click", ()=>{
-    const desc = detailsNewTaskInput.value.trim();
-    if (!desc) return;
-    detailsTaskList.push({ description: desc, completed: false });
-    detailsNewTaskInput.value = "";
-    renderDetailsTasks();
-  });
-
-  detailsAddEmployeeBtn.addEventListener("click", ()=>{
-    const id   = detailsEmployeeSelect.value;
-    const name = detailsEmployeeSelect.selectedOptions[0]?.text;
-    if (!id || detailsEmployeeList.some(e=>e.id===id)) return;
-    fetch(`${baseUrl}/employees/checkAllocation`, {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({ emp_id:id })
-    })
-    .then(r=>r.json())
-    .then(j=>{
-      if (j.allocated) alert(`Já alocado em ${j.count} projeto(s)!`);
-      detailsEmployeeList.push({ id,name });
-      renderDetailsEmployees();
-    });
-  });
-
-  detailsForm.addEventListener("submit", ()=>{
-    detailsTasksData.value     = JSON.stringify(detailsTaskList);
-    detailsEmployeesData.value = JSON.stringify(detailsEmployeeList.map(e=>e.id));
-    detailsEmpCountData.value  = detailsEmployeeList.length;
-  });
-
-  // abrir detalhe ao clicar no card
-  document.querySelectorAll(".project-item").forEach(card => {
-    card.addEventListener("click", function() {
-      const projectId = this.dataset.projectId;
-      fetch(`${baseUrl}/projects/show?id=${projectId}`)
-        .then(r => r.ok ? r.json() : Promise.reject(r.status))
-        .then(data => {
-          // popula campos básicos
-          document.getElementById("detailsProjectId").value        = data.id;
-          document.getElementById("detailsProjectName").value      = data.name;
-          document.getElementById("detailsProjectLocation").value  = data.location;
-          document.getElementById("detailsProjectTotalHours").value= data.total_hours;
-          document.getElementById("detailsProjectBudget").value    = data.budget;
-          document.getElementById("detailsProjectStatus").value    = data.status;
-
-          // popula listas
-          detailsTaskList     = (data.tasks||[]).map(t=>({ description:t.description, completed:t.completed }));
-          detailsEmployeeList = (data.employees||[]).map(e=>({ id:e.id, name:`${e.name} ${e.last_name}` }));
-          renderDetailsTasks();
-          renderDetailsEmployees();
-
-          // popula inventário
-          renderDetailsInventory(data.inventory||[]);
-
-          saveDetailsBtn.classList.remove("hidden");
-          detailsModal.classList.remove("hidden");
-        })
-        .catch(err=>{
-          console.error("Erro ao carregar detalhes:", err);
-          alert("Não foi possível carregar os detalhes do projeto.");
-        });
-    });
-  });
 });

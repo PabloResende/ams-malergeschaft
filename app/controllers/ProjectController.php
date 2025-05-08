@@ -29,8 +29,8 @@ class ProjectController {
 
         // tasks vêm em JSON no hidden "tasks"
         $tasks     = json_decode($_POST['tasks']     ?? '[]', true);
-        // employees vêm como array via name="employees[]"
-        $employees = $_POST['employees']             ?? [];
+        // employees vêm em JSON no hidden "employees"
+        $employees = json_decode($_POST['employees'] ?? '[]', true);
 
         if (empty($data['name'])) {
             echo "O nome do projeto é obrigatório.";
@@ -77,8 +77,8 @@ class ProjectController {
 
         // tasks vêm em JSON no hidden "tasks"
         $tasks     = json_decode($_POST['tasks']     ?? '[]', true);
-        // employees vêm como array via name="employees[]"
-        $employees = $_POST['employees']             ?? [];
+        // employees vêm em JSON no hidden "employees"
+        $employees = json_decode($_POST['employees'] ?? '[]', true);
 
         if (ProjectModel::update($id, $data, $tasks, $employees)) {
             header("Location: /ams-malergeschaft/public/projects");
@@ -96,7 +96,6 @@ class ProjectController {
 
         $id = $_GET['id'];
 
-        // sem restauração de inventário
         if (ProjectModel::delete($id)) {
             header("Location: /ams-malergeschaft/public/projects");
             exit;
@@ -111,7 +110,7 @@ class ProjectController {
             http_response_code(400);
             exit(json_encode(["error" => "Missing project ID"]));
         }
-    
+
         $pdo = Database::connect();
         // dados do projeto
         $stmt = $pdo->prepare("SELECT * FROM projects WHERE id = ?");
@@ -121,12 +120,12 @@ class ProjectController {
             http_response_code(404);
             exit(json_encode(["error" => "Project not found"]));
         }
-    
+
         // tasks
         $taskStmt = $pdo->prepare("SELECT description, completed FROM tasks WHERE project_id = ?");
         $taskStmt->execute([$id]);
         $tasks = $taskStmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
         // employees
         $empStmt = $pdo->prepare("
             SELECT e.id, e.name, e.last_name
@@ -137,8 +136,8 @@ class ProjectController {
         ");
         $empStmt->execute([$id]);
         $employees = $empStmt->fetchAll(PDO::FETCH_ASSOC);
-    
-        // *** inventário alocado ***
+
+        // inventário alocado
         $invStmt = $pdo->prepare("
             SELECT i.id, i.name, pr.quantity
             FROM inventory i
@@ -148,7 +147,7 @@ class ProjectController {
         ");
         $invStmt->execute([$id]);
         $inventory = $invStmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
         header('Content-Type: application/json');
         echo json_encode([
             'id'             => $project['id'],
@@ -163,7 +162,7 @@ class ProjectController {
             'status'         => $project['status'],
             'tasks'          => $tasks,
             'employees'      => $employees,
-            'inventory'      => $inventory          // <--- aqui!
+            'inventory'      => $inventory
         ]);
-    }    
+    }
 }

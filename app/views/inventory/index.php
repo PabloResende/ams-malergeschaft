@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../../config/Database.php';
 require_once __DIR__ . '/../../models/Inventory.php';
 require_once __DIR__ . '/../../models/InventoryHistoryModel.php';
 require_once __DIR__ . '/../../models/Project.php';
+// carregar o sistema de tradução
 
 $pdo = Database::connect();
 
@@ -31,45 +32,44 @@ $baseUrl = '/ams-malergeschaft/public';
 ?>
 
 <div class="ml-56 pt-20 p-8">
-  <h2 class="text-2xl font-bold mb-4"><?= $langText['inventory'] ?? 'Inventory' ?></h2>
+  <h2 class="text-2xl font-bold mb-4"><?= $langText['inventory'] ?></h2>
 
   <div class="flex justify-between mb-6">
     <div class="flex space-x-2">
       <a href="<?= $baseUrl ?>/inventory?filter=all"
-         class="px-3 py-1 rounded-full border <?= $filter === 'all' ? 'bg-gray-300' : 'bg-white' ?>">
-        All
+         class="px-3 py-1 rounded-full border <?= $filter==='all' ? 'bg-gray-300' : 'bg-white' ?>">
+        <?= $langText['all'] ?>
       </a>
       <a href="<?= $baseUrl ?>/inventory?filter=material"
-         class="px-3 py-1 rounded-full border <?= $filter === 'material' ? 'bg-blue-200 text-blue-800' : 'bg-white' ?>">
-        Material
+         class="px-3 py-1 rounded-full border <?= $filter==='material' ? 'bg-blue-200 text-blue-800' : 'bg-white' ?>">
+        <?= $langText['material'] ?>
       </a>
       <a href="<?= $baseUrl ?>/inventory?filter=equipment"
-         class="px-3 py-1 rounded-full border <?= $filter === 'equipment' ? 'bg-purple-200 text-purple-800' : 'bg-white' ?>">
-        Equipment
+         class="px-3 py-1 rounded-full border <?= $filter==='equipment' ? 'bg-purple-200 text-purple-800' : 'bg-white' ?>">
+        <?= $langText['equipment'] ?>
       </a>
       <a href="<?= $baseUrl ?>/inventory?filter=rented"
-         class="px-3 py-1 rounded-full border <?= $filter === 'rented' ? 'bg-yellow-200 text-yellow-800' : 'bg-white' ?>">
-        Rented
+         class="px-3 py-1 rounded-full border <?= $filter==='rented' ? 'bg-yellow-200 text-yellow-800' : 'bg-white' ?>">
+        <?= $langText['rented'] ?>
       </a>
     </div>
     <div class="flex space-x-2">
       <button id="openControlModal"
               class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded">
-        Controle de Estoque
+        <?= $langText['stock_control'] ?>
       </button>
       <button id="openHistoryModal"
               class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded">
-        Histórico de Estoque
+        <?= $langText['stock_history'] ?>
       </button>
     </div>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <?php if (empty($inventoryItems)): ?>
-      <p><?= $langText['no_inventory'] ?? 'No inventory items found.' ?></p>
-    <?php else: foreach ($inventoryItems as $item): ?>
+      <p><?= $langText['no_inventory'] ?></p>
+    <?php else: foreach($inventoryItems as $item): ?>
       <?php
-        // ignora itens com quantidade zero
         if ((int)$item['quantity'] <= 0) continue;
         $iconCls = match ($item['type']) {
           'material'  => 'text-blue-600',
@@ -85,9 +85,9 @@ $baseUrl = '/ams-malergeschaft/public';
           </svg>
           <h3 class="text-lg font-bold ml-2"><?= htmlspecialchars($item['name'], ENT_QUOTES) ?></h3>
         </div>
-        <p class="text-sm text-gray-600"><?= ucfirst(htmlspecialchars($item['type'], ENT_QUOTES)) ?></p>
+        <p class="text-sm text-gray-600"><?= ucfirst($langText[$item['type']]) ?></p>
         <p class="mt-2 text-sm">
-          <?= $langText['quantity'] ?? 'Quantity' ?>: <?= (int)$item['quantity'] ?>
+          <?= $langText['quantity'] ?>: <?= (int)$item['quantity'] ?>
         </p>
       </div>
     <?php endforeach; endif; ?>
@@ -98,43 +98,37 @@ $baseUrl = '/ams-malergeschaft/public';
 <div id="inventoryControlModal"
      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
   <div class="bg-white rounded-md p-8 w-11/12 max-w-2xl max-h-[90vh] overflow-y-auto relative">
-    <button id="closeControlModal"
-            class="absolute top-4 right-6 text-gray-700 text-2xl">&times;</button>
-    <h3 class="text-xl font-bold mb-4">Controle de Estoque</h3>
-    <form id="controlForm"
-          action="<?= $baseUrl ?>/inventory/control/store"
-          method="POST">
+    <button id="closeControlModal" class="absolute top-4 right-6 text-gray-700 text-2xl">&times;</button>
+    <h3 class="text-xl font-bold mb-4"><?= $langText['stock_control'] ?></h3>
+    <form id="controlForm" action="<?= $baseUrl ?>/inventory/control/store" method="POST">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div>
-          <label class="block text-gray-700">Seu nome</label>
-          <input type="text" id="userNameInput" name="user_name"
-                 class="w-full p-2 border rounded" required>
+          <label class="block text-gray-700"><?= $langText['name'] ?></label>
+          <input type="text" id="userNameInput" name="user_name" class="w-full p-2 border rounded" required>
         </div>
         <div>
-          <label class="block text-gray-700">Data e hora</label>
+          <label class="block text-gray-700"><?= $langText['date'] ?? 'Data e hora' ?></label>
           <input type="text" id="datetimeInput" name="datetime"
-                 class="w-full p-2 border rounded bg-gray-100"
-                 readonly required>
+                 class="w-full p-2 border rounded bg-gray-100" readonly required>
         </div>
         <div>
-          <label class="block text-gray-700">Motivo</label>
-          <select name="reason" id="reasonSelect"
-                  class="w-full p-2 border rounded">
-            <option value="">-- Selecione --</option>
-            <option value="projeto">Projeto</option>
-            <option value="perda">Perda</option>
-            <option value="adição">Adição</option>
-            <option value="outros">Outros</option>
-            <option value="criar">Criar Novo Item</option>
+          <label class="block text-gray-700"><?= $langText['filter_by'] ?></label>
+          <select name="reason" id="reasonSelect" class="w-full p-2 border rounded">
+            <option value=""><?= $langText['select'] ?></option>
+            <option value="projeto"><?= $langText['projects'] ?></option>
+            <option value="perda"><?= $langText['delete'] ?? 'Perda' ?></option>
+            <option value="adição"><?= $langText['add'] ?></option>
+            <option value="outros"><?= $langText['others'] ?? 'Outros' ?></option>
+            <option value="criar"><?= $langText['add_inventory_item'] ?></option>
           </select>
         </div>
       </div>
 
       <div id="projectSelectDiv" class="hidden mb-4">
-        <label class="block text-gray-700">Projeto</label>
+        <label class="block text-gray-700"><?= $langText['projects_list'] ?></label>
         <select name="project_id" class="w-full p-2 border rounded">
-          <option value="">-- Selecione --</option>
-          <?php foreach ($activeProjects as $p): ?>
+          <option value=""><?= $langText['select'] ?></option>
+          <?php foreach($activeProjects as $p): ?>
             <option value="<?= htmlspecialchars($p['id'], ENT_QUOTES) ?>">
               <?= htmlspecialchars($p['name'], ENT_QUOTES) ?>
             </option>
@@ -143,30 +137,27 @@ $baseUrl = '/ams-malergeschaft/public';
       </div>
 
       <div id="customReasonDiv" class="hidden mb-4">
-        <label class="block text-gray-700">Descreva o motivo</label>
-        <input type="text" name="custom_reason"
-               class="w-full p-2 border rounded">
+        <label class="block text-gray-700"><?= $langText['filter_by'] ?></label>
+        <input type="text" name="custom_reason" class="w-full p-2 border rounded">
       </div>
 
       <div id="newItemDiv" class="hidden mb-6">
-        <h4 class="font-semibold mb-2">Criar Novo Item</h4>
+        <h4 class="font-semibold mb-2"><?= $langText['add_inventory_item'] ?></h4>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label class="block text-gray-700">Nome do Item</label>
-            <input type="text" id="newItemName" name="new_item_name"
-                   class="w-full p-2 border rounded">
+            <label class="block text-gray-700"><?= $langText['inventory'] ?></label>
+            <input type="text" id="newItemName" name="new_item_name" class="w-full p-2 border rounded">
           </div>
           <div>
-            <label class="block text-gray-700">Tipo</label>
-            <select id="newItemType" name="new_item_type"
-                    class="w-full p-2 border rounded">
-              <option value="material">Material</option>
-              <option value="equipment">Equipment</option>
-              <option value="rented">Rented</option>
+            <label class="block text-gray-700"><?= $langText['filter_by'] ?></label>
+            <select id="newItemType" name="new_item_type" class="w-full p-2 border rounded">
+              <option value="material"><?= $langText['material'] ?></option>
+              <option value="equipment"><?= $langText['equipment'] ?></option>
+              <option value="rented"><?= $langText['rented'] ?></option>
             </select>
           </div>
           <div>
-            <label class="block text-gray-700">Quantidade</label>
+            <label class="block text-gray-700"><?= $langText['quantity'] ?></label>
             <input type="number" id="newItemQty" name="new_item_qty" min="1"
                    class="w-full p-2 border rounded" value="1">
           </div>
@@ -174,38 +165,30 @@ $baseUrl = '/ams-malergeschaft/public';
       </div>
 
       <div id="stockItemsDiv" class="mb-6">
-        <h4 class="font-semibold mb-2">Itens em Estoque</h4>
-        <?php if (empty($allItems)): ?>
-          <p>Nenhum item disponível.</p>
-        <?php else: foreach ($allItems as $it): ?>
+        <h4 class="font-semibold mb-2"><?= $langText['inventory'] ?></h4>
+        <?php if(empty($allItems)): ?>
+          <p><?= $langText['no_inventory'] ?></p>
+        <?php else: foreach($allItems as $it): ?>
           <div class="flex items-center mb-2">
-            <input type="checkbox"
-                   class="mr-2 item-checkbox"
+            <input type="checkbox" class="mr-2 item-checkbox"
                    data-max="<?= (int)$it['quantity'] ?>"
                    value="<?= htmlspecialchars($it['id'], ENT_QUOTES) ?>">
             <span class="flex-1">
-              <?= htmlspecialchars($it['name'], ENT_QUOTES) ?>
-              (Disponível: <?= (int)$it['quantity'] ?>)
+              <?= htmlspecialchars($it['name'], ENT_QUOTES) ?> (<?= (int)$it['quantity'] ?>)
             </span>
-            <input type="number"
-                   class="w-20 p-1 border rounded qty-input"
-                   min="1"
-                   max="<?= (int)$it['quantity'] ?>"
-                   value="1"
-                   disabled>
+            <input type="number" class="w-20 p-1 border rounded qty-input"
+                   min="1" max="<?= (int)$it['quantity'] ?>" value="1" disabled>
           </div>
         <?php endforeach; endif; ?>
         <input type="hidden" name="items" id="itemsData">
       </div>
 
       <div class="flex justify-end">
-        <button type="button" id="cancelControlBtn"
-                class="mr-2 px-4 py-2 border rounded">
-          Cancelar
+        <button type="button" id="cancelControlBtn" class="mr-2 px-4 py-2 border rounded">
+          <?= $langText['cancel'] ?>
         </button>
-        <button type="submit"
-                class="bg-indigo-500 text-white px-4 py-2 rounded">
-          Registrar
+        <button type="submit" class="bg-indigo-500 text-white px-4 py-2 rounded">
+          <?= $langText['save'] ?>
         </button>
       </div>
     </form>
@@ -216,22 +199,19 @@ $baseUrl = '/ams-malergeschaft/public';
 <div id="inventoryHistoryModal"
      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
   <div class="bg-white rounded-md p-8 w-11/12 max-w-2xl max-h-[90vh] overflow-y-auto relative">
-    <button id="closeHistoryModal"
-            class="absolute top-4 right-6 text-gray-700 text-2xl">&times;</button>
-    <h3 class="text-xl font-bold mb-4">Histórico de Movimentações</h3>
-    <?php if (empty($movements)): ?>
-      <p>Nenhum histórico encontrado.</p>
-    <?php else: foreach ($movements as $m): ?>
-      <?php
-        $border = match ($m['reason']) {
+    <button id="closeHistoryModal" class="absolute top-4 right-6 text-gray-700 text-2xl">&times;</button>
+    <h3 class="text-xl font-bold mb-4"><?= $langText['stock_history'] ?></h3>
+    <?php if(empty($movements)): ?>
+      <p><?= $langText['no_inventory'] ?></p>
+    <?php else: foreach($movements as $m): ?>
+      <?php $border = match($m['reason']) {
           'projeto' => 'border-l-4 border-green-500',
           'perda'   => 'border-l-4 border-red-500',
           'adição'  => 'border-l-4 border-blue-500',
           'outros'  => 'border-l-4 border-yellow-500',
           'criar'   => 'border-l-4 border-purple-500',
           default   => 'border-l-4 border-gray-300'
-        };
-      ?>
+      }; ?>
       <div class="history-item p-4 mb-2 bg-gray-50 rounded <?= $border ?>"
            data-id="<?= htmlspecialchars($m['id'], ENT_QUOTES) ?>">
         <div class="flex items-center justify-between">

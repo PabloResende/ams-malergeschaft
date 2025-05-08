@@ -1,148 +1,165 @@
 <?php
+// lang/en.php
 return [
     // ---------------------------
     // Login & Authentication
     // ---------------------------
-    'login' => 'Login',
-    'register' => 'Register',
-    'logout' => 'Logout',
-    'dont_register' => 'Don\'t have an account? Register',
+    'login'               => 'Login',
+    'register'            => 'Register',
+    'logout_button'       => 'Logout',
+    'dont_register'       => 'Don’t have an account? Register',
+    'confirm_password'    => 'Confirm Password',
+    'password'            => 'Password',
 
     // ---------------------------
     // Navigation
     // ---------------------------
-    'profile' => 'Profile',
-    'dashboard' => 'Dashboard',
-    'projects' => 'Projects',
-    'employees' => 'Employees',
-    'calendar' => 'Calendar',
+    'profile'             => 'Profile',
+    'dashboard'           => 'Dashboard',
+    'projects'            => 'Projects',
+    'employees'           => 'Employees',
+    'calendar'            => 'Calendar',
+    'clients_list'        => 'Clients List',
+    'inventory'           => 'Inventory',
 
     // ---------------------------
     // Header
     // ---------------------------
-    'Malergeschäft' => 'Painting shops',
-    'new_project' => 'New Project +',
-    'logout_button' => 'Logout',
+    'Malergeschäft'       => 'Painting Shops',
+    'new_project'         => 'New Project +',
+    'logout_button'       => 'Logout',
 
     // ---------------------------
     // Profile Page
     // ---------------------------
-    'profile_picture' => 'Profile Picture',
-    'name' => 'Name',
-    'email' => 'Email',
-    'address' => 'Address',
-    'about_me' => 'About Me',
-    'phone' => 'Phone',
-    'cpf' => 'CPF',
-    'save_changes' => 'Save Changes',
-    'update_profile' => 'Update Profile',
+    'profile_picture'     => 'Profile Picture',
+    'name'                => 'Name',
+    'last_name'           => 'Last Name',
+    'email'               => 'Email',
+    'address'             => 'Address',
+    'nationality'         => 'Nationality',
+    'marital_status'      => 'Marital Status',
+    'sex'                 => 'Sex',
+    'birth_date'          => 'Birth Date',
+    'phone'               => 'Phone',
+    'ahv_number'          => 'AHV Number',
+    'health_card_front'   => 'Health Card (Front)',
+    'health_card_back'    => 'Health Card (Back)',
+    'bank_card_front'     => 'Bank Card (Front)',
+    'bank_card_back'      => 'Bank Card (Back)',
+    'about_me'            => 'About Me',
+    'save_changes'        => 'Save Changes',
+    'update_profile'      => 'Update Profile',
 
     // ---------------------------
-    // Dashboard Page
+    // Dashboard
     // ---------------------------
-    'welcome_dashboard' => 'Welcome to your Dashboard',
-    'view_profile' => 'View Profile',
-    'projects_overview' => 'Projects Overview',
-    'track_and_manage' => 'Track and manage your renovation projects efficiently',
-    'vs_last_month' => 'vs last month',
-    'active_projects' => 'Active Projects',
-    'total_hours' => 'Total Hours',
-    'team_members' => 'Team Members',
-    'completed_projects' => 'Completed Projects',
-    'delivery' => 'Delivery',
-    'progress' => 'Progress',
-    'notifications' => 'Notifications',
-    'not_new_notifications' => 'No new notifications',
-    'client' => 'Client',
-    'clients' => 'Clients',
-    'analytics' => 'Analytics',
-    
-    // ---------------------------
-    // Projects Page
-    // ---------------------------
-    'projects_list' => 'Project List',
-    'create_project' => 'Create New Project',
-    'edit_project' => 'Edit Project',
-    'delete_project' => 'Delete Project',
-    'project_name' => 'Project Name',
-    'client_name' => 'Client Name',
-    'project_description' => 'Project Description',
-    'project_status' => 'Status',
-    'actions' => 'Actions',
-    'projects' => 'Projects',
-    'back' => 'Back',
-    'project_not_found' => 'Project not found.',
-    'status' => 'Status',
-    'progress' => 'Progress',
-    'delivery_date' => 'Delivery Date',
-    'team_members' => 'Team Members',
-    'materials' => 'Materials',
-    'filter_by_status' => 'Filter by status:',
-    'no_projects_available' => 'No projects available.',
-    'active' => 'Active',
-    'pending' => 'Pending',
-    'completed' => 'Completed',
-    'all' => 'All',
-    
+    'welcome_dashboard'   => 'Welcome to your Dashboard',
+    'view_profile'        => 'View Profile',
+    'projects_overview'   => 'Projects Overview',
+    'track_and_manage'    => 'Track and manage your renovation projects efficiently',
+    'vs_last_month'       => 'vs last month',
+    'active_projects'     => 'Active Projects',
+    'completed_projects'  => 'Projects Completed by Month',
+    'total_hours'         => 'Total Hours',
+    'team_members'        => 'Team Members',
+    'notifications'       => 'Notifications',
+    'not_new_notifications'=> 'No new notifications',
+    'clients'             => 'Clients',
+    'analytics'           => 'Analytics',
 
     // ---------------------------
-    // Employees Page
+    // Projects
     // ---------------------------
-    'employees_list' => 'Employees List',
-    'create_employee' => 'Create Employee',
-    'edit_employee' => 'Edit Employee',
-    'delete_employee' => 'Delete Employee',
-    'name' => 'Name',
-    'role' => 'Role',
-    'birth_date' => 'Birth Date',
-    'start_date' => 'Start Date',
-    'address' => 'Address',
-    'about_me' => 'About Me',
-    'phone' => 'Phone',
-    'profile_picture' => 'Profile Picture',
-    'employees_list'    => 'Employees List',
-    'create_employee'   => 'Create Employee',
-    'edit_employee'     => 'Edit Employee',
-    'delete_employee'   => 'Delete Employee',
-    'no_employees_available' => 'No employees available.',
-    'role'              => 'Role',
-    'birth_date'        => 'Birth Date',
-    'start_date'        => 'Start Date',
-    'address'           => 'Address',
-    'about_me'          => 'About Me',
-    'phone'             => 'Phone',
-    'profile_picture'   => 'Profile Picture',
-    'time_in_company'   => 'Time in Company',
-    'year'              => 'year',
-    'years'             => 'years',
-    'month'             => 'month',
-    'months'            => 'months',
-    'no_employees_found' => 'No employees found.',
-
+    'projects_list'           => 'Project List',
+    'add_project'             => 'Add Project',
+    'create_project'          => 'Create New Project',
+    'edit_project'            => 'Edit Project',
+    'delete_project'          => 'Delete Project',
+    'project_name'            => 'Project Name',
+    'client_name'             => 'Client Name',
+    'project_description'     => 'Project Description',
+    'project_status'          => 'Status',
+    'project_not_found'       => 'Project not found.',
+    'filter_by_status'        => 'Filter by status:',
+    'status'                  => 'Status',
+    'active'                  => 'Active',
+    'pending'                 => 'Pending',
+    'completed'               => 'Completed',
+    'all'                     => 'All',
+    'actions'                 => 'Actions',
+    'back'                    => 'Back',
+    'projects_created'        => 'Projects Created by Month',
 
     // ---------------------------
-    // Generic
+    // Employees
     // ---------------------------
-    'edit' => 'Edit',
-    'delete' => 'Delete',
-    'submit' => 'Submit',
-    'cancel' => 'Cancel',
-    'back' => 'Back',
+    'employees_list'          => 'Employees List',
+    'add_employee'            => 'Add Employee',
+    'create_employee'         => 'Create Employee',
+    'edit_employee'           => 'Edit Employee',
+    'delete_employee'         => 'Delete Employee',
+    'employee_name'           => 'Employee Name',
+    'employee_email'          => 'Employee Email',
+    'role'                    => 'Role',
+    'start_date'              => 'Start Date',
+    'time_in_company'         => 'Time in Company',
+    'no_employees_available'  => 'No employees available.',
+
+    // ---------------------------
+    // Calendar
+    // ---------------------------
+    'add_event'               => 'Add Event',
+    'event_name'              => 'Event Name',
+    'event_date'              => 'Event Date',
+    'event_description'       => 'Event Description',
+    'no_events'               => 'No events found.',
+
+    // ---------------------------
+    // Clients
+    // ---------------------------
+    'create_client'           => 'Create Client',
+    'edit_client'             => 'Edit Client',
+    'delete_client'           => 'Delete Client',
+    'client_name'             => 'Client Name',
+    'client_email'            => 'Client Email',
+    'no_clients_available'    => 'No clients available.',
 
     // ---------------------------
     // Inventory
     // ---------------------------
-    'inventory'           => 'Inventory',
-    'manage_inventory'    => 'Manage your inventory items',
-    'filter_by'           => 'Filter by',
-    'material'            => 'Material',
-    'equipment'           => 'Equipment',
-    'rented'              => 'Rented',
-    'no_inventory'        => 'No inventory items found.',
-    'quantity'            => 'Quantity',
-    'add_inventory_item'  => 'Add Inventory Item',
-    'type'                => 'Type',
-    'name'                => 'Name',
-    'cancel'              => 'Cancel',
-    'submit'              => 'Submit',
+    'manage_inventory'        => 'Manage your inventory items',
+    'add_inventory_item'      => 'Add Inventory Item',
+    'filter_by'               => 'Filter by',
+    'material'                => 'Material',
+    'equipment'               => 'Equipment',
+    'quantity'                => 'Quantity',
+    'no_inventory'            => 'No inventory items found.',
+
+    // ---------------------------
+    // Export & Documents
+    // ---------------------------
+    'export_excel'            => 'Export Excel',
+    'export_pdf'              => 'Export PDF',
+    'documents'               => 'Documents',
+
+    // ---------------------------
+    // Forms & Placeholders
+    // ---------------------------
+    'month'                   => 'Month',
+    'all_quarters'            => 'All Quarters',
+    'all_semesters'           => 'All Semesters',
+    'months'                  => 'Months',
+    'year'                    => 'Year',
+    'years'                   => 'Years',
+    'add'                     => 'Add',
+    'edit'                    => 'Edit',
+    'delete'                  => 'Delete',
+    'filter_by'               => 'Filter by',
+    'filter_by_status'        => 'Filter by status:',
+    'select_employee'         => 'Select Employee',
+    'send_email'              => 'Send by Email',
+    'task_placeholder'        => 'Describe the task...',
+    'font_placeholder'        => '',
+    'month_placeholder'       => '',
 ];

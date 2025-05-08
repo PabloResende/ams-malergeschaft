@@ -4,7 +4,7 @@
 require_once __DIR__ . '/../models/Analytics.php';
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../../config/config.php';
-require_once __DIR__ . '/../../libs/fpdf.php';
+require_once __DIR__ . '/../../lib/fpdf.php';
 
 class AnalyticsController
 {

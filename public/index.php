@@ -11,6 +11,8 @@ require_once __DIR__ . '/../app/controllers/EmployeeController.php';
 require_once __DIR__ . '/../app/controllers/ClientsController.php';
 require_once __DIR__ . '/../app/controllers/CalendarController.php';
 require_once __DIR__ . '/../app/controllers/AnalyticsController.php';
+require_once __DIR__ . '/../app/controllers/PaymentController.php';
+require_once __DIR__ . '/../app/controllers/InvoiceController.php';
 require_once __DIR__ . '/../app/lang/lang.php';
 
 $uri = $_SERVER['REQUEST_URI'];
@@ -39,6 +41,8 @@ $employeeController = new EmployeeController();
 $clientsController = new ClientsController();
 $calendarController = new CalendarController();
 $analyticsController = new AnalyticsController();
+$paymentController = new PaymentController();
+$invoiceController = new InvoiceController();
 
 switch ($route) {
     case '/':
@@ -183,6 +187,19 @@ switch ($route) {
         break;
     case '/analytics/sendEmail':
         $analyticsController->sendEmail();
+        break;
+    case '/finance':
+        $paymentController->form();
+        break;
+    case '/finance/checkout':
+        $paymentController->checkout();
+        break;
+    case '/finance/webhook':
+        $paymentController->webhook();
+        break;
+    case '/invoice/generate':
+        $invoiceId = $_GET['id'] ?? null;
+        $invoiceController->generate($invoiceId);
         break;
     default:
         http_response_code(404);

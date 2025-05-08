@@ -139,6 +139,15 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false || s
                             <span><?= $langText['analytics'] ?? 'Análises' ?></span>
                         </a>
                     </li>
+                    <li class="mb-4">
+                      <a href="<?= $baseUrl ?>/finance" class="flex items-center space-x-2 hover:text-gray-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                          <line x1="1" y1="10" x2="23" y2="10"></line>
+                        </svg>
+                        <span><?= $langText['finance'] ?? 'Financeiro' ?></span>
+                      </a>
+                    </li>
                 </ul>
             </nav>
         </div>
@@ -264,6 +273,15 @@ $isLoginOrRegisterPage = strpos($_SERVER['REQUEST_URI'], 'login') !== false || s
             </svg>
           </a>
         </li>
+        <li class="mb-4">
+          <a href="<?= $baseUrl ?>/finance" class="flex items-center space-x-2 hover:text-gray-300">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                  <line x1="1" y1="10" x2="23" y2="10"></line>
+              </svg>
+              <span><?= $langText['finance'] ?? 'Financeiro' ?></span>
+          </a>
+      </li>
         <li>
           <a href="<?= $baseUrl ?>/employees" class="flex flex-col items-center py-2 text-gray-700">
             <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

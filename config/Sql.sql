@@ -131,3 +131,23 @@ CREATE TABLE inventory_movement_details (
   FOREIGN KEY (item_id)
     REFERENCES inventory(id)
 );
+
+CREATE TABLE payments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  intent_id VARCHAR(255) NOT NULL UNIQUE,
+  amount INT NOT NULL,
+  currency VARCHAR(10) NOT NULL,
+  status VARCHAR(50) NOT NULL,
+  created_at DATETIME NOT NULL
+);
+
+CREATE TABLE invoices (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  number VARCHAR(50),
+  client_name VARCHAR(255),
+  client_email VARCHAR(255),
+  amount DECIMAL(10,2),
+  issue_date DATE,
+  due_date DATE,
+  status VARCHAR(50)
+);

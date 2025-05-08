@@ -1,61 +1,65 @@
 // public/js/header.js
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Notificações
-  document.querySelectorAll('.notification-btn').forEach(btn => {
-    const wrap = btn.parentElement;
-    const list = wrap.querySelector('.notification-list');
-    const dot  = btn.querySelector('.notification-dot');
-
-    if (!list) return;
-
-    // inicializa badge
-    if (dot) {
-      const has = list.querySelectorAll('li.notification-item').length > 0;
-      dot.classList.toggle('hidden', !has);
-    }
-
-    // toggle dropdown
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      document.querySelectorAll('.notification-list').forEach(o => { if (o !== list) o.classList.add('hidden'); });
-      list.classList.toggle('hidden');
-      if (dot) dot.classList.add('hidden');
+  // Sidebar mobile toggle
+  const mobileBtn = document.getElementById('mobileMenuButton');
+  const sidebar   = document.getElementById('sidebar');
+  const overlay   = document.getElementById('contentOverlay');
+  if (mobileBtn && sidebar && overlay) {
+    mobileBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('sidebar-open');
+      overlay.classList.toggle('hidden');
+      document.body.classList.toggle('overflow-hidden');
     });
-
-    // fecha ao clicar fora
-    document.addEventListener('click', e => {
-      if (!wrap.contains(e.target)) list.classList.add('hidden');
+    overlay.addEventListener('click', () => {
+      sidebar.classList.add('hidden');
+      overlay.classList.add('hidden');
+      document.body.classList.remove('overflow-hidden');
     });
+  }
 
-    // hover marca lida & decrementa badge
-    if (dot) {
-      let count = parseInt(dot.innerText, 10) || 0;
-      list.querySelectorAll('li.notification-item').forEach(item => {
-        item.dataset.read = 'false';
-        item.addEventListener('mouseenter', () => {
-          if (item.dataset.read === 'false') {
-            count = Math.max(count - 1, 0);
-            dot.innerText = count;
-            if (count === 0) dot.classList.add('hidden');
-            item.dataset.read = 'true';
-          }
-          item.classList.add('bg-gray-100');
-        });
-        item.addEventListener('mouseleave', () => {
-          item.classList.remove('bg-gray-100');
-        });
-      });
-    }
-  });
-
-  // Idioma
-  const langBtn = document.getElementById('language-button'),
-        langMenu = document.getElementById('language-menu');
+  // Language dropdown
+  const langBtn = document.getElementById('language-button');
+  const langMenu = document.getElementById('language-menu');
   if (langBtn && langMenu) {
-    langBtn.addEventListener('click', e => { e.stopPropagation(); langMenu.classList.toggle('hidden'); });
+    langBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      langMenu.classList.toggle('hidden');
+    });
     document.addEventListener('click', e => {
-      if (!langBtn.contains(e.target) && !langMenu.contains(e.target)) langMenu.classList.add('hidden');
+      if (!langBtn.contains(e.target) && !langMenu.contains(e.target)) {
+        langMenu.classList.add('hidden');
+      }
+    });
+  }
+
+  // Notifications desktop
+  const notifBtn = document.getElementById('notificationBtn');
+  const notifList = document.getElementById('notificationList');
+  if (notifBtn && notifList) {
+    notifBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      notifList.classList.toggle('hidden');
+    });
+    document.addEventListener('click', e => {
+      if (!notifBtn.contains(e.target) && !notifList.contains(e.target)) {
+        notifList.classList.add('hidden');
+      }
+    });
+  }
+
+  // Notifications mobile
+  const notifBtnM = document.getElementById('notificationBtnMobile');
+  const notifListM = document.getElementById('notificationListMobile');
+  if (notifBtnM && notifListM) {
+    notifBtnM.addEventListener('click', e => {
+      e.stopPropagation();
+      notifListM.classList.toggle('hidden');
+    });
+    document.addEventListener('click', e => {
+      if (!notifBtnM.contains(e.target) && !notifListM.contains(e.target)) {
+        notifListM.classList.add('hidden');
+      }
     });
   }
 });

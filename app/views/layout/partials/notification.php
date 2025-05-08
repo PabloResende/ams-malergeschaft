@@ -1,7 +1,7 @@
 <?php
 // app/views/layout/partials/notification.php
 
-// 1) Inicia sessão se ainda não estiver ativa
+// 1) Inicia sessão se necessário
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
@@ -11,22 +11,22 @@ require_once __DIR__ . '/../../../../config/Database.php';
 $pdo     = Database::connect();
 $baseUrl = '/ams-malergeschaft/public';
 
-// 3) Função helper: adiciona notificação se não estiver marcada como lida
+// 3) Helper para adicionar apenas não-lidas
 function addNotif(array &$arr, string $key, string $text, string $url): void {
-    // obtém sempre um array
+    // garante que $_SESSION[...] é array
     $readKeys = $_SESSION['read_notifications'] ?? [];
     if (! is_array($readKeys)) {
         $readKeys = [];
     }
     if (! in_array($key, $readKeys, true)) {
-        $arr[] = compact('key', 'text', 'url');
+        $arr[] = compact('key','text','url');
     }
 }
 
-// 4) Inicializa o array de notificações
+// 4) Array de retorno
 $notifications = [];
 
-// ——— Materiais com estoque < 10 ———
+// ——— 1) Materiais com estoque < 10 ———
 $stmt = $pdo->query("
     SELECT id, name, quantity
     FROM inventory
@@ -41,7 +41,7 @@ while ($it = $stmt->fetch(PDO::FETCH_ASSOC)) {
     addNotif($notifications, $key, $text, $url);
 }
 
-// ——— Projetos vencendo em ≤ 5 dias ———
+// ——— 2) Projetos vencendo em ≤5 dias ———
 $today = date('Y-m-d');
 $limit = date('Y-m-d', strtotime('+5 days'));
 $stmt  = $pdo->prepare("
@@ -62,7 +62,7 @@ while ($pj = $stmt->fetch(PDO::FETCH_ASSOC)) {
     addNotif($notifications, $key, $text, $url);
 }
 
-// ——— Clientes com ≥ 5 projetos ———
+// ——— 3) Clientes com ≥5 projetos ———
 $stmt = $pdo->query("
     SELECT c.id, c.name, COUNT(p.id) AS cnt
     FROM client c
@@ -77,5 +77,5 @@ while ($c = $stmt->fetch(PDO::FETCH_ASSOC)) {
     addNotif($notifications, $key, $text, $url);
 }
 
-// 5) Retorna apenas notificações não-lidas
+// 5) Retorna somente as não-lidas
 return $notifications;

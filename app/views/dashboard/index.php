@@ -3,30 +3,35 @@ require_once __DIR__ . '/../layout/header.php';
 require_once __DIR__ . '/../../../config/Database.php';
 
 $pdo = Database::connect();
+
 // Métricas gerais (mês atual)
-$stmt = $pdo->query("SELECT 
-  SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS active_projects,
-  SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_projects,
-  SUM(total_hours) AS total_hours
-FROM projects");
+$stmt = $pdo->query("
+    SELECT 
+      SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS active_projects,
+      SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_projects,
+      SUM(total_hours) AS total_hours
+    FROM projects
+");
 $metrics = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$activeProjectsCount = $metrics['active_projects'] ?? 0;
-$completedProjects = $metrics['completed_projects'] ?? 0;
-$totalHours = $metrics['total_hours'] ?? 0;
+$activeProjectsCount   = $metrics['active_projects']   ?? 0;
+$completedProjects      = $metrics['completed_projects']?? 0;
+$totalHours             = $metrics['total_hours']       ?? 0;
 
 // Métricas do mês anterior
-$stmt = $pdo->query("SELECT 
-  SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS active_projects_last_month,
-  SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_projects_last_month,
-  SUM(total_hours) AS total_hours_last_month
-FROM projects 
-WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)");
+$stmt = $pdo->query("
+    SELECT 
+      SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS active_projects_last_month,
+      SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed_projects_last_month,
+      SUM(total_hours) AS total_hours_last_month
+    FROM projects 
+    WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
+");
 $lastMonthMetrics = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$activeProjectsLastMonth = $lastMonthMetrics['active_projects_last_month'] ?? 0;
+$activeProjectsLastMonth    = $lastMonthMetrics['active_projects_last_month'] ?? 0;
 $completedProjectsLastMonth = $lastMonthMetrics['completed_projects_last_month'] ?? 0;
-$totalHoursLastMonth = $lastMonthMetrics['total_hours_last_month'] ?? 0;
+$totalHoursLastMonth        = $lastMonthMetrics['total_hours_last_month']        ?? 0;
 
 // Membros da equipe
 $stmt = $pdo->query("SELECT COUNT(DISTINCT id) AS team_members FROM employees");
@@ -41,13 +46,22 @@ function calculatePercentageChange($current, $previous) {
     return round((($current - $previous) / $previous) * 100, 1);
 }
 
-$activeProjectsChange = calculatePercentageChange($activeProjectsCount, $activeProjectsLastMonth);
-$completedProjectsChange = calculatePercentageChange($completedProjects, $completedProjectsLastMonth);
-$totalHoursChange = calculatePercentageChange($totalHours, $totalHoursLastMonth);
+$activeProjectsChange    = calculatePercentageChange($activeProjectsCount, $activeProjectsLastMonth);
+$completedProjectsChange = calculatePercentageChange($completedProjects,    $completedProjectsLastMonth);
+$totalHoursChange        = calculatePercentageChange($totalHours,           $totalHoursLastMonth);
 
-// Projetos ativos (limite de 9)
-$stmt = $pdo->query("SELECT * FROM projects WHERE status = 'in_progress' ORDER BY created_at DESC LIMIT 9");
+// Projetos ativos (limite de 9) – com JOIN para obter client_name
+$stmt = $pdo->query("
+    SELECT p.*, c.name AS client_name
+    FROM projects p
+    LEFT JOIN client c ON p.client_id = c.id
+    WHERE p.status = 'in_progress'
+    ORDER BY p.created_at DESC
+    LIMIT 9
+");
 $activeProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$baseUrl = '/ams-malergeschaft/public';
 ?>
 
 <div class="ml-56 pt-20 p-8">
@@ -73,8 +87,8 @@ $activeProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
     <div class="bg-white p-4 rounded-lg shadow flex flex-col items-center">
       <h3 class="text-lg font-semibold mb-2"><?= $langText['team_members'] ?? 'Team Members' ?></h3>
       <p class="text-3xl font-bold"><?= $teamMembers ?></p>
-      <p class="mt-1 text-sm <?= $activeProjectsChange >= 0 ? 'text-green-500' : 'text-red-500' ?>">
-        <?= $activeProjectsChange >= 0 ? '+' : '' ?><?= $activeProjectsChange ?> <?= $langText['vs_last_month'] ?? 'vs last month' ?>
+      <p class="mt-1 text-sm <?= $teamMembers >= 0 ? 'text-green-500' : 'text-red-500' ?>">
+        <?= '+' . $activeProjectsChange ?> <?= $langText['vs_last_month'] ?? 'vs last month' ?>
       </p>
     </div>
     <div class="bg-white p-4 rounded-lg shadow flex flex-col items-center">
@@ -86,42 +100,79 @@ $activeProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </div>
   </div>
 
-  <!-- Grid de Projetos Ativos -->
+  <!-- Grid de Projetos Ativos (estilo igual à página de projetos) -->
   <div class="mt-12">
     <h3 class="text-xl font-semibold mb-6"><?= $langText['active_projects'] ?? 'Active Projects' ?></h3>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div id="projectsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <?php if (empty($activeProjects)): ?>
+        <p class="text-gray-600"><?= $langText['no_projects_available'] ?? 'No active projects.' ?></p>
+      <?php else: ?>
         <?php foreach ($activeProjects as $project): ?>
-            <?php
-                $progress = $project['progress'] ?? 0;
-                $status = $project['status'];
+          <?php
+            // Tag de status
+            switch ($project['status'] ?? '') {
+              case 'in_progress':
+                $tagClass = 'bg-blue-500';
+                $tagText  = $langText['active'] ?? 'Active';
+                break;
+              case 'pending':
+                $tagClass = 'bg-yellow-500';
+                $tagText  = $langText['pending'] ?? 'Pending';
+                break;
+              default:
+                $tagClass = 'bg-green-500';
+                $tagText  = $langText['completed'] ?? 'Completed';
+                break;
+            }
+            $tag = "<span class=\"{$tagClass} text-white px-3 py-1 rounded-full text-[12px] font-semibold\">"
+                 . htmlspecialchars($tagText, ENT_QUOTES, 'UTF-8')
+                 . "</span>";
 
-                // Definindo as tags de status com cores
-                if ($status === 'in_progress') {
-                    $tag = '<span class="bg-blue-200 text-blue-800 px-2 py-1 rounded-full text-xs">' . ($langText['active'] ?? 'Active') . '</span>';
-                } elseif ($status === 'pending') {
-                    $tag = '<span class="bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full text-xs">' . ($langText['pending'] ?? 'Pending') . '</span>';
-                } else {
-                    $tag = '<span class="bg-green-200 text-green-800 px-2 py-1 rounded-full text-xs">' . ($langText['completed'] ?? 'Completed') . '</span>';
-                }
-            ?>
-            <a href="<?= $baseUrl ?>/projects/details?id=<?= $project['id'] ?>" class="block">
-                <div class="bg-white p-6 rounded-xl shadow flex flex-col hover:shadow-md transition-all">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="text-xl font-bold flex-1"><?= htmlspecialchars($project['name']) ?></h4>
-                        <?= $tag ?>
-                    </div>
-                    <span>
-                        <h1 class="text-[13px] text-gray-600"><?= $langText['client'] ?? 'Client' ?></h1>
-                        <p class="text-sm font-semibold -mt-1"><?= htmlspecialchars($project['client_name']) ?></p>
-                    </span>
+            // Progresso via tasks
+            $tStmt = $pdo->prepare("SELECT completed FROM tasks WHERE project_id = ?");
+            $tStmt->execute([$project['id']]);
+            $tasksData = $tStmt->fetchAll(PDO::FETCH_ASSOC);
+            $done     = array_reduce($tasksData, fn($c,$t) => $c + (int)$t['completed'], 0);
+            $progress = count($tasksData) ? round($done / count($tasksData) * 100) : 0;
+          ?>
+          <div
+            class="project-item bg-white p-6 rounded-xl shadow hover:shadow-md transition-all cursor-pointer"
+            onclick="location.href='<?= $baseUrl ?>/projects'"
+          >
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-xl font-bold flex-1">
+                <?= htmlspecialchars($project['name'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+              </h4>
+              <?= $tag ?>
+            </div>
 
-                    <div class="w-full bg-gray-200 rounded-full h-2 mt-3">
-                        <div class="bg-blue-500 h-2 rounded-full" style="width: <?= $progress ?>%;"></div>
-                    </div>
-                    <p class="mt-1 text-sm text-gray-600"><?= $langText['progress'] ?? 'Progress' ?>: <?= $progress ?>%</p>
-                </div>
-            </a>
+            <p class="text-sm text-gray-600 mb-1">
+              <span class="font-semibold"><?= htmlspecialchars($langText['client'] ?? 'Client', ENT_QUOTES, 'UTF-8') ?>:</span>
+              <?= htmlspecialchars($project['client_name'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
+            </p>
+
+            <p class="text-sm text-gray-600 mb-1">
+              <span class="font-semibold"><?= htmlspecialchars($langText['location'] ?? 'Location', ENT_QUOTES, 'UTF-8') ?>:</span>
+              <?= htmlspecialchars($project['location'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
+            </p>
+
+            <p class="text-sm text-gray-600 mb-2">
+              <span class="font-semibold"><?= htmlspecialchars($langText['budget'] ?? 'Budget', ENT_QUOTES, 'UTF-8') ?>:</span>
+              <?= number_format((float)($project['budget'] ?? 0), 2, ',', '.') ?>
+            </p>
+
+            <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
+              <div class="bg-blue-500 h-2 rounded-full" style="width:<?= $progress ?>%;"></div>
+            </div>
+            <p class="text-sm text-gray-600">
+              <?= htmlspecialchars($langText['employee_count'] ?? 'Employees', ENT_QUOTES, 'UTF-8') ?>:
+              <?= (int)($project['employee_count'] ?? 0) ?> |
+              <?= htmlspecialchars($langText['progress'] ?? 'Progress', ENT_QUOTES, 'UTF-8') ?>:
+              <?= $progress ?>%
+            </p>
+          </div>
         <?php endforeach; ?>
+      <?php endif; ?>
     </div>
   </div>
 </div>

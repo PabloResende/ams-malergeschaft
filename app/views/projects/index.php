@@ -131,12 +131,10 @@ $baseUrl = '/ams-malergeschaft/public';
       <h3 class="text-xl font-bold mb-4"><?= htmlspecialchars($langText['add_project'] ?? 'Add Project', ENT_QUOTES, 'UTF-8') ?></h3>
       <form id="projectForm" action="<?= $baseUrl ?>/projects/store" method="POST">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <!-- nome -->
           <div>
             <label class="block text-gray-700"><?= htmlspecialchars($langText['name'] ?? 'Project Name', ENT_QUOTES, 'UTF-8') ?></label>
             <input name="name" type="text" required class="w-full p-2 border rounded">
           </div>
-          <!-- cliente -->
           <div>
             <label class="block text-gray-700"><?= htmlspecialchars($langText['select_client'] ?? 'Select Client', ENT_QUOTES, 'UTF-8') ?></label>
             <select name="client_id" class="w-full p-2 border rounded">
@@ -146,34 +144,21 @@ $baseUrl = '/ams-malergeschaft/public';
               <?php endforeach; ?>
             </select>
           </div>
-          <!-- location -->
           <div>
             <label class="block text-gray-700"><?= htmlspecialchars($langText['location'] ?? 'Location', ENT_QUOTES, 'UTF-8') ?></label>
             <input name="location" type="text" class="w-full p-2 border rounded">
           </div>
-          <!-- description -->
           <div>
             <label class="block text-gray-700"><?= htmlspecialchars($langText['description'] ?? 'Description', ENT_QUOTES, 'UTF-8') ?></label>
             <textarea name="description" class="w-full p-2 border rounded"></textarea>
           </div>
-          <!-- start_date -->
           <div>
             <label class="block text-gray-700"><?= htmlspecialchars($langText['start_date'] ?? 'Start Date', ENT_QUOTES, 'UTF-8') ?></label>
             <input name="start_date" type="date" required class="w-full p-2 border rounded">
           </div>
-          <!-- end_date -->
           <div>
             <label class="block text-gray-700"><?= htmlspecialchars($langText['end_date'] ?? 'End Date', ENT_QUOTES, 'UTF-8') ?></label>
             <input name="end_date" type="date" required class="w-full p-2 border rounded">
-          </div>
-          <!-- status -->
-          <div>
-            <label class="block text-gray-700"><?= htmlspecialchars($langText['status'] ?? 'Status', ENT_QUOTES, 'UTF-8') ?></label>
-            <select name="status" class="w-full p-2 border rounded">
-              <option value="in_progress"><?= htmlspecialchars($langText['in_progress'] ?? 'In Progress', ENT_QUOTES, 'UTF-8') ?></option>
-              <option value="pending"><?= htmlspecialchars($langText['pending'] ?? 'Pending', ENT_QUOTES, 'UTF-8') ?></option>
-              <option value="completed"><?= htmlspecialchars($langText['completed'] ?? 'Completed', ENT_QUOTES, 'UTF-8') ?></option>
-            </select>
           </div>
         </div>
 
@@ -219,7 +204,6 @@ $baseUrl = '/ams-malergeschaft/public';
     <div class="bg-white rounded-md p-8 w-90 max-h-[90vh] overflow-y-auto mt-10 relative">
       <button id="closeProjectDetailsModal" class="absolute top-2 right-2 text-gray-700 text-2xl">&times;</button>
       <h3 class="text-xl font-bold mb-4"><?= htmlspecialchars($langText['project_details'] ?? 'Project Details', ENT_QUOTES, 'UTF-8') ?></h3>
-
       <form id="projectDetailsForm" action="<?= $baseUrl ?>/projects/update" method="POST">
         <input name="id" type="hidden" id="detailsProjectId">
 

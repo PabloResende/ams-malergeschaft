@@ -22,12 +22,12 @@ class ProjectController
         }
 
         $data = [
-            'name'           => $_POST['name']           ?? '',
-            'client_id'      => $_POST['client_id']      ?: null,
-            'location'       => $_POST['location']       ?? '',
-            'description'    => $_POST['description']    ?? '',
-            'start_date'     => $_POST['start_date']     ?? '',
-            'end_date'       => $_POST['end_date']       ?? '',
+            'name'           => $_POST['name']        ?? '',
+            'client_id'      => isset($_POST['client_id']) && $_POST['client_id'] !== '' ? (int)$_POST['client_id'] : null,
+            'location'       => $_POST['location']    ?? '',
+            'description'    => $_POST['description'] ?? '',
+            'start_date'     => $_POST['start_date']  ?? null,
+            'end_date'       => $_POST['end_date']    ?? null,
             'total_hours'    => $_POST['total_hours']    ?? 0,
             'budget'         => $_POST['budget']         ?? 0,
             'employee_count' => $_POST['employee_count'] ?? 0,
@@ -50,23 +50,6 @@ class ProjectController
         }
     }
 
-    public function edit()
-    {
-        if (!isset($_GET['id'])) {
-            echo "ID do projeto não fornecido.";
-            exit;
-        }
-
-        $project = ProjectModel::find($_GET['id']);
-        if (!$project) {
-            echo "Projeto não encontrado.";
-            exit;
-        }
-
-        $clients = Client::all();
-        require_once __DIR__ . '/../views/projects/edit.php';
-    }
-
     public function update()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -75,19 +58,43 @@ class ProjectController
         }
 
         $id = $_POST['id'] ?? null;
+        if (!$id) {
+            echo "ID do projeto não fornecido.";
+            exit;
+        }
+
+        // Busca dados atuais para fallback de datas/client
+        $existing = ProjectModel::find($id);
+        if (!$existing) {
+            echo "Projeto não encontrado.";
+            exit;
+        }
+
+        // Prepara client_id
+        $clientId = isset($_POST['client_id']) && $_POST['client_id'] !== ''
+                    ? (int) $_POST['client_id']
+                    : $existing['client_id'];
+
+        // Datas: se vazias, mantém as originais
+        $startDate = !empty($_POST['start_date'])
+                     ? $_POST['start_date']
+                     : $existing['start_date'];
+        $endDate   = !empty($_POST['end_date'])
+                     ? $_POST['end_date']
+                     : $existing['end_date'];
 
         $data = [
-            'name'           => $_POST['name']           ?? '',
-            'client_id'      => $_POST['client_id']      ?: null,
-            'location'       => $_POST['location']       ?? '',
-            'description'    => $_POST['description']    ?? '',
-            'start_date'     => $_POST['start_date']     ?? '',
-            'end_date'       => $_POST['end_date']       ?? '',
-            'total_hours'    => $_POST['total_hours']    ?? 0,
-            'budget'         => $_POST['budget']         ?? 0,
-            'employee_count' => $_POST['employee_count'] ?? 0,
-            'status'         => $_POST['status']         ?? 'pending',
-            'progress'       => $_POST['progress']       ?? 0,
+            'name'           => $_POST['name']           ?? $existing['name'],
+            'client_id'      => $clientId,
+            'location'       => $_POST['location']       ?? $existing['location'],
+            'description'    => $_POST['description']    ?? $existing['description'],
+            'start_date'     => $startDate,
+            'end_date'       => $endDate,
+            'total_hours'    => $_POST['total_hours']    ?? $existing['total_hours'],
+            'budget'         => $_POST['budget']         ?? $existing['budget'],
+            'employee_count' => $_POST['employee_count'] ?? $existing['employee_count'],
+            'status'         => $_POST['status']         ?? $existing['status'],
+            'progress'       => $_POST['progress']       ?? $existing['progress'],
         ];
 
         $tasks     = json_decode($_POST['tasks']     ?? '[]', true);
@@ -105,28 +112,9 @@ class ProjectController
         }
     }
 
-    public function delete()
-    {
-        if (!isset($_GET['id'])) {
-            echo "ID do projeto não fornecido.";
-            exit;
-        }
-
-        if (ProjectModel::delete($_GET['id'])) {
-            header("Location: /ams-malergeschaft/public/projects");
-            exit;
-        } else {
-            echo "Erro ao deletar o projeto.";
-        }
-    }
-
-    /**
-     * API JSON para carregar detalhes no modal.
-     */
     public function show()
     {
         header('Content-Type: application/json; charset=UTF-8');
-
         if (!isset($_GET['id'])) {
             echo json_encode(['error' => 'ID não fornecido']);
             exit;
@@ -173,5 +161,20 @@ class ProjectController
 
         echo json_encode($output);
         exit;
+    }
+
+    public function delete()
+    {
+        if (!isset($_GET['id'])) {
+            echo "ID do projeto não fornecido.";
+            exit;
+        }
+
+        if (ProjectModel::delete($_GET['id'])) {
+            header("Location: /ams-malergeschaft/public/projects");
+            exit;
+        } else {
+            echo "Erro ao deletar o projeto.";
+        }
     }
 }

@@ -22,12 +22,12 @@ class ProjectController
         }
 
         $data = [
-            'name'           => $_POST['name']        ?? '',
+            'name'           => $_POST['name']           ?? '',
             'client_id'      => isset($_POST['client_id']) && $_POST['client_id'] !== '' ? (int)$_POST['client_id'] : null,
-            'location'       => $_POST['location']    ?? '',
-            'description'    => $_POST['description'] ?? '',
-            'start_date'     => $_POST['start_date']  ?? null,
-            'end_date'       => $_POST['end_date']    ?? null,
+            'location'       => $_POST['location']       ?? '',
+            'description'    => $_POST['description']    ?? '',
+            'start_date'     => $_POST['start_date']     ?? null,
+            'end_date'       => $_POST['end_date']       ?? null,
             'total_hours'    => $_POST['total_hours']    ?? 0,
             'budget'         => $_POST['budget']         ?? 0,
             'employee_count' => $_POST['employee_count'] ?? 0,
@@ -63,19 +63,16 @@ class ProjectController
             exit;
         }
 
-        // Busca dados atuais para fallback de datas/client
         $existing = ProjectModel::find($id);
         if (!$existing) {
             echo "Projeto não encontrado.";
             exit;
         }
 
-        // Prepara client_id
         $clientId = isset($_POST['client_id']) && $_POST['client_id'] !== ''
-                    ? (int) $_POST['client_id']
+                    ? (int)$_POST['client_id']
                     : $existing['client_id'];
 
-        // Datas: se vazias, mantém as originais
         $startDate = !empty($_POST['start_date'])
                      ? $_POST['start_date']
                      : $existing['start_date'];
@@ -129,12 +126,10 @@ class ProjectController
 
         $pdo = Database::connect();
 
-        // Tasks
         $stmt = $pdo->prepare("SELECT id, description, completed FROM tasks WHERE project_id = ?");
         $stmt->execute([$id]);
         $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Employees
         $stmt = $pdo->prepare("
             SELECT pr.resource_id AS id, e.name, e.last_name
             FROM project_resources pr
@@ -144,7 +139,6 @@ class ProjectController
         $stmt->execute([$id]);
         $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Inventory
         $stmt = $pdo->prepare("
             SELECT pr.quantity, i.name
             FROM project_resources pr
@@ -160,6 +154,30 @@ class ProjectController
         $output['inventory'] = $inventory;
 
         echo json_encode($output);
+        exit;
+    }
+
+    public function checkEmployee()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        if (!isset($_GET['id'])) {
+            echo json_encode(['error' => 'ID não fornecido']);
+            exit;
+        }
+        $empId = (int) $_GET['id'];
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare("
+            SELECT COUNT(DISTINCT pr.project_id) AS cnt
+            FROM project_resources pr
+            JOIN projects p ON pr.project_id = p.id
+            WHERE pr.resource_type = 'employee'
+              AND pr.resource_id = ?
+              AND p.status = 'in_progress'
+        ");
+        $stmt->execute([$empId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $count = $row['cnt'] ?? 0;
+        echo json_encode(['count' => (int)$count]);
         exit;
     }
 

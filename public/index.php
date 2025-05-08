@@ -11,8 +11,6 @@ require_once __DIR__ . '/../app/controllers/EmployeeController.php';
 require_once __DIR__ . '/../app/controllers/ClientsController.php';
 require_once __DIR__ . '/../app/controllers/CalendarController.php';
 require_once __DIR__ . '/../app/controllers/AnalyticsController.php';
-require_once __DIR__ . '/../app/controllers/PaymentController.php';
-require_once __DIR__ . '/../app/controllers/InvoiceController.php';
 require_once __DIR__ . '/../app/lang/lang.php';
 
 $uri = $_SERVER['REQUEST_URI'];
@@ -41,8 +39,6 @@ $employeeController = new EmployeeController();
 $clientsController = new ClientsController();
 $calendarController = new CalendarController();
 $analyticsController = new AnalyticsController();
-$paymentController = new PaymentController();
-$invoiceController = new InvoiceController();
 
 switch ($route) {
     case '/':
@@ -76,9 +72,12 @@ switch ($route) {
     case '/projects/update':
         $projectController->update();
         break;
+    case '/projects/edit':
+        $projectController->edit();
+        break;
     case '/projects/show':
         $projectController->show();
-        break;        
+        break;
     case '/projects/delete':
         $projectController->delete();
         break;
@@ -187,18 +186,6 @@ switch ($route) {
         break;
     case '/analytics/sendEmail':
         $analyticsController->sendEmail();
-        break;
-    case '/finance':
-        $paymentController->pos();
-        break;
-    case '/finance/generate-link':
-        $paymentController->generateLink();
-        break;
-    case '/finance/generate-invoice':
-        $paymentController->generateInvoice();
-        break;
-    case '/finance/send-email':
-        $paymentController->sendEmail();
         break;
     default:
         http_response_code(404);

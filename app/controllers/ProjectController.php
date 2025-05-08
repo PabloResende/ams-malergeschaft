@@ -1,14 +1,21 @@
 <?php
+// app/controllers/ProjectController.php
+
 require_once __DIR__ . '/../../config/Database.php';
 require_once __DIR__ . '/../models/Project.php';
+require_once __DIR__ . '/../models/Clients.php';
 
-class ProjectController {
-
-    public function index() {
+class ProjectController
+{
+    public function index()
+    {
+        $projects = ProjectModel::getAll();
+        $clients  = Client::all();
         require_once __DIR__ . '/../views/projects/index.php';
     }
 
-    public function store() {
+    public function store()
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: /ams-malergeschaft/public/projects");
             exit;
@@ -16,6 +23,7 @@ class ProjectController {
 
         $data = [
             'name'           => $_POST['name']           ?? '',
+            'client_id'      => $_POST['client_id']      ?: null,
             'location'       => $_POST['location']       ?? '',
             'description'    => $_POST['description']    ?? '',
             'start_date'     => $_POST['start_date']     ?? '',
@@ -23,21 +31,18 @@ class ProjectController {
             'total_hours'    => $_POST['total_hours']    ?? 0,
             'budget'         => $_POST['budget']         ?? 0,
             'employee_count' => $_POST['employee_count'] ?? 0,
-            'status'         => $_POST['status']         ?? 'in_progress',
+            'status'         => $_POST['status']         ?? 'pending',
             'progress'       => $_POST['progress']       ?? 0,
         ];
 
-        // tasks vêm em JSON no hidden "tasks"
         $tasks     = json_decode($_POST['tasks']     ?? '[]', true);
-        // employees vêm em JSON no hidden "employees"
         $employees = json_decode($_POST['employees'] ?? '[]', true);
 
-        if (empty($data['name'])) {
-            echo "O nome do projeto é obrigatório.";
-            return;
-        }
-
         if (ProjectModel::create($data, $tasks, $employees)) {
+            if ($data['client_id']) {
+                $count = Client::countProjects($data['client_id']);
+                Client::setPoints($data['client_id'], $count);
+            }
             header("Location: /ams-malergeschaft/public/projects");
             exit;
         } else {
@@ -45,20 +50,35 @@ class ProjectController {
         }
     }
 
-    public function update() {
+    public function edit()
+    {
+        if (!isset($_GET['id'])) {
+            echo "ID do projeto não fornecido.";
+            exit;
+        }
+
+        $project = ProjectModel::find($_GET['id']);
+        if (!$project) {
+            echo "Projeto não encontrado.";
+            exit;
+        }
+
+        $clients = Client::all();
+        require_once __DIR__ . '/../views/projects/edit.php';
+    }
+
+    public function update()
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: /ams-malergeschaft/public/projects");
             exit;
         }
 
-        $id = $_POST['id'] ?? '';
-        if (empty($id) || empty($_POST['name'])) {
-            echo "Dados obrigatórios faltando.";
-            return;
-        }
+        $id = $_POST['id'] ?? null;
 
         $data = [
-            'name'           => $_POST['name'],
+            'name'           => $_POST['name']           ?? '',
+            'client_id'      => $_POST['client_id']      ?: null,
             'location'       => $_POST['location']       ?? '',
             'description'    => $_POST['description']    ?? '',
             'start_date'     => $_POST['start_date']     ?? '',
@@ -66,21 +86,18 @@ class ProjectController {
             'total_hours'    => $_POST['total_hours']    ?? 0,
             'budget'         => $_POST['budget']         ?? 0,
             'employee_count' => $_POST['employee_count'] ?? 0,
-            'status'         => $_POST['status']         ?? 'in_progress',
+            'status'         => $_POST['status']         ?? 'pending',
             'progress'       => $_POST['progress']       ?? 0,
         ];
 
-        if ($data['status'] === 'completed' && $data['progress'] < 100) {
-            echo "Não é possível marcar como concluído até que todas as tasks estejam finalizadas.";
-            return;
-        }
-
-        // tasks vêm em JSON no hidden "tasks"
         $tasks     = json_decode($_POST['tasks']     ?? '[]', true);
-        // employees vêm em JSON no hidden "employees"
         $employees = json_decode($_POST['employees'] ?? '[]', true);
 
         if (ProjectModel::update($id, $data, $tasks, $employees)) {
+            if ($data['client_id']) {
+                $count = Client::countProjects($data['client_id']);
+                Client::setPoints($data['client_id'], $count);
+            }
             header("Location: /ams-malergeschaft/public/projects");
             exit;
         } else {
@@ -88,15 +105,14 @@ class ProjectController {
         }
     }
 
-    public function delete() {
+    public function delete()
+    {
         if (!isset($_GET['id'])) {
-            header("Location: /ams-malergeschaft/public/projects");
+            echo "ID do projeto não fornecido.";
             exit;
         }
 
-        $id = $_GET['id'];
-
-        if (ProjectModel::delete($id)) {
+        if (ProjectModel::delete($_GET['id'])) {
             header("Location: /ams-malergeschaft/public/projects");
             exit;
         } else {
@@ -104,65 +120,58 @@ class ProjectController {
         }
     }
 
-    public function show() {
-        $id = $_GET['id'] ?? null;
-        if (!$id) {
-            http_response_code(400);
-            exit(json_encode(["error" => "Missing project ID"]));
+    /**
+     * API JSON para carregar detalhes no modal.
+     */
+    public function show()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+
+        if (!isset($_GET['id'])) {
+            echo json_encode(['error' => 'ID não fornecido']);
+            exit;
+        }
+        $id = (int) $_GET['id'];
+
+        $project = ProjectModel::find($id);
+        if (!$project) {
+            echo json_encode(['error' => 'Projeto não encontrado']);
+            exit;
         }
 
         $pdo = Database::connect();
-        // dados do projeto
-        $stmt = $pdo->prepare("SELECT * FROM projects WHERE id = ?");
+
+        // Tasks
+        $stmt = $pdo->prepare("SELECT id, description, completed FROM tasks WHERE project_id = ?");
         $stmt->execute([$id]);
-        $project = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$project) {
-            http_response_code(404);
-            exit(json_encode(["error" => "Project not found"]));
-        }
+        $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // tasks
-        $taskStmt = $pdo->prepare("SELECT description, completed FROM tasks WHERE project_id = ?");
-        $taskStmt->execute([$id]);
-        $tasks = $taskStmt->fetchAll(PDO::FETCH_ASSOC);
-
-        // employees
-        $empStmt = $pdo->prepare("
-            SELECT e.id, e.name, e.last_name
-            FROM employees e
-            JOIN project_resources pr
-              ON pr.resource_id = e.id
+        // Employees
+        $stmt = $pdo->prepare("
+            SELECT pr.resource_id AS id, e.name, e.last_name
+            FROM project_resources pr
+            JOIN employees e ON pr.resource_id = e.id
             WHERE pr.project_id = ? AND pr.resource_type = 'employee'
         ");
-        $empStmt->execute([$id]);
-        $employees = $empStmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt->execute([$id]);
+        $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // inventário alocado
-        $invStmt = $pdo->prepare("
-            SELECT i.id, i.name, pr.quantity
-            FROM inventory i
-            JOIN project_resources pr
-              ON pr.resource_id = i.id
+        // Inventory
+        $stmt = $pdo->prepare("
+            SELECT pr.quantity, i.name
+            FROM project_resources pr
+            JOIN inventory i ON pr.resource_id = i.id
             WHERE pr.project_id = ? AND pr.resource_type = 'inventory'
         ");
-        $invStmt->execute([$id]);
-        $inventory = $invStmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt->execute([$id]);
+        $inventory = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        header('Content-Type: application/json');
-        echo json_encode([
-            'id'             => $project['id'],
-            'name'           => $project['name'],
-            'location'       => $project['location']     ?? '',
-            'description'    => $project['description']  ?? '',
-            'start_date'     => $project['start_date'],
-            'end_date'       => $project['end_date'],
-            'total_hours'    => $project['total_hours'],
-            'budget'         => $project['budget']       ?? 0,
-            'employee_count' => $project['employee_count'] ?? 0,
-            'status'         => $project['status'],
-            'tasks'          => $tasks,
-            'employees'      => $employees,
-            'inventory'      => $inventory
-        ]);
+        $output = $project;
+        $output['tasks']     = $tasks;
+        $output['employees'] = $employees;
+        $output['inventory'] = $inventory;
+
+        echo json_encode($output);
+        exit;
     }
 }

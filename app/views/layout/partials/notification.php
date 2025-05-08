@@ -1,61 +1,68 @@
 <?php
+// app/views/layout/partials/notification.php
+
+// 1) Inicia sessão se ainda não estiver ativa
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+// 2) Conexão com o banco
 require_once __DIR__ . '/../../../../config/Database.php';
 $pdo     = Database::connect();
 $baseUrl = '/ams-malergeschaft/public';
 
+// 3) Função helper: adiciona notificação se não estiver marcada como lida
+function addNotif(array &$arr, string $key, string $text, string $url): void {
+    // obtém sempre um array
+    $readKeys = $_SESSION['read_notifications'] ?? [];
+    if (! is_array($readKeys)) {
+        $readKeys = [];
+    }
+    if (! in_array($key, $readKeys, true)) {
+        $arr[] = compact('key', 'text', 'url');
+    }
+}
+
+// 4) Inicializa o array de notificações
 $notifications = [];
 
-// —————————————————————————————————————————————
-// 1) Materiais: se 0 → “acabou”, se ≥1 e <10 → “Tem x nome”
-// —————————————————————————————————————————————
-$stmt = $pdo->prepare("
+// ——— Materiais com estoque < 10 ———
+$stmt = $pdo->query("
     SELECT id, name, quantity
     FROM inventory
     WHERE type = 'material' AND quantity < 10
 ");
-$stmt->execute();
-$items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-foreach ($items as $it) {
-    if ($it['quantity'] == 0) {
-        $text = "Acabou: «{$it['name']}»";
-    } else {
-        $text = "Tem {$it['quantity']}× «{$it['name']}»";
-    }
-    $notifications[] = [
-        'text' => $text,
-        'url'  => "{$baseUrl}/inventory/show/{$it['id']}"
-    ];
+while ($it = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $key  = "inventory_{$it['id']}";
+    $text = $it['quantity'] == 0
+        ? "Acabou: «{$it['name']}»"
+        : "Tem {$it['quantity']}× «{$it['name']}»";
+    $url  = "{$baseUrl}/inventory?show={$it['id']}";
+    addNotif($notifications, $key, $text, $url);
 }
 
-// —————————————————————————————————————————————
-// 2) Projetos com prazo curto: faltam ≤5 dias
-// —————————————————————————————————————————————
-$today    = date('Y-m-d');
-$maxDate  = date('Y-m-d', strtotime('+5 days'));
-$stmt = $pdo->prepare("
+// ——— Projetos vencendo em ≤ 5 dias ———
+$today = date('Y-m-d');
+$limit = date('Y-m-d', strtotime('+5 days'));
+$stmt  = $pdo->prepare("
     SELECT id, name, end_date
     FROM projects
     WHERE end_date BETWEEN ? AND ?
 ");
-$stmt->execute([$today, $maxDate]);
-$pps = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-foreach ($pps as $pj) {
-    $diff = (strtotime($pj['end_date']) - strtotime($today)) / 86400;
-    $dias = (int) $diff;
+$stmt->execute([$today, $limit]);
+while ($pj = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $diff  = (strtotime($pj['end_date']) - strtotime($today)) / 86400;
+    $dias  = (int)$diff;
     $label = $dias === 0
         ? "vence hoje"
         : ($dias === 1 ? "vence em 1 dia" : "vence em {$dias} dias");
-    $notifications[] = [
-        'text' => "Projeto «{$pj['name']}» {$label}!",
-        'url'  => "{$baseUrl}/projects/show/{$pj['id']}"
-    ];
+    $key   = "project_{$pj['id']}";
+    $text  = "Projeto «{$pj['name']}» {$label}!";
+    $url   = "{$baseUrl}/projects?show={$pj['id']}";
+    addNotif($notifications, $key, $text, $url);
 }
 
-// —————————————————————————————————————————————
-// 3) Clientes fiéis: ≥5 projetos
-// —————————————————————————————————————————————
+// ——— Clientes com ≥ 5 projetos ———
 $stmt = $pdo->query("
     SELECT c.id, c.name, COUNT(p.id) AS cnt
     FROM client c
@@ -63,13 +70,12 @@ $stmt = $pdo->query("
     GROUP BY c.id
     HAVING cnt >= 5
 ");
-$cls = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-foreach ($cls as $c) {
-    $notifications[] = [
-        'text' => "Cliente «{$c['name']}» fez {$c['cnt']} projetos",
-        'url'  => "{$baseUrl}/clients/show/{$c['id']}"
-    ];
+while ($c = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    $key  = "client_{$c['id']}";
+    $text = "Cliente «{$c['name']}» fez {$c['cnt']} projetos";
+    $url  = "{$baseUrl}/clients?show={$c['id']}";
+    addNotif($notifications, $key, $text, $url);
 }
 
+// 5) Retorna apenas notificações não-lidas
 return $notifications;

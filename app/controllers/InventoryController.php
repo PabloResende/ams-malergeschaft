@@ -118,7 +118,10 @@ class InventoryController {
         }
 
         $user       = trim($_POST['user_name']     ?? '');
-        $datetime   = $_POST['datetime']           ?? '';
+        $datetime   = trim($_POST['datetime']      ?? '');
+        if ($datetime === '') {
+            $datetime = date('Y-m-d H:i:s');
+        }
         $reason     = $_POST['reason']             ?? '';
         $project_id = $_POST['project_id'] ?: null;
         $custom     = trim($_POST['custom_reason'] ?? '');
@@ -248,20 +251,5 @@ class InventoryController {
         echo json_encode($data);
     }
 
-    /**
-     * GET /inventory/control
-     */
-    public function control(): void {
-        $items          = $this->inventoryModel->getAll('all');
-        $activeProjects = ProjectModel::getActiveProjects();
-        require_once __DIR__ . '/../views/inventory/control.php';
-    }
-
-    /**
-     * GET /inventory/history
-     */
-    public function history(): void {
-        $movements = $this->historyModel->getAllMovements();
-        require_once __DIR__ . '/../views/inventory/history.php';
-    }
+    // Removido o método control() — todo o modal agora vive em index.php
 }

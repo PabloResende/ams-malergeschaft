@@ -8,6 +8,7 @@ require_once __DIR__ . '/../../models/Project.php';
 
 $pdo = Database::connect();
 
+date_default_timezone_set('Europe/Zurich');
 // 1) Listagem principal
 $filter = $_GET['filter'] ?? 'all';
 if ($filter !== 'all') {
@@ -100,8 +101,15 @@ $baseUrl = '/ams-malergeschaft/public';
         </div>
         <div>
           <label class="block text-gray-700">Data e hora</label>
-          <input type="text" name="datetime" value="<?= date('Y-m-d H:i:s') ?>"
-                 class="w-full p-2 border rounded bg-gray-100" readonly>
+          <input
+            type="text"
+            id="datetimeInput"
+            name="datetime"
+            value="<?= (new DateTime('now', new DateTimeZone('Europe/Zurich')))->format('Y-m-d H:i:s') ?>"
+            class="w-full p-2 border rounded bg-gray-100"
+            readonly
+            required
+          >
         </div>
         <div>
           <label class="block text-gray-700">Motivo</label>

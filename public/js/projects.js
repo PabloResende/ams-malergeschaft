@@ -158,6 +158,10 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
+        // cliente
+        document.getElementById("detailsProjectClientName")
+                .textContent = data.client_name || '—';
+
         // preencher formulário
         detailsProjectIdInput.value                 = data.id;
         detailsProjectNameInput.value               = data.name;

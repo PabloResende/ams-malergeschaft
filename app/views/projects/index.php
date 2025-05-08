@@ -296,7 +296,12 @@ $baseUrl = '/ams-malergeschaft/public';
       <h3 class="text-xl font-bold mb-4">
         <?= htmlspecialchars($langText['project_details'] ?? 'Project Details', ENT_QUOTES, 'UTF-8') ?>
       </h3>
-
+      <p class="mb-4">
+        <span class="font-semibold">
+          <?= htmlspecialchars($langText['client'] ?? 'Client', ENT_QUOTES, 'UTF-8') ?>:
+        </span>
+        <span id="detailsProjectClientName">—</span>
+      </p>
       <form id="projectDetailsForm" action="<?= $baseUrl ?>/projects/update" method="POST">
         <input type="hidden" name="id" id="detailsProjectId">
 

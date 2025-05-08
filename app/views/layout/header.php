@@ -87,15 +87,15 @@ $isLoggedIn = isset($_SESSION['user']);
       </h1>
       <nav>
         <ul>
-          <li class="mb-4">
-            <a href="<?= $baseUrl ?>/dashboard" class="flex items-center space-x-2 hover:text-gray-300">
-              <!-- Heroicon: Home -->
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7m-9 2v8m4-8v8m5-2h-2a4 4 0 01-4-4V9" />
-              </svg>
-              <span><?= $langText['dashboard'] ?? 'Painel de Controle' ?></span>
-            </a>
-          </li>
+        <li class="mb-4">
+          <a href="<?= $baseUrl ?>/dashboard" class="flex items-center space-x-2 hover:text-gray-300">
+            <!-- Heroicon: Home simples -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10.707 1.707a1 1 0 00-1.414 0l-7 7A1 1 0 003 10h1v7a1 1 0 001 1h4v-5h2v5h4a1 1 0 001-1v-7h1a1 1 0 00.707-1.707l-7-7z"/>
+            </svg>
+            <span><?= $langText['dashboard'] ?? 'Painel de Controle' ?></span>
+          </a>
+        </li>
           <li class="mb-4">
             <a href="<?= $baseUrl ?>/projects" class="flex items-center space-x-2 hover:text-gray-300">
               <!-- Heroicon: Briefcase -->
@@ -133,14 +133,15 @@ $isLoggedIn = isset($_SESSION['user']);
             </a>
           </li>
           <li class="mb-4">
-            <a href="<?= $baseUrl ?>/clients" class="flex items-center space-x-2 hover:text-gray-300">
-              <!-- Heroicon: User Group -->
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87M12 7a4 4 0 110 8 4 4 0 010-8z" />
-              </svg>
-              <span><?= $langText['clients'] ?? 'Clientes' ?></span>
-            </a>
-          </li>
+          <a href="<?= $baseUrl ?>/clients" class="flex items-center space-x-2 hover:text-gray-300">
+            <!-- Heroicon: User Group -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M17 20h5v-2a4 4 0 00-3-3.87M2 18v-2a4 4 0 013-3.87M12 7a4 4 0 110 8 4 4 0 010-8z" />
+            </svg>
+            <span><?= $langText['clients'] ?? 'Clientes' ?></span>
+          </a>
+        </li>
           <li class="mb-4">
             <a href="<?= $baseUrl ?>/analytics" class="flex items-center space-x-2 hover:text-gray-300">
               <!-- Heroicon: Chart Bar -->

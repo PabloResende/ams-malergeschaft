@@ -8,7 +8,6 @@ require_once __DIR__ . '/../../models/Project.php';
 
 $pdo = Database::connect();
 
-date_default_timezone_set('Europe/Zurich');
 // 1) Listagem principal
 $filter = $_GET['filter'] ?? 'all';
 if ($filter !== 'all') {
@@ -30,31 +29,36 @@ $movements = $histModel->getAllMovements();
 
 $baseUrl = '/ams-malergeschaft/public';
 ?>
+
 <div class="ml-56 pt-20 p-8">
   <h2 class="text-2xl font-bold mb-4"><?= $langText['inventory'] ?? 'Inventory' ?></h2>
 
   <div class="flex justify-between mb-6">
     <div class="flex space-x-2">
       <a href="<?= $baseUrl ?>/inventory?filter=all"
-         class="px-3 py-1 rounded-full border <?= $filter==='all' ? 'bg-gray-300' : 'bg-white' ?>">All</a>
+         class="px-3 py-1 rounded-full border <?= $filter === 'all' ? 'bg-gray-300' : 'bg-white' ?>">
+        All
+      </a>
       <a href="<?= $baseUrl ?>/inventory?filter=material"
-         class="px-3 py-1 rounded-full border <?= $filter==='material' ? 'bg-blue-200 text-blue-800' : 'bg-white' ?>">
+         class="px-3 py-1 rounded-full border <?= $filter === 'material' ? 'bg-blue-200 text-blue-800' : 'bg-white' ?>">
         Material
       </a>
       <a href="<?= $baseUrl ?>/inventory?filter=equipment"
-         class="px-3 py-1 rounded-full border <?= $filter==='equipment' ? 'bg-purple-200 text-purple-800' : 'bg-white' ?>">
+         class="px-3 py-1 rounded-full border <?= $filter === 'equipment' ? 'bg-purple-200 text-purple-800' : 'bg-white' ?>">
         Equipment
       </a>
       <a href="<?= $baseUrl ?>/inventory?filter=rented"
-         class="px-3 py-1 rounded-full border <?= $filter==='rented' ? 'bg-yellow-200 text-yellow-800' : 'bg-white' ?>">
+         class="px-3 py-1 rounded-full border <?= $filter === 'rented' ? 'bg-yellow-200 text-yellow-800' : 'bg-white' ?>">
         Rented
       </a>
     </div>
     <div class="flex space-x-2">
-      <button id="openControlModal" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded">
+      <button id="openControlModal"
+              class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded">
         Controle de Estoque
       </button>
-      <button id="openHistoryModal" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded">
+      <button id="openHistoryModal"
+              class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded">
         Histórico de Estoque
       </button>
     </div>
@@ -63,9 +67,11 @@ $baseUrl = '/ams-malergeschaft/public';
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <?php if (empty($inventoryItems)): ?>
       <p><?= $langText['no_inventory'] ?? 'No inventory items found.' ?></p>
-    <?php else: foreach($inventoryItems as $item): ?>
+    <?php else: foreach ($inventoryItems as $item): ?>
       <?php
-        $iconCls = match($item['type']) {
+        // ignora itens com quantidade zero
+        if ((int)$item['quantity'] <= 0) continue;
+        $iconCls = match ($item['type']) {
           'material'  => 'text-blue-600',
           'equipment' => 'text-purple-600',
           'rented'    => 'text-yellow-600',
@@ -80,7 +86,9 @@ $baseUrl = '/ams-malergeschaft/public';
           <h3 class="text-lg font-bold ml-2"><?= htmlspecialchars($item['name'], ENT_QUOTES) ?></h3>
         </div>
         <p class="text-sm text-gray-600"><?= ucfirst(htmlspecialchars($item['type'], ENT_QUOTES)) ?></p>
-        <p class="mt-2 text-sm"><?= $langText['quantity'] ?? 'Quantity' ?>: <?= (int)$item['quantity'] ?></p>
+        <p class="mt-2 text-sm">
+          <?= $langText['quantity'] ?? 'Quantity' ?>: <?= (int)$item['quantity'] ?>
+        </p>
       </div>
     <?php endforeach; endif; ?>
   </div>
@@ -90,9 +98,12 @@ $baseUrl = '/ams-malergeschaft/public';
 <div id="inventoryControlModal"
      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
   <div class="bg-white rounded-md p-8 w-11/12 max-w-2xl max-h-[90vh] overflow-y-auto relative">
-    <button id="closeControlModal" class="absolute top-4 right-6 text-gray-700 text-2xl">&times;</button>
+    <button id="closeControlModal"
+            class="absolute top-4 right-6 text-gray-700 text-2xl">&times;</button>
     <h3 class="text-xl font-bold mb-4">Controle de Estoque</h3>
-    <form id="controlForm" action="<?= $baseUrl ?>/inventory/control/store" method="POST">
+    <form id="controlForm"
+          action="<?= $baseUrl ?>/inventory/control/store"
+          method="POST">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div>
           <label class="block text-gray-700">Seu nome</label>
@@ -101,15 +112,9 @@ $baseUrl = '/ams-malergeschaft/public';
         </div>
         <div>
           <label class="block text-gray-700">Data e hora</label>
-          <input
-            type="text"
-            id="datetimeInput"
-            name="datetime"
-            value="<?= (new DateTime('now', new DateTimeZone('Europe/Zurich')))->format('Y-m-d H:i:s') ?>"
-            class="w-full p-2 border rounded bg-gray-100"
-            readonly
-            required
-          >
+          <input type="text" id="datetimeInput" name="datetime"
+                 class="w-full p-2 border rounded bg-gray-100"
+                 readonly required>
         </div>
         <div>
           <label class="block text-gray-700">Motivo</label>
@@ -163,7 +168,7 @@ $baseUrl = '/ams-malergeschaft/public';
           <div>
             <label class="block text-gray-700">Quantidade</label>
             <input type="number" id="newItemQty" name="new_item_qty" min="1"
-                   class="w-full p-2 border rounded">
+                   class="w-full p-2 border rounded" value="1">
           </div>
         </div>
       </div>
@@ -172,7 +177,7 @@ $baseUrl = '/ams-malergeschaft/public';
         <h4 class="font-semibold mb-2">Itens em Estoque</h4>
         <?php if (empty($allItems)): ?>
           <p>Nenhum item disponível.</p>
-        <?php else: foreach ($allItems as $it): if ($it['quantity'] <= 0) continue; ?>
+        <?php else: foreach ($allItems as $it): ?>
           <div class="flex items-center mb-2">
             <input type="checkbox"
                    class="mr-2 item-checkbox"
@@ -180,7 +185,7 @@ $baseUrl = '/ams-malergeschaft/public';
                    value="<?= htmlspecialchars($it['id'], ENT_QUOTES) ?>">
             <span class="flex-1">
               <?= htmlspecialchars($it['name'], ENT_QUOTES) ?>
-              (<?= (int)$it['quantity'] ?> disponíveis)
+              (Disponível: <?= (int)$it['quantity'] ?>)
             </span>
             <input type="number"
                    class="w-20 p-1 border rounded qty-input"
@@ -195,9 +200,13 @@ $baseUrl = '/ams-malergeschaft/public';
 
       <div class="flex justify-end">
         <button type="button" id="cancelControlBtn"
-                class="mr-2 px-4 py-2 border rounded">Cancelar</button>
+                class="mr-2 px-4 py-2 border rounded">
+          Cancelar
+        </button>
         <button type="submit"
-                class="bg-indigo-500 text-white px-4 py-2 rounded">Registrar</button>
+                class="bg-indigo-500 text-white px-4 py-2 rounded">
+          Registrar
+        </button>
       </div>
     </form>
   </div>
@@ -207,21 +216,22 @@ $baseUrl = '/ams-malergeschaft/public';
 <div id="inventoryHistoryModal"
      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
   <div class="bg-white rounded-md p-8 w-11/12 max-w-2xl max-h-[90vh] overflow-y-auto relative">
-    <button id="closeHistoryModal" class="absolute top-4 right-6 text-gray-700 text-2xl">&times;</button>
+    <button id="closeHistoryModal"
+            class="absolute top-4 right-6 text-gray-700 text-2xl">&times;</button>
     <h3 class="text-xl font-bold mb-4">Histórico de Movimentações</h3>
-
     <?php if (empty($movements)): ?>
       <p>Nenhum histórico encontrado.</p>
-    <?php else: foreach ($movements as $m):
-      $border = match ($m['reason']) {
-        'projeto' => 'border-l-4 border-green-500',
-        'perda'   => 'border-l-4 border-red-500',
-        'adição'  => 'border-l-4 border-blue-500',
-        'outros'  => 'border-l-4 border-yellow-500',
-        'criar'   => 'border-l-4 border-purple-500',
-        default   => 'border-l-4 border-gray-300'
-      };
-    ?>
+    <?php else: foreach ($movements as $m): ?>
+      <?php
+        $border = match ($m['reason']) {
+          'projeto' => 'border-l-4 border-green-500',
+          'perda'   => 'border-l-4 border-red-500',
+          'adição'  => 'border-l-4 border-blue-500',
+          'outros'  => 'border-l-4 border-yellow-500',
+          'criar'   => 'border-l-4 border-purple-500',
+          default   => 'border-l-4 border-gray-300'
+        };
+      ?>
       <div class="history-item p-4 mb-2 bg-gray-50 rounded <?= $border ?>"
            data-id="<?= htmlspecialchars($m['id'], ENT_QUOTES) ?>">
         <div class="flex items-center justify-between">
@@ -237,5 +247,8 @@ $baseUrl = '/ams-malergeschaft/public';
   </div>
 </div>
 
-<script>window.baseUrl = '<?= $baseUrl ?>';</script>
+<script>
+  window.baseUrl = '<?= $baseUrl ?>';
+  console.log('baseUrl:', window.baseUrl);
+</script>
 <script src="<?= $baseUrl ?>/js/inventory_control.js"></script>

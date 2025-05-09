@@ -5,8 +5,8 @@ require_once __DIR__ . '/../../../config/Database.php';
 require_once __DIR__ . '/../../models/Inventory.php';
 require_once __DIR__ . '/../../models/InventoryHistoryModel.php';
 require_once __DIR__ . '/../../models/Project.php';
-// carregar o sistema de tradução
 
+// carregar o sistema de tradução
 $pdo = Database::connect();
 
 // 1) Listagem principal
@@ -229,6 +229,5 @@ $baseUrl = '/ams-malergeschaft/public';
 
 <script>
   window.baseUrl = '<?= $baseUrl ?>';
-  console.log('baseUrl:', window.baseUrl);
 </script>
-<script src="<?= $baseUrl ?>/js/inventory_control.js"></script>
+<script src="<?= $baseUrl ?>/js/inventory_control.js?v=<?= time() ?>" defer></script>

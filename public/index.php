@@ -13,33 +13,35 @@ require_once __DIR__ . '/../app/controllers/CalendarController.php';
 require_once __DIR__ . '/../app/controllers/AnalyticsController.php';
 require_once __DIR__ . '/../app/lang/lang.php';
 
-$uri = $_SERVER['REQUEST_URI'];
+$uri   = $_SERVER['REQUEST_URI'];
 $route = str_replace($basePath, '', parse_url($uri, PHP_URL_PATH));
+$route = strtok($route, '?');
 
+// Troca de idioma
 if (isset($_GET['lang'])) {
     $_SESSION['lang'] = $_GET['lang'];
     if (!headers_sent()) {
-        setcookie('lang', $_GET['lang'], time() + (86400 * 30), "/");
+        setcookie('lang', $_GET['lang'], time() + 86400 * 30, "/");
     }
 }
 
-$route = strtok($route, '?');
-
-// Proteção de rotas
+// Rotas públicas
 $publicRoutes = ['/', '/login', '/auth', '/register', '/store'];
 if (!in_array($route, $publicRoutes) && !isset($_SESSION['user'])) {
     header("Location: $basePath/login");
     exit;
 }
 
-$userController = new UserController();
-$projectController = new ProjectController();
+// Instancia controllers
+$userController      = new UserController();
+$projectController   = new ProjectController();
 $inventoryController = new InventoryController();
-$employeeController = new EmployeeController();
-$clientsController = new ClientsController();
-$calendarController = new CalendarController();
+$employeeController  = new EmployeeController();
+$clientsController   = new ClientsController();
+$calendarController  = new CalendarController();
 $analyticsController = new AnalyticsController();
 
+// Dispatcher
 switch ($route) {
     case '/':
     case '/login':
@@ -63,6 +65,7 @@ switch ($route) {
     case '/profile':
         $userController->profile();
         break;
+
     case '/projects':
         $projectController->index();
         break;
@@ -81,6 +84,7 @@ switch ($route) {
     case '/projects/delete':
         $projectController->delete();
         break;
+
     case '/employees':
         $employeeController->list();
         break;
@@ -108,6 +112,7 @@ switch ($route) {
     case '/employees/document':
         $employeeController->serveDocument();
         break;
+
     case '/clients':
         $clientsController->list();
         break;
@@ -129,6 +134,7 @@ switch ($route) {
     case '/clients/delete':
         $clientsController->delete();
         break;
+
     case '/inventory':
         $inventoryController->index();
         break;
@@ -147,18 +153,16 @@ switch ($route) {
     case '/inventory/delete':
         $inventoryController->delete();
         break;
-    case '/inventory':
-        $inventoryController->index();
-        break;
     case '/inventory/control/store':
         $inventoryController->storeControl();
         break;
     case '/inventory/history':
-        $inventoryController->history();
+        $inventoryController->history(); // se existir
         break;
     case '/inventory/history/details':
         $inventoryController->historyDetails();
         break;
+
     case '/calendar':
         $calendarController->index();
         break;
@@ -168,6 +172,7 @@ switch ($route) {
     case '/calendar/fetch':
         $calendarController->fetch();
         break;
+
     case '/analytics':
         $analyticsController->index();
         break;
@@ -183,6 +188,7 @@ switch ($route) {
     case '/analytics/sendEmail':
         $analyticsController->sendEmail();
         break;
+
     default:
         http_response_code(404);
         echo "404 - Page not found.";

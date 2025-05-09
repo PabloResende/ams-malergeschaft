@@ -17,21 +17,25 @@ class InventoryController {
 
     /**
      * GET /inventory
-     * Exibe lista de itens e carrega dados para modais.
      */
     public function index(): void {
-        $filter          = $_GET['filter'] ?? 'all';
-        $inventoryItems  = $this->inventoryModel->getAll($filter);
-        $allItems        = $this->inventoryModel->getAll('all');
-        $activeProjects  = ProjectModel::getActiveProjects();
-        $movements       = $this->historyModel->getAllMovements();
-
+        $filter         = $_GET['filter'] ?? 'all';
+        $inventoryItems = $this->inventoryModel->getAll($filter);
+        $allItems       = $this->inventoryModel->getAll('all');
+        $activeProjects = ProjectModel::getActiveProjects();
+        $movements      = $this->historyModel->getAllMovements();
         require_once __DIR__ . '/../views/inventory/index.php';
     }
 
     /**
+     * GET /inventory/create
+     */
+    public function create(): void {
+        require_once __DIR__ . '/../views/inventory/create.php';
+    }
+
+    /**
      * POST /inventory/store
-     * Cria um novo item no estoque.
      */
     public function store(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -54,7 +58,6 @@ class InventoryController {
 
     /**
      * GET /inventory/edit?id=...
-     * Exibe formulário de edição.
      */
     public function edit(): void {
         if (!isset($_GET['id'])) {
@@ -71,7 +74,6 @@ class InventoryController {
 
     /**
      * POST /inventory/update
-     * Atualiza um item existente.
      */
     public function update(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -95,7 +97,6 @@ class InventoryController {
 
     /**
      * GET /inventory/delete?id=...
-     * Remove um item do estoque.
      */
     public function delete(): void {
         if (!isset($_GET['id'])) {
@@ -109,7 +110,6 @@ class InventoryController {
 
     /**
      * POST /inventory/control/store
-     * Processa alocação, adição, perda ou criação de itens.
      */
     public function storeControl(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -118,10 +118,7 @@ class InventoryController {
         }
 
         $user       = trim($_POST['user_name']     ?? '');
-        $datetime   = trim($_POST['datetime']      ?? '');
-        if ($datetime === '') {
-            $datetime = date('Y-m-d H:i:s');
-        }
+        $rawDate    = trim($_POST['datetime']      ?? '');
         $reason     = $_POST['reason']             ?? '';
         $project_id = $_POST['project_id'] ?: null;
         $custom     = trim($_POST['custom_reason'] ?? '');
@@ -137,10 +134,32 @@ class InventoryController {
             return;
         }
 
+        // Converte data/hora para MySQL e timezone Europe/Zurich
+        try {
+            $dt = \DateTime::createFromFormat(
+                'd/m/Y, H:i:s',
+                $rawDate,
+                new \DateTimeZone('Europe/Zurich')
+            );
+            if (!$dt) {
+                $dt = \DateTime::createFromFormat(
+                    'd/m/Y H:i:s',
+                    $rawDate,
+                    new \DateTimeZone('Europe/Zurich')
+                );
+            }
+            if (!$dt) {
+                $dt = new \DateTime('now', new \DateTimeZone('Europe/Zurich'));
+            }
+        } catch (\Exception $e) {
+            $dt = new \DateTime('now', new \DateTimeZone('Europe/Zurich'));
+        }
+        $datetime = $dt->format('Y-m-d H:i:s');
+
         $pdo       = Database::connect();
         $toHistory = [];
 
-        // Caso de criar novo item
+        // Criar novo item
         if ($reason === 'criar' && isset($data['new_item'])) {
             $ni   = $data['new_item'];
             $name = trim($ni['name']     ?? '');
@@ -161,7 +180,7 @@ class InventoryController {
             $toHistory = [ $newId => $qty ];
 
         } else {
-            // Movimentação de itens existentes
+            // Movimentação existente
             foreach ($data as $id => $qty) {
                 $i = (int)$id;
                 $q = (int)$qty;
@@ -174,29 +193,24 @@ class InventoryController {
                 return;
             }
 
-            // Atualiza estoque
             foreach ($toHistory as $id => $q) {
-                if ($reason === 'adição') {
-                    $upd = $pdo->prepare("UPDATE inventory SET quantity = quantity + ? WHERE id = ?");
-                } else {
-                    $upd = $pdo->prepare("UPDATE inventory SET quantity = quantity - ? WHERE id = ?");
-                }
+                $sql = $reason === 'adição'
+                    ? "UPDATE inventory SET quantity = quantity + ? WHERE id = ?"
+                    : "UPDATE inventory SET quantity = quantity - ? WHERE id = ?";
+                $upd = $pdo->prepare($sql);
                 $upd->execute([$q, $id]);
             }
 
-            // Aloca itens em project_resources quando for motivo 'projeto'
             if ($reason === 'projeto' && $project_id) {
                 foreach ($toHistory as $id => $q) {
-                    // Verifica se já existe registro
                     $prCheck = $pdo->prepare("
                         SELECT id, quantity
                         FROM project_resources
                         WHERE project_id = ? AND resource_type = 'inventory' AND resource_id = ?
                     ");
                     $prCheck->execute([$project_id, $id]);
-                    $prRow = $prCheck->fetch(PDO::FETCH_ASSOC);
+                    $prRow = $prCheck->fetch(\PDO::FETCH_ASSOC);
                     if ($prRow) {
-                        // Incrementa quantidade
                         $newQty = (int)$prRow['quantity'] + $q;
                         $prUpd = $pdo->prepare("
                             UPDATE project_resources
@@ -205,7 +219,6 @@ class InventoryController {
                         ");
                         $prUpd->execute([$newQty, $prRow['id']]);
                     } else {
-                        // Insere nova alocação
                         $prIns = $pdo->prepare("
                             INSERT INTO project_resources
                               (project_id, resource_type, resource_id, quantity, created_at)
@@ -217,7 +230,7 @@ class InventoryController {
             }
         }
 
-        // Registra histórico de movimentação
+        // Registrar histórico
         try {
             $this->historyModel->insertMovement(
                 $user,
@@ -238,18 +251,34 @@ class InventoryController {
 
     /**
      * GET /inventory/history/details?id=...
+     * Retorna JSON com itens (qty>0) desse movimento.
      */
     public function historyDetails(): void {
-        $id = $_GET['id'] ?? null;
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
+        header('Content-Type: application/json; charset=utf-8');
+
         if (!$id) {
             http_response_code(400);
-            echo json_encode(["error" => "ID do movimento não informado"]);
-            return;
+            echo json_encode(['items' => []]);
+            exit;
         }
-        $data = $this->historyModel->getMovementWithDetails((int)$id);
-        header('Content-Type: application/json');
-        echo json_encode($data);
-    }
 
-    // Removido o método control() — todo o modal agora vive em index.php
+        // Busca detalhes na tabela inventory_movement_details
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare("
+            SELECT i.name,
+                   d.quantity AS qty
+            FROM inventory_movement_details d
+            INNER JOIN inventory i ON d.item_id = i.id
+            WHERE d.movement_id = ?
+        ");
+        $stmt->execute([$id]);
+        $items = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        // Filtra apenas qty > 0
+        $items = array_filter($items, fn($i) => (int)$i['qty'] > 0);
+
+        echo json_encode(['items' => array_values($items)]);
+        exit;
+    }
 }

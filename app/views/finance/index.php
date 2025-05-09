@@ -27,7 +27,7 @@ require __DIR__ . '/../layout/header.php';
       <p class="text-sm"><?= $langText['total_expense'] ?></p>
       <p class="text-2xl font-bold"><?= number_format($summary['expense'],2,',','.') ?></p>
     </div>
-    <div class="p-4 bg-gray-100 rounded">
+    <div class="p-4 bg-blue-100 rounded">
       <p class="text-sm"><?= $langText['net_balance'] ?></p>
       <p class="text-2xl font-bold"><?= number_format($summary['net'],2,',','.') ?></p>
     </div>

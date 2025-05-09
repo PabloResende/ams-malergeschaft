@@ -14,7 +14,7 @@ require __DIR__ . '/../layout/header.php';
   };
 </script>
 
-<main class="md:pl-70 pt-20 p-6">
+<main class="md:pl-80 pt-20 p-6">
   <h1 class="text-3xl font-bold mb-6"><?= $langText['finance'] ?></h1>
 
   <!-- Resumo -->

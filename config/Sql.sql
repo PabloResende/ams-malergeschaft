@@ -168,3 +168,51 @@ CREATE TABLE invoices (
   due_date DATE,
   status VARCHAR(50)
 );
+
+-- Categorias de transação
+CREATE TABLE finance_categories (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  type ENUM('income','expense','debt') NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Transações financeiras
+CREATE TABLE financial_transactions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  category_id INT NOT NULL,
+  type ENUM('income','expense','debt') NOT NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  date DATE NOT NULL,
+  description TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id)    REFERENCES users(id),
+  FOREIGN KEY (category_id) REFERENCES finance_categories(id)
+);
+
+-- Comprovantes (anexos) de cada transação
+CREATE TABLE transaction_attachments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  transaction_id INT NOT NULL,
+  file_path VARCHAR(255) NOT NULL,
+  uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (transaction_id)
+    REFERENCES financial_transactions(id)
+    ON DELETE CASCADE
+);
+
+-- Dívidas específicas (facultativo: você pode tratar dívida como type='debt' em financial_transactions)
+CREATE TABLE debts (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  client_id INT,
+  transaction_id INT NULL,
+  amount DECIMAL(12,2) NOT NULL,
+  due_date DATE NOT NULL,
+  status ENUM('open','paid','overdue') DEFAULT 'open',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (client_id) 
+    REFERENCES client(id),
+  FOREIGN KEY (transaction_id)
+    REFERENCES financial_transactions(id)
+);

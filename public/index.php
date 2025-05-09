@@ -12,6 +12,7 @@ require_once __DIR__ . '/../app/controllers/EmployeeController.php';
 require_once __DIR__ . '/../app/controllers/ClientsController.php';
 require_once __DIR__ . '/../app/controllers/CalendarController.php';
 require_once __DIR__ . '/../app/controllers/AnalyticsController.php';
+require_once __DIR__ . '/../app/controllers/FinancialController.php';
 require_once __DIR__ . '/../app/lang/lang.php';
 
 $uri   = $_SERVER['REQUEST_URI'];
@@ -44,6 +45,7 @@ $employeeController  = new EmployeeController();
 $clientsController   = new ClientsController();
 $calendarController  = new CalendarController();
 $analyticsController = new AnalyticsController();
+$financialController = new FinancialController();
 
 // Dispatcher
 switch ($route) {
@@ -193,6 +195,32 @@ switch ($route) {
         break;
     case '/analytics/sendEmail':
         $analyticsController->sendEmail();
+        break;
+
+    // FINANCEIRO
+    case '/finance':
+        $financialController->index();
+        break;
+    case '/finance/create':
+        $financialController->create();
+        break;
+    case '/finance/store':
+        $financialController->store();
+        break;
+    case '/finance/edit':
+        $financialController->edit();
+        break;
+    case '/finance/update':
+        $financialController->update();
+        break;
+    case '/finance/delete':
+        $financialController->delete();
+        break;
+    case '/finance/report':
+        $financialController->report();
+        break;
+    case '/finance/attachment/download':
+        $financialController->downloadAttachment();
         break;
 
     default:

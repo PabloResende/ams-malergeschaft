@@ -12,14 +12,23 @@ $pdo     = Database::connect();
 $baseUrl = '/ams-malergeschaft/public';
 
 // 3) Helper para adicionar apenas não-lidas
-function addNotif(array &$arr, string $key, string $text, string $url): void {
-    // garante que $_SESSION[...] é array
-    $readKeys = $_SESSION['read_notifications'] ?? [];
-    if (! is_array($readKeys)) {
-        $readKeys = [];
-    }
-    if (! in_array($key, $readKeys, true)) {
-        $arr[] = compact('key','text','url');
+if (! function_exists('addNotif')) {
+    /**
+     * Adiciona uma notificação no array, se ainda não foi marcada como lida
+     *
+     * @param array  $arr Recebedor das notificações
+     * @param string $key Identificador único
+     * @param string $text Texto a exibir
+     * @param string $url  Link de destino
+     */
+    function addNotif(array &$arr, string $key, string $text, string $url): void {
+        $readKeys = $_SESSION['read_notifications'] ?? [];
+        if (! is_array($readKeys)) {
+            $readKeys = [];
+        }
+        if (! in_array($key, $readKeys, true)) {
+            $arr[] = compact('key','text','url');
+        }
     }
 }
 

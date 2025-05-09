@@ -15,6 +15,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Abre modal de Controle e popula data/hora em fuso Swiss
   openCtrlBtn?.addEventListener('click', () => {
+    // opcional: limpa seleções anteriores
+    document.querySelectorAll('.item-checkbox').forEach(box => {
+      box.checked = false;
+      const qi = box.parentElement.querySelector('.qty-input');
+      qi.disabled = true;
+      qi.value = 1;
+    });
+
     const now = new Date();
     datetimeInput.value = now.toLocaleString('pt-CH', {
       day: '2-digit', month: '2-digit', year: 'numeric',
@@ -49,7 +57,17 @@ document.addEventListener('DOMContentLoaded', () => {
     newItemDiv       .classList.toggle('hidden', v !== 'criar');
   });
 
-  // Form submission
+  // habilita/desabilita o campo de quantidade ao marcar/desmarcar checkbox
+  document.querySelectorAll('.item-checkbox').forEach(box => {
+    box.addEventListener('change', () => {
+      const qtyInput = box.parentElement.querySelector('.qty-input');
+      qtyInput.disabled = !box.checked;
+      // quando desmarca, reset para 1
+      if (!box.checked) qtyInput.value = 1;
+    });
+  });
+
+  // Form submission: monta JSON com itens selecionados
   document.getElementById('controlForm')?.addEventListener('submit', () => {
     const data = {};
     if (reasonSelect.value === 'criar') {
@@ -61,7 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       document.querySelectorAll('.item-checkbox').forEach(box => {
         if (box.checked) {
-          data[box.value] = parseInt(box.parentElement.querySelector('.qty-input').value, 10);
+          const qty = parseInt(box.parentElement.querySelector('.qty-input').value, 10) || 0;
+          data[box.value] = qty;
         }
       });
     }

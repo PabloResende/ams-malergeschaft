@@ -1,23 +1,20 @@
 <?php
 // app/views/finance/index.php
 
-// 1) inclui header (define $langText, $baseUrl, e disponibiliza as variáveis:
-//    $transactions, $allCategories, $summary, $start, $end, $type, $cat)
 require __DIR__ . '/../layout/header.php';
 ?>
 <script>
-  // rota base e legendas para o JS externo
   window.FINANCE_PREFIX = '<?= $baseUrl ?>/finance';
   window.FINANCE_STR = {
     newTransaction: <?= json_encode($langText['new_transaction']) ?>,
     save:           <?= json_encode($langText['save']) ?>,
     editTransaction:<?= json_encode($langText['edit_transaction']  ?? 'Editar Transação') ?>,
-    saveChanges:    <?= json_encode($langText['save_changes']      ?? 'Salvar') ?>
+    saveChanges:    <?= json_encode($langText['save_changes']      ?? 'Salvar') ?>,
+    confirmDelete:  <?= json_encode($langText['confirm_delete']     ?? 'Excluir esta transação?') ?>
   };
 </script>
 
 <main class="md:pl-56 pt-20 p-6">
-  <!-- Título -->
   <h1 class="text-3xl font-bold mb-6"><?= $langText['finance'] ?></h1>
 
   <!-- Resumo -->
@@ -61,11 +58,6 @@ require __DIR__ . '/../layout/header.php';
         <?= $langText['filter'] ?>
       </button>
     </form>
-
-    <a href="<?= $baseUrl ?>/finance/report?start=<?= $start ?>&end=<?= $end ?>"
-       class="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-800">
-      <?= $langText['report'] ?>
-    </a>
 
     <a href="<?= $baseUrl ?>/calendar"
        class="px-3 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600 flex items-center gap-1">
@@ -178,17 +170,16 @@ require __DIR__ . '/../layout/header.php';
           <button type="button" id="txCancelBtn" class="px-4 py-2 border rounded"><?= $langText['cancel'] ?></button>
           <button type="submit" id="txSaveBtn" class="bg-green-500 text-white px-4 py-2 rounded"><?= $langText['save'] ?></button>
         </div>
-        
-          <!-- link de excluir, escondido por padrão -->
-          <a href="#"
-            id="txDeleteLink"
-            class="absolute bottom-6 left-6 text-red-600 hover:underline hidden">
-            <?= $langText['delete'] ?>
-          </a>
       </form>
+
+      <a href="#"
+         id="txDeleteLink"
+         class="absolute bottom-6 left-6 text-red-600 hover:underline hidden">
+        <?= $langText['delete'] ?>
+      </a>
     </div>
   </div>
 </main>
 
-<!-- scripts -->
 <script defer src="<?= $baseUrl ?>/js/finance.js"></script>
+<script src="<?= $baseUrl ?>/js/header.js"></script>

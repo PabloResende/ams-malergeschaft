@@ -17,6 +17,7 @@ class InventoryController {
 
     /**
      * GET /inventory
+     * Exibe lista de itens e carrega dados para os modais.
      */
     public function index(): void {
         $filter         = $_GET['filter'] ?? 'all';
@@ -24,6 +25,7 @@ class InventoryController {
         $allItems       = $this->inventoryModel->getAll('all');
         $activeProjects = ProjectModel::getActiveProjects();
         $movements      = $this->historyModel->getAllMovements();
+
         require_once __DIR__ . '/../views/inventory/index.php';
     }
 
@@ -36,12 +38,14 @@ class InventoryController {
 
     /**
      * POST /inventory/store
+     * Cria um novo item no estoque.
      */
     public function store(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: /ams-malergeschaft/public/inventory");
             exit;
         }
+
         $type     = $_POST['type']     ?? '';
         $name     = trim($_POST['name']     ?? '');
         $quantity = (int)($_POST['quantity'] ?? 0);
@@ -58,28 +62,33 @@ class InventoryController {
 
     /**
      * GET /inventory/edit?id=...
+     * Exibe formulário de edição de um item.
      */
     public function edit(): void {
         if (!isset($_GET['id'])) {
-            echo "Inventory item ID não fornecido.";
+            echo "ID de item não fornecido.";
             exit;
         }
+
         $item = $this->inventoryModel->getById((int)$_GET['id']);
         if (!$item) {
             echo "Item não encontrado.";
             exit;
         }
+
         require_once __DIR__ . '/../views/inventory/edit.php';
     }
 
     /**
      * POST /inventory/update
+     * Atualiza um item existente.
      */
     public function update(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: /ams-malergeschaft/public/inventory");
             exit;
         }
+
         $id       = (int)($_POST['id']       ?? 0);
         $type     = $_POST['type']         ?? '';
         $name     = trim($_POST['name']     ?? '');
@@ -97,12 +106,14 @@ class InventoryController {
 
     /**
      * GET /inventory/delete?id=...
+     * Remove um item do estoque.
      */
     public function delete(): void {
         if (!isset($_GET['id'])) {
-            echo "Inventory item ID não fornecido.";
+            echo "ID de item não fornecido.";
             exit;
         }
+
         $this->inventoryModel->delete((int)$_GET['id']);
         header("Location: /ams-malergeschaft/public/inventory");
         exit;
@@ -110,6 +121,7 @@ class InventoryController {
 
     /**
      * POST /inventory/control/store
+     * Processa adição, perda, alocação em projeto ou criação de item.
      */
     public function storeControl(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -134,7 +146,7 @@ class InventoryController {
             return;
         }
 
-        // Converte data/hora para MySQL e timezone Europe/Zurich
+        // Converte data/hora para MySQL e fuso Europe/Zurich
         try {
             $dt = \DateTime::createFromFormat(
                 'd/m/Y, H:i:s',
@@ -159,7 +171,7 @@ class InventoryController {
         $pdo       = Database::connect();
         $toHistory = [];
 
-        // Criar novo item
+        // Criação de novo item
         if ($reason === 'criar' && isset($data['new_item'])) {
             $ni   = $data['new_item'];
             $name = trim($ni['name']     ?? '');
@@ -180,7 +192,7 @@ class InventoryController {
             $toHistory = [ $newId => $qty ];
 
         } else {
-            // Movimentação existente
+            // Movimentação de itens existentes
             foreach ($data as $id => $qty) {
                 $i = (int)$id;
                 $q = (int)$qty;
@@ -193,6 +205,7 @@ class InventoryController {
                 return;
             }
 
+            // Atualiza quantidade no estoque
             foreach ($toHistory as $id => $q) {
                 $sql = $reason === 'adição'
                     ? "UPDATE inventory SET quantity = quantity + ? WHERE id = ?"
@@ -201,6 +214,7 @@ class InventoryController {
                 $upd->execute([$q, $id]);
             }
 
+            // Aloca em projeto, se aplicável
             if ($reason === 'projeto' && $project_id) {
                 foreach ($toHistory as $id => $q) {
                     $prCheck = $pdo->prepare("
@@ -230,7 +244,7 @@ class InventoryController {
             }
         }
 
-        // Registrar histórico
+        // Registra histórico de movimentação
         try {
             $this->historyModel->insertMovement(
                 $user,
@@ -251,7 +265,9 @@ class InventoryController {
 
     /**
      * GET /inventory/history/details?id=...
-     * Retorna JSON com itens (qty>0) desse movimento.
+     * Retorna JSON com:
+     *  - movement: { user_name, datetime (Europe/Zurich), reason, project_name?, custom_reason? }
+     *  - items: [ { name, qty } … ]
      */
     public function historyDetails(): void {
         $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
@@ -259,26 +275,61 @@ class InventoryController {
 
         if (!$id) {
             http_response_code(400);
-            echo json_encode(['items' => []]);
+            echo json_encode(['movement' => null, 'items' => []]);
             exit;
         }
 
-        // Busca detalhes na tabela inventory_movement_details
         $pdo = Database::connect();
+
+        // Busca dados da movimentação
         $stmt = $pdo->prepare("
+            SELECT m.user_name,
+                   m.datetime,
+                   m.reason,
+                   m.custom_reason,
+                   p.name AS project_name
+            FROM inventory_movements m
+            LEFT JOIN projects p ON m.project_id = p.id
+            WHERE m.id = ?
+        ");
+        $stmt->execute([$id]);
+        $mv = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$mv) {
+            echo json_encode(['movement' => null, 'items' => []]);
+            exit;
+        }
+
+        // Ajusta fuso para Europe/Zurich
+        $dt = new \DateTime($mv['datetime'], new \DateTimeZone('UTC'));
+        $dt->setTimezone(new \DateTimeZone('Europe/Zurich'));
+        $mv['datetime'] = $dt->format('Y-m-d H:i:s');
+
+        // Busca itens da movimentação
+        $stmt2 = $pdo->prepare("
             SELECT i.name,
                    d.quantity AS qty
             FROM inventory_movement_details d
-            INNER JOIN inventory i ON d.item_id = i.id
+            JOIN inventory i ON d.item_id = i.id
             WHERE d.movement_id = ?
         ");
-        $stmt->execute([$id]);
-        $items = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $stmt2->execute([$id]);
+        $items = $stmt2->fetchAll(\PDO::FETCH_ASSOC);
 
-        // Filtra apenas qty > 0
-        $items = array_filter($items, fn($i) => (int)$i['qty'] > 0);
+        // Filtra apenas qty>0
+        $items = array_values(array_filter($items, fn($i) => (int)$i['qty'] > 0));
 
-        echo json_encode(['items' => array_values($items)]);
+        // Retorna JSON completo
+        echo json_encode([
+            'movement' => [
+                'user_name'     => $mv['user_name'],
+                'datetime'      => $mv['datetime'],
+                'reason'        => $mv['reason'],
+                'project_name'  => $mv['project_name'],
+                'custom_reason' => $mv['custom_reason'],
+            ],
+            'items'    => $items
+        ]);
         exit;
     }
 }

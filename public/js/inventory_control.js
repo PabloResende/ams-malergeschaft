@@ -1,72 +1,56 @@
 // public/js/inventory_control.js
 
-// DEBUG TEMP: confirma que é a versão certa
-console.log('🚀 inventory_control.js carregado em:', new Date());
-
-// Ao carregar o DOM
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('DOM pronto para manipulação');
-
-  // Elementos de Controle de Estoque
+  // Controle de Estoque
   const openCtrlBtn   = document.getElementById('openControlModal');
   const closeCtrlBtn  = document.getElementById('closeControlModal');
   const cancelCtrlBtn = document.getElementById('cancelControlBtn');
   const ctrlModal     = document.getElementById('inventoryControlModal');
   const datetimeInput = document.getElementById('datetimeInput');
 
-  // Elementos de Histórico de Estoque
+  // Histórico de Estoque
   const openHistBtn   = document.getElementById('openHistoryModal');
   const closeHistBtn  = document.getElementById('closeHistoryModal');
   const histModal     = document.getElementById('inventoryHistoryModal');
 
-  // --- Modal de Controle ---
-  if (openCtrlBtn && closeCtrlBtn && cancelCtrlBtn && ctrlModal) {
-    openCtrlBtn.addEventListener('click', () => {
-      // Popula data/hora no formato pt-BR
-      const now = new Date();
-      datetimeInput.value = now.toLocaleString('pt-BR', {
-        day: '2-digit', month: '2-digit', year: 'numeric',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-      });
-      ctrlModal.classList.remove('hidden');
+  // Abre modal de Controle e popula data/hora (Suíça)
+  openCtrlBtn?.addEventListener('click', () => {
+    const now = new Date();
+    datetimeInput.value = now.toLocaleString('pt-CH', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      timeZone: 'Europe/Zurich'
     });
-    [closeCtrlBtn, cancelCtrlBtn].forEach(btn =>
-      btn.addEventListener('click', () => ctrlModal.classList.add('hidden'))
-    );
-    ctrlModal.addEventListener('click', e => {
-      if (e.target === ctrlModal) ctrlModal.classList.add('hidden');
-    });
-  }
+    ctrlModal.classList.remove('hidden');
+  });
+  [closeCtrlBtn, cancelCtrlBtn].forEach(b => b?.addEventListener('click', () => {
+    ctrlModal.classList.add('hidden');
+  }));
+  ctrlModal?.addEventListener('click', e => {
+    if (e.target === ctrlModal) ctrlModal.classList.add('hidden');
+  });
 
-  // --- Modal de Histórico ---
-  if (openHistBtn && closeHistBtn && histModal) {
-    openHistBtn.addEventListener('click', () => histModal.classList.remove('hidden'));
-    closeHistBtn.addEventListener('click', () => histModal.classList.add('hidden'));
-    histModal.addEventListener('click', e => {
-      if (e.target === histModal) histModal.classList.add('hidden');
-    });
-  }
+  // Abre/fecha modal de Histórico
+  openHistBtn?.addEventListener('click', () => histModal.classList.remove('hidden'));
+  closeHistBtn?.addEventListener('click', () => histModal.classList.add('hidden'));
+  histModal?.addEventListener('click', e => {
+    if (e.target === histModal) histModal.classList.add('hidden');
+  });
 
-  // Campos condicionais no formulário de controle
+  // Campos condicionais no formulário de Controle
   const reasonSelect     = document.getElementById('reasonSelect');
   const projectSelectDiv = document.getElementById('projectSelectDiv');
   const customReasonDiv  = document.getElementById('customReasonDiv');
   const newItemDiv       = document.getElementById('newItemDiv');
-  if (reasonSelect) {
-    reasonSelect.addEventListener('change', () => {
-      const v = reasonSelect.value;
-      projectSelectDiv.classList.toggle('hidden', v !== 'projeto');
-      customReasonDiv .classList.toggle('hidden', v !== 'outros');
-      newItemDiv      .classList.toggle('hidden', v !== 'criar');
-    });
-  }
+  reasonSelect?.addEventListener('change', () => {
+    const v = reasonSelect.value;
+    projectSelectDiv .classList.toggle('hidden', v !== 'projeto');
+    customReasonDiv  .classList.toggle('hidden', v !== 'outros');
+    newItemDiv       .classList.toggle('hidden', v !== 'criar');
+  });
 
-  // Itens e quantidades de controle
-  const checkboxes     = document.querySelectorAll('.item-checkbox');
-  const itemsDataInput = document.getElementById('itemsData');
-  const controlForm    = document.getElementById('controlForm');
-
-  checkboxes.forEach(box => {
+  // Item checkboxes
+  document.querySelectorAll('.item-checkbox').forEach(box => {
     const qtyInput = box.parentElement.querySelector('.qty-input');
     box.addEventListener('change', () => qtyInput.disabled = !box.checked);
     qtyInput.addEventListener('input', () => {
@@ -75,60 +59,63 @@ document.addEventListener('DOMContentLoaded', () => {
       if (qtyInput.value > max) qtyInput.value = max;
     });
   });
+  document.getElementById('controlForm')?.addEventListener('submit', () => {
+    const data = {};
+    if (reasonSelect.value === 'criar') {
+      data.new_item = {
+        name:     document.querySelector('[name=new_item_name]').value,
+        type:     document.querySelector('[name=new_item_type]').value,
+        quantity: parseInt(document.querySelector('[name=new_item_qty]').value, 10) || 0
+      };
+    } else {
+      document.querySelectorAll('.item-checkbox').forEach(box => {
+        if (box.checked) {
+          data[box.value] = parseInt(box.parentElement.querySelector('.qty-input').value, 10);
+        }
+      });
+    }
+    document.getElementById('itemsData').value = JSON.stringify(data);
+  });
 
-  if (controlForm) {
-    controlForm.addEventListener('submit', () => {
-      const data = {};
-      if (reasonSelect.value === 'criar') {
-        data.new_item = {
-          name:     document.getElementById('newItemName').value,
-          type:     document.getElementById('newItemType').value,
-          quantity: parseInt(document.getElementById('newItemQty').value, 10) || 0
-        };
-      } else {
-        checkboxes.forEach(box => {
-          if (box.checked) {
-            const qty = parseInt(box.parentElement.querySelector('.qty-input').value, 10);
-            data[box.value] = qty;
-          }
-        });
-      }
-      itemsDataInput.value = JSON.stringify(data);
-    });
-  }
-
-  // --- Histórico: expandir/recolher ---
-  const historyItems = document.querySelectorAll('.history-item');
-  historyItems.forEach(item => {
+  // Histórico: expandir/recolher e exibir detalhes completos
+  document.querySelectorAll('.history-item').forEach(item => {
     const arrow   = item.querySelector('.arrow');
     const details = item.querySelector('.history-details');
 
     const toggleDetails = () => {
       const id = item.dataset.id;
-      console.log('⟳ toggleDetails para movimento', id, 'hidden=', details.classList.contains('hidden'));
-
       if (details.classList.contains('hidden')) {
-        fetch(`${window.baseUrl}/inventory/history/details?id=${id}`)
-          .then(res => {
-            console.log('Fetch status:', res.status);
-            if (!res.ok) throw new Error(`Status ${res.status}`);
-            return res.json();
-          })
+        fetch(`${baseUrl}/inventory/history/details?id=${id}`)
+          .then(r => r.json())
           .then(json => {
-            // se vier { items: [...] } usa json.items, senão usa json direto
-            const arr = Array.isArray(json) ? json : (json.items || []);
-            console.log('✔ dados recebidos:', arr);
-            details.innerHTML = arr.map(i =>
-              `<div>${i.name}: ${i.qty}</div>`
-            ).join('') || '<div class="text-gray-500">Sem detalhes.</div>';
+            // movement + items
+            const m = json.movement;
+            let html = `
+              <div><strong>Operador:</strong> ${m.user_name}</div>
+              <div><strong>Data/Hora:</strong> ${m.datetime}</div>
+              <div><strong>Motivo:</strong> ${m.reason}</div>
+            `;
+            if (m.reason === 'projeto' && m.project_name) {
+              html += `<div><strong>Projeto:</strong> ${m.project_name}</div>`;
+            }
+            if (m.custom_reason) {
+              html += `<div><strong>Detalhe:</strong> ${m.custom_reason}</div>`;
+            }
+            html += '<hr class="my-2">';
+            if (json.items.length) {
+              html += json.items.map(i => `<div>${i.name}: ${i.qty}</div>`).join('');
+            } else {
+              html += `<div class="text-gray-500">Sem itens registrados.</div>`;
+            }
+            details.innerHTML = html;
             details.classList.remove('hidden');
             arrow.textContent = '▾';
           })
           .catch(err => {
-            console.error('❌ Erro ao carregar detalhes de histórico:', err);
             details.innerHTML = `<div class="text-red-500">Erro ao carregar detalhes.</div>`;
             details.classList.remove('hidden');
             arrow.textContent = '▾';
+            console.error('Erro detalhes histórico:', err);
           });
       } else {
         details.classList.add('hidden');
@@ -144,5 +131,4 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!e.target.closest('.history-details')) toggleDetails();
     });
   });
-
 });

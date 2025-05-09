@@ -120,6 +120,28 @@ class FinancialController
         header('Location: /ams-malergeschaft/public/finance');
     }
 
+    public function edit()
+{
+    // pega o ID
+    $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+
+    // busca os dados da transação
+    $tx = TransactionModel::find($id);
+    if (! $tx) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Transação não encontrada.']);
+        exit;
+    }
+
+    // anexa comprovantes
+    $tx['attachments'] = TransactionModel::getAttachments($id);
+
+    // devolve JSON e termina aqui
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($tx);
+    exit;
+}
+
     /**
      * Remove transação, anexos e registro de dívida.
      */

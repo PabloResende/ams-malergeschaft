@@ -185,4 +185,3 @@ require __DIR__ . '/../layout/header.php';
 
 <!-- scripts -->
 <script defer src="<?= $baseUrl ?>/js/finance.js"></script>
-<script src="<?= $baseUrl ?>/js/header.js"></script>

@@ -142,6 +142,7 @@ return [
     'upcoming_reminders'    => 'Rappels à venir',
     'all_quarters'          => 'Tous les Trimestres',
     'all_semesters'         => 'Tous les Semestres',
+    'other'                 => 'Autres',
 
     // ---------------------------
     // Export & Documents

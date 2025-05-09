@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeHistBtn  = document.getElementById('closeHistoryModal');
   const histModal     = document.getElementById('inventoryHistoryModal');
 
-  // Abre modal de Controle e popula data/hora (Suíça)
+  // Abre modal de Controle e popula data/hora em fuso Swiss
   openCtrlBtn?.addEventListener('click', () => {
     const now = new Date();
     datetimeInput.value = now.toLocaleString('pt-CH', {
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === histModal) histModal.classList.add('hidden');
   });
 
-  // Campos condicionais no formulário de Controle
+  // Campos condicionais
   const reasonSelect     = document.getElementById('reasonSelect');
   const projectSelectDiv = document.getElementById('projectSelectDiv');
   const customReasonDiv  = document.getElementById('customReasonDiv');
@@ -49,16 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     newItemDiv       .classList.toggle('hidden', v !== 'criar');
   });
 
-  // Item checkboxes
-  document.querySelectorAll('.item-checkbox').forEach(box => {
-    const qtyInput = box.parentElement.querySelector('.qty-input');
-    box.addEventListener('change', () => qtyInput.disabled = !box.checked);
-    qtyInput.addEventListener('input', () => {
-      const max = parseInt(box.dataset.max, 10);
-      if (qtyInput.value < 1) qtyInput.value = 1;
-      if (qtyInput.value > max) qtyInput.value = max;
-    });
-  });
+  // Form submission
   document.getElementById('controlForm')?.addEventListener('submit', () => {
     const data = {};
     if (reasonSelect.value === 'criar') {
@@ -77,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('itemsData').value = JSON.stringify(data);
   });
 
-  // Histórico: expandir/recolher e exibir detalhes completos
+  // Histórico: expandir/recolher com detalhes
   document.querySelectorAll('.history-item').forEach(item => {
     const arrow   = item.querySelector('.arrow');
     const details = item.querySelector('.history-details');
@@ -88,7 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch(`${baseUrl}/inventory/history/details?id=${id}`)
           .then(r => r.json())
           .then(json => {
-            // movement + items
             const m = json.movement;
             let html = `
               <div><strong>Operador:</strong> ${m.user_name}</div>
@@ -123,10 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    arrow.addEventListener('click', e => {
-      e.stopPropagation();
-      toggleDetails();
-    });
+    arrow.addEventListener('click', e => { e.stopPropagation(); toggleDetails(); });
     item.addEventListener('click', e => {
       if (!e.target.closest('.history-details')) toggleDetails();
     });

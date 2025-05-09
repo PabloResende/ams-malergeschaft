@@ -143,6 +143,8 @@ return [
     'upcoming_reminders'    => 'Lembretes Pendentes',
     'all_quarters'          => 'Todos os Trimestres',
     'all_semesters'         => 'Todos os Semestres',
+    'other'                 => 'Outros',
+
 
     // ---------------------------
     // Export & Documentos

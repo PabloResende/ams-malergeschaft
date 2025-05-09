@@ -142,6 +142,7 @@ return [
     'upcoming_reminders'    => 'Anstehende Erinnerungen',
     'all_quarters'          => 'Alle Quartale',
     'all_semesters'         => 'Alle Semester',
+    'other'                 => 'Andere',
 
     // ---------------------------
     // Export & Dokumente

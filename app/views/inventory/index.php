@@ -6,7 +6,6 @@ require_once __DIR__ . '/../../models/Inventory.php';
 require_once __DIR__ . '/../../models/InventoryHistoryModel.php';
 require_once __DIR__ . '/../../models/Project.php';
 
-// Dados
 $pdo             = Database::connect();
 $filter          = $_GET['filter'] ?? 'all';
 $inventoryItems  = $filter === 'all'
@@ -23,30 +22,30 @@ $baseUrl         = '/ams-malergeschaft/public';
 ?>
 
 <div class="ml-56 pt-20 p-8">
-  <h2 class="text-2xl font-bold mb-4"><?= $langText['inventory'] ?></h2>
+  <h2 class="text-2xl font-bold mb-4"><?= $langText['inventory'] ?? 'Estoque' ?></h2>
 
   <div class="flex justify-between mb-6">
     <div class="flex space-x-2">
       <?php foreach (['all','material','equipment','rented'] as $f): ?>
         <a href="<?= $baseUrl ?>/inventory?filter=<?= $f ?>"
-           class="px-3 py-1 rounded-full border <?= $filter=== $f ? 'bg-gray-300' : 'bg-white' ?>">
+           class="px-3 py-1 rounded-full border <?= $filter === $f ? 'bg-gray-300' : 'bg-white' ?>">
           <?= $langText[$f] ?? ucfirst($f) ?>
         </a>
       <?php endforeach; ?>
     </div>
     <div class="flex space-x-2">
       <button id="openControlModal" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded">
-        <?= $langText['stock_control'] ?>
+        <?= $langText['stock_control'] ?? 'Controle de Estoque' ?>
       </button>
       <button id="openHistoryModal" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded">
-        <?= $langText['stock_history'] ?>
+        <?= $langText['stock_history'] ?? 'Histórico de Estoque' ?>
       </button>
     </div>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <?php if (empty($inventoryItems)): ?>
-      <p><?= $langText['no_inventory'] ?></p>
+      <p><?= $langText['no_inventory'] ?? 'Sem itens em estoque.' ?></p>
     <?php else: foreach($inventoryItems as $item):
       if ((int)$item['quantity'] <= 0) continue;
       $iconCls = match ($item['type']) {
@@ -63,8 +62,12 @@ $baseUrl         = '/ams-malergeschaft/public';
           </svg>
           <h3 class="text-lg font-bold ml-2"><?= htmlspecialchars($item['name'], ENT_QUOTES) ?></h3>
         </div>
-        <p class="text-sm text-gray-600"><?= ucfirst($langText[$item['type']] ?? $item['type']) ?></p>
-        <p class="mt-2 text-sm"><?= $langText['quantity'] ?>: <?= (int)$item['quantity'] ?></p>
+        <p class="text-sm text-gray-600">
+          <?= ucfirst($langText[$item['type']] ?? $item['type']) ?>
+        </p>
+        <p class="mt-2 text-sm">
+          <?= $langText['quantity'] ?? 'Quantidade' ?>: <?= (int)$item['quantity'] ?>
+        </p>
       </div>
     <?php endforeach; endif; ?>
   </div>
@@ -74,35 +77,35 @@ $baseUrl         = '/ams-malergeschaft/public';
 <div id="inventoryControlModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
   <div class="bg-white rounded-md p-8 w-11/12 max-w-2xl max-h-[90vh] overflow-y-auto relative">
     <button id="closeControlModal" class="absolute top-4 right-6 text-gray-700 text-2xl">&times;</button>
-    <h3 class="text-xl font-bold mb-4"><?= $langText['stock_control'] ?></h3>
+    <h3 class="text-xl font-bold mb-4"><?= $langText['stock_control'] ?? 'Controle de Estoque' ?></h3>
     <form id="controlForm" action="<?= $baseUrl ?>/inventory/control/store" method="POST">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div>
-          <label class="block text-gray-700"><?= $langText['name'] ?></label>
+          <label class="block text-gray-700"><?= $langText['name'] ?? 'Nome' ?></label>
           <input type="text" name="user_name" class="w-full p-2 border rounded" required>
         </div>
         <div>
-          <label class="block text-gray-700"><?= $langText['date'] ?></label>
+          <label class="block text-gray-700"><?= $langText['date'] ?? 'Data e hora' ?></label>
           <input type="text" id="datetimeInput" name="datetime"
                  class="w-full p-2 border rounded bg-gray-100" readonly required>
         </div>
         <div>
-          <label class="block text-gray-700"><?= $langText['filter_by'] ?></label>
+          <label class="block text-gray-700"><?= $langText['filter_by'] ?? 'Filtrar por' ?></label>
           <select name="reason" id="reasonSelect" class="w-full p-2 border rounded">
-            <option value=""><?= $langText['select'] ?></option>
-            <option value="projeto"><?= $langText['projects'] ?></option>
-            <option value="perda"><?= $langText['delete'] ?></option>
-            <option value="adição"><?= $langText['add'] ?></option>
-            <option value="outros"><?= $langText['others'] ?></option>
-            <option value="criar"><?= $langText['add_inventory_item'] ?></option>
+            <option value=""><?= $langText['select'] ?? '-- Selecione --' ?></option>
+            <option value="projeto"><?= $langText['projects'] ?? 'Projeto' ?></option>
+            <option value="perda"><?= $langText['delete'] ?? 'Perda' ?></option>
+            <option value="adição"><?= $langText['add'] ?? 'Adição' ?></option>
+            <option value="outros"><?= $langText['others'] ?? 'Outros' ?></option>
+            <option value="criar"><?= $langText['add_inventory_item'] ?? 'Criar item' ?></option>
           </select>
         </div>
       </div>
 
       <div id="projectSelectDiv" class="hidden mb-4">
-        <label class="block text-gray-700"><?= $langText['projects_list'] ?></label>
+        <label class="block text-gray-700"><?= $langText['projects_list'] ?? 'Lista de Projetos' ?></label>
         <select name="project_id" class="w-full p-2 border rounded">
-          <option value=""><?= $langText['select'] ?></option>
+          <option value=""><?= $langText['select'] ?? '-- Selecione --' ?></option>
           <?php foreach($activeProjects as $p): ?>
             <option value="<?= $p['id'] ?>"><?= htmlspecialchars($p['name'], ENT_QUOTES) ?></option>
           <?php endforeach; ?>
@@ -110,27 +113,27 @@ $baseUrl         = '/ams-malergeschaft/public';
       </div>
 
       <div id="customReasonDiv" class="hidden mb-4">
-        <label class="block text-gray-700"><?= $langText['filter_by'] ?></label>
-        <input type="text" name="custom_reason" class="w-full p-2 border rounded">
+        <label class="block text-gray-700"><?= $langText['other'] ?? 'Outros' ?></label>
+        <input type="text" name="custom_reason" class="w-full p-2 border rounded" placeholder="<?= $langText['custom_reason'] ?? 'Razão personalizada' ?>">
       </div>
 
       <div id="newItemDiv" class="hidden mb-6">
-        <h4 class="font-semibold mb-2"><?= $langText['add_inventory_item'] ?></h4>
+        <h4 class="font-semibold mb-2"><?= $langText['add_inventory_item'] ?? 'Adicionar novo item' ?></h4>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label class="block text-gray-700"><?= $langText['inventory'] ?></label>
+            <label class="block text-gray-700"><?= $langText['inventory'] ?? 'Item' ?></label>
             <input type="text" name="new_item_name" class="w-full p-2 border rounded">
           </div>
           <div>
-            <label class="block text-gray-700"><?= $langText['filter_by'] ?></label>
+            <label class="block text-gray-700"><?= $langText['filter_by'] ?? 'Tipo' ?></label>
             <select name="new_item_type" class="w-full p-2 border rounded">
-              <option value="material"><?= $langText['material'] ?></option>
-              <option value="equipment"><?= $langText['equipment'] ?></option>
-              <option value="rented"><?= $langText['rented'] ?></option>
+              <option value="material"><?= $langText['material'] ?? 'Material' ?></option>
+              <option value="equipment"><?= $langText['equipment'] ?? 'Equipamento' ?></option>
+              <option value="rented"><?= $langText['rented'] ?? 'Alugado' ?></option>
             </select>
           </div>
           <div>
-            <label class="block text-gray-700"><?= $langText['quantity'] ?></label>
+            <label class="block text-gray-700"><?= $langText['quantity'] ?? 'Quantidade' ?></label>
             <input type="number" name="new_item_qty" min="1"
                    class="w-full p-2 border rounded" value="1">
           </div>
@@ -138,9 +141,9 @@ $baseUrl         = '/ams-malergeschaft/public';
       </div>
 
       <div id="stockItemsDiv" class="mb-6">
-        <h4 class="font-semibold mb-2"><?= $langText['inventory'] ?></h4>
+        <h4 class="font-semibold mb-2"><?= $langText['inventory'] ?? 'Estoque' ?></h4>
         <?php if (empty($allItems)): ?>
-          <p><?= $langText['no_inventory'] ?></p>
+          <p><?= $langText['no_inventory'] ?? 'Sem itens em estoque.' ?></p>
         <?php else: foreach($allItems as $it): ?>
           <div class="flex items-center mb-2">
             <input type="checkbox" class="mr-2 item-checkbox"
@@ -155,10 +158,10 @@ $baseUrl         = '/ams-malergeschaft/public';
 
       <div class="flex justify-end">
         <button type="button" id="cancelControlBtn" class="mr-2 px-4 py-2 border rounded">
-          <?= $langText['cancel'] ?>
+          <?= $langText['cancel'] ?? 'Cancelar' ?>
         </button>
         <button type="submit" class="bg-indigo-500 text-white px-4 py-2 rounded">
-          <?= $langText['save'] ?>
+          <?= $langText['save'] ?? 'Salvar' ?>
         </button>
       </div>
     </form>
@@ -169,9 +172,9 @@ $baseUrl         = '/ams-malergeschaft/public';
 <div id="inventoryHistoryModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
   <div class="bg-white rounded-md p-8 w-11/12 max-w-2xl max-h-[90vh] overflow-y-auto relative">
     <button id="closeHistoryModal" class="absolute top-4 right-6 text-gray-700 text-2xl">&times;</button>
-    <h3 class="text-xl font-bold mb-4"><?= $langText['stock_history'] ?></h3>
+    <h3 class="text-xl font-bold mb-4"><?= $langText['stock_history'] ?? 'Histórico de Estoque' ?></h3>
     <?php if (empty($movements)): ?>
-      <p><?= $langText['no_inventory'] ?></p>
+      <p><?= $langText['no_inventory'] ?? 'Sem histórico.' ?></p>
     <?php else: foreach ($movements as $m): ?>
       <div class="history-item p-4 mb-2 bg-gray-50 rounded <?= match($m['reason']) {
           'projeto' => 'border-l-4 border-green-500',
@@ -183,10 +186,8 @@ $baseUrl         = '/ams-malergeschaft/public';
         } ?>"
         data-id="<?= $m['id'] ?>">
         <div class="flex justify-between">
-          <span>
-            <strong><?= htmlspecialchars($m['user_name'], ENT_QUOTES) ?></strong>
-            — <?= htmlspecialchars($m['datetime'], ENT_QUOTES) ?>
-          </span>
+          <span><strong><?= htmlspecialchars($m['user_name'], ENT_QUOTES) ?></strong>
+            — <?= htmlspecialchars($m['datetime'], ENT_QUOTES) ?></span>
           <span class="arrow cursor-pointer select-none">▸</span>
         </div>
         <div class="history-details mt-2 hidden"></div>

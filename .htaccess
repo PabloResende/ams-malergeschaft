@@ -1,5 +1,12 @@
-RewriteEngine On
-RewriteBase /ams-malergeschaft/public/
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ index.php [QSA,L]
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /ams-malergeschaft/public/
+
+  # Se for arquivo ou pasta real, serve direto
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Qualquer outra URL vai para o front-controller
+  RewriteRule ^ index.php [QSA,L]
+</IfModule>

@@ -1,4 +1,5 @@
 <?php
+// app/models/Employee.php
 
 require_once __DIR__ . '/../../config/Database.php';
 
@@ -24,16 +25,13 @@ class Employee
         $employee = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($employee) {
-            $documentFields = [
+            // apenas sinaliza existência no JSON; a URL final é montada no JS
+            foreach ([
                 'profile_picture', 'passport', 'permission_photo_front',
                 'permission_photo_back', 'health_card_front', 'health_card_back',
                 'bank_card_front', 'bank_card_back', 'marriage_certificate'
-            ];
-
-            foreach ($documentFields as $field) {
-                $employee[$field] = $employee[$field]
-                    ? "/ams-malergeschaft/public/employees/document?id={$employee['id']}&type={$field}"
-                    : null;
+            ] as $field) {
+                $employee[$field] = !empty($employee[$field]);
             }
         }
 
@@ -43,17 +41,22 @@ class Employee
     public static function create($data, $files)
     {
         $pdo = self::connect();
+        $uploadDir = __DIR__ . '/../../public/uploads/employees/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
 
-        function upload($inputName)
-        {
+        $upload = function($inputName) use ($uploadDir) {
             if (isset($_FILES[$inputName]) && $_FILES[$inputName]['error'] === UPLOAD_ERR_OK) {
-                $filename = uniqid() . "_" . basename($_FILES[$inputName]['name']);
-                $destination = __DIR__ . '/../../public/uploads/employees/' . $filename;
-                move_uploaded_file($_FILES[$inputName]['tmp_name'], $destination);
-                return $filename;
+                $original = basename($_FILES[$inputName]['name']);
+                $safeName = uniqid() . "_" . preg_replace('/[^A-Za-z0-9\.\-_]/', '_', $original);
+                $dest     = $uploadDir . $safeName;
+                if (move_uploaded_file($_FILES[$inputName]['tmp_name'], $dest)) {
+                    return $safeName;
+                }
             }
             return null;
-        }
+        };
 
         $stmt = $pdo->prepare("
             INSERT INTO employees (
@@ -85,61 +88,68 @@ class Employee
             'role'                   => $data['role'] ?? null,
             'start_date'             => $data['start_date'] ?? null,
             'about'                  => $data['about'] ?? null,
-            'profile_picture'        => upload('profile_picture'),
-            'passport'               => upload('passport'),
-            'permission_photo_front' => upload('permission_photo_front'),
-            'permission_photo_back'  => upload('permission_photo_back'),
-            'health_card_front'      => upload('health_card_front'),
-            'health_card_back'       => upload('health_card_back'),
-            'bank_card_front'        => upload('bank_card_front'),
-            'bank_card_back'         => upload('bank_card_back'),
-            'marriage_certificate'   => upload('marriage_certificate'),
+            'profile_picture'        => $upload('profile_picture'),
+            'passport'               => $upload('passport'),
+            'permission_photo_front' => $upload('permission_photo_front'),
+            'permission_photo_back'  => $upload('permission_photo_back'),
+            'health_card_front'      => $upload('health_card_front'),
+            'health_card_back'       => $upload('health_card_back'),
+            'bank_card_front'        => $upload('bank_card_front'),
+            'bank_card_back'         => $upload('bank_card_back'),
+            'marriage_certificate'   => $upload('marriage_certificate'),
         ]);
     }
 
     public static function update($id, $data, $files)
     {
         $pdo = self::connect();
-
-        function uploadUpdate($inputName, $current)
-        {
-            if (isset($_FILES[$inputName]) && $_FILES[$inputName]['error'] === UPLOAD_ERR_OK) {
-                $filename = uniqid() . "_" . basename($_FILES[$inputName]['name']);
-                $destination = __DIR__ . '/../../public/uploads/employees/' . $filename;
-                move_uploaded_file($_FILES[$inputName]['tmp_name'], $destination);
-                return $filename;
-            }
-            return $current; // mantém o arquivo atual se nenhum novo for enviado
+        $uploadDir = __DIR__ . '/../../public/uploads/employees/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
         }
 
-        $current = self::find($id);
+        $current = $pdo->prepare("SELECT * FROM employees WHERE id = ?");
+        $current->execute([$id]);
+        $current = $current->fetch(PDO::FETCH_ASSOC);
+
+        $uploadUpdate = function($inputName, $existing) use ($uploadDir) {
+            if (isset($_FILES[$inputName]) && $_FILES[$inputName]['error'] === UPLOAD_ERR_OK) {
+                $original = basename($_FILES[$inputName]['name']);
+                $safeName = uniqid() . "_" . preg_replace('/[^A-Za-z0-9\.\-_]/', '_', $original);
+                $dest     = $uploadDir . $safeName;
+                if (move_uploaded_file($_FILES[$inputName]['tmp_name'], $dest)) {
+                    return $safeName;
+                }
+            }
+            return $existing;
+        };
 
         $stmt = $pdo->prepare("
             UPDATE employees SET
-                name = :name,
-                last_name = :last_name,
-                address = :address,
-                sex = :sex,
-                birth_date = :birth_date,
-                nationality = :nationality,
-                permission_type = :permission_type,
-                email = :email,
-                ahv_number = :ahv_number,
-                phone = :phone,
-                religion = :religion,
-                marital_status = :marital_status,
-                role = :role,
-                start_date = :start_date,
-                about = :about,
-                profile_picture = :profile_picture,
-                passport = :passport,
-                permission_photo_front = :permission_photo_front,
+                name                  = :name,
+                last_name             = :last_name,
+                address               = :address,
+                sex                   = :sex,
+                birth_date            = :birth_date,
+                nationality           = :nationality,
+                permission_type       = :permission_type,
+                email                 = :email,
+                ahv_number            = :ahv_number,
+                phone                 = :phone,
+                religion              = :religion,
+                marital_status        = :marital_status,
+                role                  = :role,
+                start_date            = :start_date,
+                about                 = :about,
+                profile_picture       = :profile_picture,
+                passport              = :passport,
+                permission_photo_front= :permission_photo_front,
                 permission_photo_back = :permission_photo_back,
-                health_card_front = :health_card_front,
-                health_card_back = :health_card_back,
-                bank_card_front = :bank_card_front,
-                bank_card_back = :bank_card_back,
-                marriage_certificate = :marriage_certificate
+                health_card_front     = :health_card_front,
+                health_card_back      = :health_card_back,
+                bank_card_front       = :bank_card_front,
+                bank_card_back        = :bank_card_back,
+                marriage_certificate  = :marriage_certificate
             WHERE id = :id
         ");
 
@@ -160,15 +170,15 @@ class Employee
             'role'                   => $data['role'] ?? null,
             'start_date'             => $data['start_date'] ?? null,
             'about'                  => $data['about'] ?? null,
-            'profile_picture'        => uploadUpdate('profile_picture', $current['profile_picture']),
-            'passport'               => uploadUpdate('passport', $current['passport']),
-            'permission_photo_front' => uploadUpdate('permission_photo_front', $current['permission_photo_front']),
-            'permission_photo_back'  => uploadUpdate('permission_photo_back', $current['permission_photo_back']),
-            'health_card_front'      => uploadUpdate('health_card_front', $current['health_card_front']),
-            'health_card_back'       => uploadUpdate('health_card_back', $current['health_card_back']),
-            'bank_card_front'        => uploadUpdate('bank_card_front', $current['bank_card_front']),
-            'bank_card_back'         => uploadUpdate('bank_card_back', $current['bank_card_back']),
-            'marriage_certificate'   => uploadUpdate('marriage_certificate', $current['marriage_certificate']),
+            'profile_picture'        => $uploadUpdate('profile_picture', $current['profile_picture']),
+            'passport'               => $uploadUpdate('passport', $current['passport']),
+            'permission_photo_front' => $uploadUpdate('permission_photo_front', $current['permission_photo_front']),
+            'permission_photo_back'  => $uploadUpdate('permission_photo_back', $current['permission_photo_back']),
+            'health_card_front'      => $uploadUpdate('health_card_front', $current['health_card_front']),
+            'health_card_back'       => $uploadUpdate('health_card_back', $current['health_card_back']),
+            'bank_card_front'        => $uploadUpdate('bank_card_front', $current['bank_card_front']),
+            'bank_card_back'         => $uploadUpdate('bank_card_back', $current['bank_card_back']),
+            'marriage_certificate'   => $uploadUpdate('marriage_certificate', $current['marriage_certificate']),
         ]);
     }
 
@@ -197,18 +207,5 @@ class Employee
 
         http_response_code(404);
         echo "Arquivo não encontrado.";
-    }
-
-    public static function checkAllocation($empId)
-    {
-        $pdo = self::connect();
-        $stmt = $pdo->prepare("
-            SELECT COUNT(*) as count
-            FROM project_resources
-            WHERE resource_type = 'employee' AND resource_id = ?
-        ");
-        $stmt->execute([$empId]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result ? (int)$result['count'] : 0;
     }
 }

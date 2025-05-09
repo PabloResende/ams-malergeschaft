@@ -1,4 +1,5 @@
 <?php
+// app/controllers/EmployeeController.php
 require_once __DIR__ . '/../models/Employees.php';
 
 class EmployeeController {
@@ -21,10 +22,6 @@ class EmployeeController {
     }
 
     public function update() {
-        if ($data['status'] === 'completed' && $data['progress'] < 100) {
-            echo "Não é possível marcar como concluído até que todas as tasks estejam finalizadas.";
-            return;
-        }
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 Employee::update($_POST['id'], $_POST, $_FILES);
@@ -63,31 +60,11 @@ class EmployeeController {
     }
 
     public function serveDocument() {
-        Employee::serveDocument($_GET['id'], $_GET['type']);
-    }
-
-    public function checkAllocation() {
-        $input = json_decode(file_get_contents('php://input'), true);
-        $emp_id = $input['emp_id'] ?? null;
-        if (!$emp_id) {
+        if (!isset($_GET['id'], $_GET['type'])) {
             http_response_code(400);
-            echo json_encode(['error'=>'emp_id missing']);
+            echo "Parâmetros inválidos.";
             return;
         }
-        $pdo = Database::connect();
-        $stmt = $pdo->prepare("
-          SELECT COUNT(*) as count
-          FROM project_resources
-          WHERE resource_type = 'employee'
-            AND resource_id   = ?
-        ");
-        $stmt->execute([$emp_id]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $count = $row['count'] ?? 0;
-        header('Content-Type: application/json');
-        echo json_encode([
-          'allocated' => ($count > 0),
-          'count'     => (int)$count
-        ]);
-    }    
+        Employee::serveDocument($_GET['id'], $_GET['type']);
+    }
 }

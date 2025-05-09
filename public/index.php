@@ -1,4 +1,5 @@
 <?php
+// public/index.php
 ob_start();
 session_start();
 
@@ -15,7 +16,10 @@ require_once __DIR__ . '/../app/lang/lang.php';
 
 $uri   = $_SERVER['REQUEST_URI'];
 $route = str_replace($basePath, '', parse_url($uri, PHP_URL_PATH));
-$route = strtok($route, '?');
+$route = rtrim($route, '/');
+if ($route === '') {
+    $route = '/';
+}
 
 // Troca de idioma
 if (isset($_GET['lang'])) {
@@ -43,6 +47,7 @@ $analyticsController = new AnalyticsController();
 
 // Dispatcher
 switch ($route) {
+    // USUÁRIO
     case '/':
     case '/login':
         $userController->login();
@@ -66,6 +71,7 @@ switch ($route) {
         $userController->profile();
         break;
 
+    // PROJETOS
     case '/projects':
         $projectController->index();
         break;
@@ -85,20 +91,15 @@ switch ($route) {
         $projectController->delete();
         break;
 
+    // FUNCIONÁRIOS
     case '/employees':
         $employeeController->list();
         break;
     case '/employees/checkAllocation':
         $employeeController->checkAllocation();
         break;
-    case '/employees/create':
-        $employeeController->create();
-        break;
     case '/employees/store':
         $employeeController->store();
-        break;
-    case '/employees/edit':
-        $employeeController->edit();
         break;
     case '/employees/update':
         $employeeController->update();
@@ -110,9 +111,11 @@ switch ($route) {
         $employeeController->get();
         break;
     case '/employees/document':
-        $employeeController->serveDocument();
-        break;
+        case '/employees/serveDocument':
+            $ctrl->serveDocument();
+            break;
 
+    // CLIENTES
     case '/clients':
         $clientsController->list();
         break;
@@ -135,6 +138,7 @@ switch ($route) {
         $clientsController->delete();
         break;
 
+    // INVENTÁRIO
     case '/inventory':
         $inventoryController->index();
         break;
@@ -157,12 +161,13 @@ switch ($route) {
         $inventoryController->storeControl();
         break;
     case '/inventory/history':
-        $inventoryController->history(); // se existir
+        $inventoryController->history();
         break;
     case '/inventory/history/details':
         $inventoryController->historyDetails();
         break;
 
+    // CALENDÁRIO
     case '/calendar':
         $calendarController->index();
         break;
@@ -173,6 +178,7 @@ switch ($route) {
         $calendarController->fetch();
         break;
 
+    // ANALYTICS
     case '/analytics':
         $analyticsController->index();
         break;

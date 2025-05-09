@@ -1,5 +1,6 @@
 // public/js/employees.js
-const baseUrl = window.location.origin + '/ams-malergeschaft/public';
+// usa exatamente o baseUrl definido no PHP
+const baseUrl = window.baseUrl;
 
 document.addEventListener("DOMContentLoaded", () => {
   //
@@ -28,7 +29,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const closeDetailsBtns = document.querySelectorAll(".closeEmployeeDetailsModal");
   const deleteBtn        = document.getElementById("deleteEmployeeBtn");
 
-  // campos do form de detalhes
   const detailFields = {
     id:               "detailsEmployeeId",
     name:             "detailsEmployeeName",
@@ -48,7 +48,6 @@ document.addEventListener("DOMContentLoaded", () => {
     about:            "detailsEmployeeAbout"
   };
 
-  // imagens de documentos
   const imageFields = {
     profile_picture:        "viewProfilePicture",
     passport:               "viewPassport",
@@ -61,7 +60,6 @@ document.addEventListener("DOMContentLoaded", () => {
     marriage_certificate:   "viewMarriageCertificate"
   };
 
-  // fecha o modal de detalhes
   function closeDetails() {
     detailsModal.classList.add("hidden");
   }
@@ -72,7 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target === detailsModal) closeDetails();
   });
 
-  // abre e popula o modal
   function openDetails(id) {
     fetch(`${baseUrl}/employees/get?id=${id}`)
       .then(res => {
@@ -80,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return res.json();
       })
       .then(data => {
-        // popula inputs/selects/textarea
+        // popula inputs
         Object.entries(detailFields).forEach(([key, elId]) => {
           const el = document.getElementById(elId);
           if (el) el.value = data[key] || "";
@@ -89,8 +86,12 @@ document.addEventListener("DOMContentLoaded", () => {
         // popula imagens
         Object.entries(imageFields).forEach(([key, imgId]) => {
           const img = document.getElementById(imgId);
-          if (img) {
-            img.src = data[key] || "https://via.placeholder.com/150?text=No+Image";
+          if (!img) return;
+          if (data[key]) {
+            img.src = `${baseUrl}/employees/serveDocument?id=${data.id}&type=${key}`;
+            img.style.display = "block";
+          } else {
+            img.style.display = "none";
           }
         });
 
@@ -98,7 +99,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const mc = document.getElementById("marriageCertificateContainer");
         if (mc) mc.style.display = data.marriage_certificate ? "block" : "none";
 
-        // exibe o modal
         detailsModal.classList.remove("hidden");
       })
       .catch(err => {
@@ -107,7 +107,6 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
-  // vincula clique em cada card
   document.querySelectorAll(".employee-card").forEach(card => {
     card.addEventListener("click", () => {
       const id = card.dataset.id;
@@ -115,7 +114,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // deletar
   deleteBtn.addEventListener("click", () => {
     if (!confirm("Deseja realmente excluir este funcionário?")) return;
     const id = document.getElementById("detailsEmployeeId").value;

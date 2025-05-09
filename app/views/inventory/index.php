@@ -142,19 +142,24 @@ $baseUrl         = '/ams-malergeschaft/public';
 
       <div id="stockItemsDiv" class="mb-6">
         <h4 class="font-semibold mb-2"><?= $langText['inventory'] ?? 'Estoque' ?></h4>
-        <?php if (empty($allItems)): ?>
-          <p><?= $langText['no_inventory'] ?? 'Sem itens em estoque.' ?></p>
-        <?php else: foreach($allItems as $it): ?>
+        <?php
+          // Filtra apenas itens com quantity > 0
+          $available = array_filter($allItems, fn($it) => (int)$it['quantity'] > 0);
+        ?>
+        <?php if (empty($available)): ?>
+          <p><?= $langText['no_inventory'] ?? 'Sem itens disponíveis.' ?></p>
+        <?php else: foreach($available as $it): ?>
           <div class="flex items-center mb-2">
             <input type="checkbox" class="mr-2 item-checkbox"
-                   data-max="<?= $it['quantity'] ?>" value="<?= $it['id'] ?>">
+                  data-max="<?= $it['quantity'] ?>" value="<?= $it['id'] ?>">
             <span class="flex-1"><?= htmlspecialchars($it['name'], ENT_QUOTES) ?> (<?= $it['quantity'] ?>)</span>
             <input type="number" class="w-20 p-1 border rounded qty-input"
-                   min="1" max="<?= $it['quantity'] ?>" value="1" disabled>
+                  min="1" max="<?= $it['quantity'] ?>" value="1" disabled>
           </div>
         <?php endforeach; endif; ?>
         <input type="hidden" name="items" id="itemsData">
       </div>
+
 
       <div class="flex justify-end">
         <button type="button" id="cancelControlBtn" class="mr-2 px-4 py-2 border rounded">

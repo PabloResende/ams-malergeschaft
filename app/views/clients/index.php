@@ -58,21 +58,15 @@ $baseUrl = '/ams-malergeschaft/public';
 <div
   id="createModal"
   class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden"
-  aria-modal="true" role="dialog"
+  role="dialog" aria-modal="true"
 >
-  <div
-    id="createModalContent"
-    class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"
-  >
-    <button
-      type="button"
-      id="closeCreateModal"
-      class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl focus:outline-none"
-      aria-label="Close"
-    >&times;</button>
-
+  <div id="createModalContent"
+       class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+    <button type="button" id="closeCreateModal"
+            class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl focus:outline-none"
+            aria-label="Close">&times;</button>
     <h2 class="text-2xl font-bold mb-4"><?= $langText['create_client'] ?? 'Create Client' ?></h2>
-    <form action="<?= $baseUrl ?>/clients/store" method="POST" enctype="multipart/form-data" class="space-y-4">
+    <form action="<?= $baseUrl ?>/index.php/clients/store" method="POST" enctype="multipart/form-data" class="space-y-4">
       <div>
         <label for="newName" class="block mb-1 font-medium"><?= $langText['name'] ?? 'Name' ?></label>
         <input id="newName" name="name" type="text" required
@@ -116,21 +110,15 @@ $baseUrl = '/ams-malergeschaft/public';
 <div
   id="detailsModal"
   class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden"
-  aria-modal="true" role="dialog"
+  role="dialog" aria-modal="true"
 >
-  <div
-    id="detailsModalContent"
-    class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"
-  >
-    <button
-      type="button"
-      id="closeDetailsModal"
-      class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl focus:outline-none"
-      aria-label="Close"
-    >&times;</button>
-
+  <div id="detailsModalContent"
+       class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
+    <button type="button" id="closeDetailsModal"
+            class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl focus:outline-none"
+            aria-label="Close">&times;</button>
     <h2 class="text-2xl font-bold mb-4"><?= $langText['client_details'] ?? 'Client Details' ?></h2>
-    <form id="detailsForm" action="<?= $baseUrl ?>/clients/update" method="POST" class="space-y-4">
+    <form id="detailsForm" action="<?= $baseUrl ?>/index.php/clients/update" method="POST" class="space-y-4">
       <input type="hidden" name="id" id="detailId" value="">
 
       <div>
@@ -162,6 +150,10 @@ $baseUrl = '/ams-malergeschaft/public';
           <span id="detailProjects">0</span>
         </div>
         <div class="space-x-2">
+          <a href="#" id="deleteClientLink"
+             class="px-4 py-2 border rounded text-red-600 hover:bg-red-100 focus:outline-none">
+            <?= $langText['delete'] ?? 'Delete' ?>
+          </a>
           <button type="button" id="cancelDetails"
                   class="px-4 py-2 border rounded hover:bg-gray-100 focus:outline-none">
             <?= $langText['cancel'] ?? 'Cancel' ?>
@@ -173,72 +165,18 @@ $baseUrl = '/ams-malergeschaft/public';
         </div>
       </div>
     </form>
+
+    <!-- Form para exclusão -->
+    <form id="deleteForm" action="<?= $baseUrl ?>/clients/delete" method="POST" class="hidden">
+      <input type="hidden" name="id" id="deleteIdField" value="">
+    </form>
   </div>
 </div>
 
+<!-- scripts -->
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-  const baseUrl = '<?= $baseUrl ?>';
-
-  // helpers
-  function closeModal(modal) {
-    modal.classList.add('hidden');
-  }
-  function onClickOutside(modal, content, closeFn) {
-    modal.addEventListener('click', e => {
-      if (e.target === modal) closeFn();
-    });
-  }
-
-  // create modal
-  const createModal = document.getElementById('createModal');
-  document.getElementById('addClientBtn').addEventListener('click', () => {
-    createModal.classList.remove('hidden');
-  });
-  ['closeCreateModal','cancelCreate'].forEach(id =>
-    document.getElementById(id).addEventListener('click', () => closeModal(createModal))
-  );
-  onClickOutside(createModal, document.getElementById('createModalContent'),
-    () => closeModal(createModal)
-  );
-
-  // details/edit modal
-  const detailsModal    = document.getElementById('detailsModal');
-  const detailsContent  = document.getElementById('detailsModalContent');
-  const detailForm      = document.getElementById('detailsForm');
-  ['closeDetailsModal','cancelDetails'].forEach(id =>
-    document.getElementById(id).addEventListener('click', () => closeModal(detailsModal))
-  );
-  onClickOutside(detailsModal, detailsContent, () => closeModal(detailsModal));
-
-  // open details modal on card click
-  document.querySelectorAll('.client-item').forEach(item => {
-    item.addEventListener('click', () => {
-      const id = item.dataset.id;
-      fetch(`${baseUrl}/clients/show?id=${encodeURIComponent(id)}`, {
-        credentials: 'same-origin'
-      })
-      .then(res => {
-        if (!res.ok) throw new Error(res.statusText);
-        return res.json();
-      })
-      .then(data => {
-        // fill form
-        detailForm.id.value        = data.id;
-        detailForm.name.value      = data.name;
-        detailForm.address.value   = data.address   || '';
-        detailForm.about.value     = data.about     || '';
-        detailForm.phone.value     = data.phone     || '';
-        document.getElementById('detailLoyalty').textContent  = data.loyalty_points;
-        document.getElementById('detailProjects').textContent = data.project_count;
-
-        detailsModal.classList.remove('hidden');
-      })
-      .catch(err => {
-        console.error('Erro ao carregar detalhes:', err);
-        alert('Não foi possível carregar detalhes do cliente.');
-      });
-    });
-  });
-});
+  window.baseUrl         = '<?= $baseUrl ?>';
+  window.confirmDeleteMsg = '<?= addslashes($langText['confirm_delete'] ?? 'Are you sure you want to delete this client?') ?>';
 </script>
+<script src="<?= $baseUrl ?>/js/clients.js?v=<?= time() ?>" defer></script>
+

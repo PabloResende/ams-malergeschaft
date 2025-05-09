@@ -100,16 +100,20 @@ class ClientsController {
     }
 
     public function delete() {
-        if (!isset($_GET['id'])) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo "Método inválido.";
+            exit;
+        }
+        if (empty($_POST['id'])) {
             echo "ID não fornecido.";
             exit;
         }
-
-        if (Client::delete($_GET['id'])) {
+        $id = (int) $_POST['id'];
+        if (Client::delete($id)) {
             header("Location: /ams-malergeschaft/public/clients");
             exit;
         } else {
             echo "Erro ao deletar o cliente.";
         }
-    }
+    }    
 }

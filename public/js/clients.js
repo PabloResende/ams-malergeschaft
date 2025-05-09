@@ -1,73 +1,78 @@
+// public/js/clients.js
+
 document.addEventListener('DOMContentLoaded', () => {
-  const baseUrl = window.baseUrl || '';
+  const baseUrl    = window.baseUrl || '';
+  const confirmMsg = window.confirmDeleteMsg || 'Are you sure?';
 
-  // ——— Modal de Criação ———
-  const addClientBtn     = document.getElementById('addClientBtn');
-  const clientModal      = document.getElementById('clientModal');
-  const closeClientModal = document.getElementById('closeClientModal');
-
-  addClientBtn.addEventListener('click', () => {
-    clientModal.classList.remove('hidden');
-  });
-
-  closeClientModal.addEventListener('click', () => {
-    clientModal.classList.add('hidden');
-  });
-
-  window.addEventListener('click', e => {
-    if (e.target === clientModal) {
-      clientModal.classList.add('hidden');
-    }
-  });
-
-  // ——— Modal de Detalhes ———
-  const detailsModal    = document.getElementById('clientDetailsModal');
-  const closeDetailsX   = document.getElementById('closeClientDetailsModal');
-  const closeDetailsBtn = document.getElementById('closeClientDetailsBtn');
-
-  function closeDetails() {
-    detailsModal.classList.add('hidden');
+  function closeModal(modal) {
+    modal.classList.add('hidden');
   }
 
-  closeDetailsX.addEventListener('click', closeDetails);
-  closeDetailsBtn.addEventListener('click', closeDetails);
+  // — Modal de Criação
+  const createModal     = document.getElementById('createModal');
+  const openCreateBtn   = document.getElementById('addClientBtn');
+  const closeCreateBtn  = document.getElementById('closeCreateModal');
+  const cancelCreateBtn = document.getElementById('cancelCreate');
 
-  window.addEventListener('click', e => {
-    if (e.target === detailsModal) {
-      closeDetails();
-    }
+  openCreateBtn.addEventListener('click', () => createModal.classList.remove('hidden'));
+  [closeCreateBtn, cancelCreateBtn].forEach(btn =>
+    btn.addEventListener('click', () => closeModal(createModal))
+  );
+  createModal.addEventListener('click', e => {
+    if (e.target === createModal) closeModal(createModal);
   });
 
-  // ——— Abre detalhes ao clicar em cada card ———
+  // — Modal de Detalhes / Edição
+  const detailsModal     = document.getElementById('detailsModal');
+  const closeDetailsBtn  = document.getElementById('closeDetailsModal');
+  const cancelDetailsBtn = document.getElementById('cancelDetails');
+  const detailForm       = document.getElementById('detailsForm');
+  const deleteLink       = document.getElementById('deleteClientLink');
+  const deleteForm       = document.getElementById('deleteForm');
+  const deleteIdField    = document.getElementById('deleteIdField');
+
+  [closeDetailsBtn, cancelDetailsBtn].forEach(btn =>
+    btn.addEventListener('click', () => closeModal(detailsModal))
+  );
+  detailsModal.addEventListener('click', e => {
+    if (e.target === detailsModal) closeModal(detailsModal);
+  });
+
+  // Abre detalhes ao clicar em cada card
   document.querySelectorAll('.client-item').forEach(item => {
     item.addEventListener('click', () => {
-      const id = item.getAttribute('data-id');
+      const id = item.dataset.id;
       if (!id) return;
 
       fetch(`${baseUrl}/clients/show?id=${encodeURIComponent(id)}`, {
         credentials: 'same-origin'
       })
-        .then(res => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.json();
-        })
-        .then(data => {
-          if (data.error) {
-            alert(data.error);
-            return;
-          }
-          document.getElementById('detailsClientName').textContent    = data.name;
-          document.getElementById('detailsClientAddress').textContent = data.address   || '—';
-          document.getElementById('detailsClientAbout').textContent   = data.about     || '—';
-          document.getElementById('detailsClientPhone').textContent   = data.phone     || '—';
-          document.getElementById('detailsClientLoyalty').textContent = data.loyalty_points;
-          document.getElementById('detailsClientProjects').textContent= data.project_count;
-          detailsModal.classList.remove('hidden');
-        })
-        .catch(err => {
-          console.error('Erro ao carregar detalhes:', err);
-          alert('Não foi possível carregar detalhes do cliente.');
-        });
+      .then(res => res.ok ? res.json() : Promise.reject(res.status))
+      .then(data => {
+        if (data.error) return alert(data.error);
+
+        // Preenche formulário de edição
+        detailForm.id.value      = data.id;
+        detailForm.name.value    = data.name;
+        detailForm.address.value = data.address || '';
+        detailForm.about.value   = data.about   || '';
+        detailForm.phone.value   = data.phone   || '';
+        document.getElementById('detailLoyalty').textContent  = data.loyalty_points;
+        document.getElementById('detailProjects').textContent = data.project_count;
+
+        // Configura exclusão via form POST
+        deleteIdField.value = data.id;
+        deleteLink.onclick = e => {
+          e.preventDefault();
+          if (confirm(confirmMsg)) deleteForm.submit();
+        };
+
+        detailsModal.classList.remove('hidden');
+      })
+      .catch(err => {
+        console.error('Erro ao carregar detalhes:', err);
+        alert('Não foi possível carregar detalhes do cliente.');
+      });
     });
   });
 });

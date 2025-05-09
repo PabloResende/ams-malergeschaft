@@ -20,23 +20,22 @@ $baseUrl = '/ams-malergeschaft/public';
     <?php else: ?>
       <?php foreach ($clients as $c): ?>
         <div
-          class="client-item bg-white rounded-lg overflow-hidden shadow hover:shadow-xl transition-shadow cursor-pointer"
+          class="client-item bg-white rounded-lg overflow-hidden shadow hover:shadow-xl transition-shadow cursor-pointer p-4"
           data-id="<?= $c['id'] ?>"
         >
-          <img
-            src="<?= !empty($c['profile_picture'])
-              ? $baseUrl . '/uploads/' . $c['profile_picture']
-              : 'https://via.placeholder.com/400x240' ?>"
-            alt="<?= htmlspecialchars($c['name'], ENT_QUOTES) ?>"
-            class="w-full h-40 object-cover"
-          >
-          <div class="p-4">
-            <h2 class="text-xl font-semibold mb-1"><?= htmlspecialchars($c['name'], ENT_QUOTES) ?></h2>
-            <p class="text-sm text-gray-600">
-              <?= $langText['loyalty_points'] ?? 'Loyalty Points' ?>:
-              <span class="font-medium"><?= (int)$c['loyalty_points'] ?></span>
-            </p>
-          </div>
+          <h2 class="text-xl font-semibold mb-1"><?= htmlspecialchars($c['name'], ENT_QUOTES) ?></h2>
+          <p class="text-sm text-gray-600">
+            <?= $langText['address'] ?? 'Address' ?>:
+            <span class="font-medium"><?= htmlspecialchars($c['address'], ENT_QUOTES) ?></span>
+          </p>
+          <p class="text-sm text-gray-600 mt-2">
+            <?= $langText['phone'] ?? 'Phone' ?>:
+            <span class="font-medium"><?= htmlspecialchars($c['phone'], ENT_QUOTES) ?></span>
+          </p>
+          <p class="text-sm text-gray-600 mt-2">
+            <?= $langText['loyalty_points'] ?? 'Loyalty Points' ?>:
+            <span class="font-medium"><?= (int)$c['loyalty_points'] ?></span>
+          </p>
         </div>
       <?php endforeach; ?>
     <?php endif; ?>
@@ -66,7 +65,7 @@ $baseUrl = '/ams-malergeschaft/public';
             class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl focus:outline-none"
             aria-label="Close">&times;</button>
     <h2 class="text-2xl font-bold mb-4"><?= $langText['create_client'] ?? 'Create Client' ?></h2>
-    <form action="<?= $baseUrl ?>/index.php/clients/store" method="POST" enctype="multipart/form-data" class="space-y-4">
+    <form action="<?= $baseUrl ?>/clients/store" method="POST" class="space-y-4">
       <div>
         <label for="newName" class="block mb-1 font-medium"><?= $langText['name'] ?? 'Name' ?></label>
         <input id="newName" name="name" type="text" required
@@ -78,18 +77,8 @@ $baseUrl = '/ams-malergeschaft/public';
                class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"/>
       </div>
       <div>
-        <label for="newAbout" class="block mb-1 font-medium"><?= $langText['about_me'] ?? 'About Me' ?></label>
-        <textarea id="newAbout" name="about" rows="3"
-                  class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"></textarea>
-      </div>
-      <div>
         <label for="newPhone" class="block mb-1 font-medium"><?= $langText['phone'] ?? 'Phone' ?></label>
         <input id="newPhone" name="phone" type="text"
-               class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"/>
-      </div>
-      <div>
-        <label for="newProfilePicture" class="block mb-1 font-medium"><?= $langText['profile_picture'] ?? 'Profile Picture' ?></label>
-        <input id="newProfilePicture" name="profile_picture" type="file" accept="image/*"
                class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"/>
       </div>
       <div class="flex justify-end space-x-2 pt-4">
@@ -118,7 +107,7 @@ $baseUrl = '/ams-malergeschaft/public';
             class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl focus:outline-none"
             aria-label="Close">&times;</button>
     <h2 class="text-2xl font-bold mb-4"><?= $langText['client_details'] ?? 'Client Details' ?></h2>
-    <form id="detailsForm" action="<?= $baseUrl ?>/index.php/clients/update" method="POST" class="space-y-4">
+    <form id="detailsForm" action="<?= $baseUrl ?>/clients/update" method="POST" class="space-y-4">
       <input type="hidden" name="id" id="detailId" value="">
 
       <div>
@@ -132,16 +121,10 @@ $baseUrl = '/ams-malergeschaft/public';
                class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"/>
       </div>
       <div>
-        <label for="detailAbout" class="block mb-1 font-medium"><?= $langText['about_me'] ?? 'About Me' ?></label>
-        <textarea id="detailAbout" name="about" rows="3"
-                  class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"></textarea>
-      </div>
-      <div>
         <label for="detailPhone" class="block mb-1 font-medium"><?= $langText['phone'] ?? 'Phone' ?></label>
         <input id="detailPhone" name="phone" type="text"
                class="w-full border rounded px-3 py-2 focus:outline-none focus:ring focus:border-blue-300"/>
       </div>
-
       <div class="flex justify-between items-center pt-4">
         <div class="text-sm text-gray-600">
           <?= $langText['loyalty_points'] ?? 'Loyalty Points' ?>:
@@ -165,8 +148,6 @@ $baseUrl = '/ams-malergeschaft/public';
         </div>
       </div>
     </form>
-
-    <!-- Form para exclusão -->
     <form id="deleteForm" action="<?= $baseUrl ?>/clients/delete" method="POST" class="hidden">
       <input type="hidden" name="id" id="deleteIdField" value="">
     </form>

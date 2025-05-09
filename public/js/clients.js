@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     modal.classList.add('hidden');
   }
 
-  // — Modal de Criação
+  // Criação
   const createModal     = document.getElementById('createModal');
   const openCreateBtn   = document.getElementById('addClientBtn');
   const closeCreateBtn  = document.getElementById('closeCreateModal');
@@ -22,14 +22,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === createModal) closeModal(createModal);
   });
 
-  // — Modal de Detalhes / Edição
-  const detailsModal     = document.getElementById('detailsModal');
-  const closeDetailsBtn  = document.getElementById('closeDetailsModal');
-  const cancelDetailsBtn = document.getElementById('cancelDetails');
-  const detailForm       = document.getElementById('detailsForm');
-  const deleteLink       = document.getElementById('deleteClientLink');
-  const deleteForm       = document.getElementById('deleteForm');
-  const deleteIdField    = document.getElementById('deleteIdField');
+  // Detalhes/Edição
+  const detailsModal       = document.getElementById('detailsModal');
+  const closeDetailsBtn    = document.getElementById('closeDetailsModal');
+  const cancelDetailsBtn   = document.getElementById('cancelDetails');
+  const detailForm         = document.getElementById('detailsForm');
+  const deleteLink         = document.getElementById('deleteClientLink');
+  const deleteForm         = document.getElementById('deleteForm');
+  const deleteIdField      = document.getElementById('deleteIdField');
 
   [closeDetailsBtn, cancelDetailsBtn].forEach(btn =>
     btn.addEventListener('click', () => closeModal(detailsModal))
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target === detailsModal) closeModal(detailsModal);
   });
 
-  // Abre detalhes ao clicar em cada card
+  // Abre detalhes
   document.querySelectorAll('.client-item').forEach(item => {
     item.addEventListener('click', () => {
       const id = item.dataset.id;
@@ -51,16 +51,13 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(data => {
         if (data.error) return alert(data.error);
 
-        // Preenche formulário de edição
         detailForm.id.value      = data.id;
         detailForm.name.value    = data.name;
-        detailForm.address.value = data.address || '';
-        detailForm.about.value   = data.about   || '';
-        detailForm.phone.value   = data.phone   || '';
+        detailForm.address.value = data.address   || '';
+        detailForm.phone.value   = data.phone     || '';
         document.getElementById('detailLoyalty').textContent  = data.loyalty_points;
         document.getElementById('detailProjects').textContent = data.project_count;
 
-        // Configura exclusão via form POST
         deleteIdField.value = data.id;
         deleteLink.onclick = e => {
           e.preventDefault();
@@ -70,8 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
         detailsModal.classList.remove('hidden');
       })
       .catch(err => {
-        console.error('Erro ao carregar detalhes:', err);
-        alert('Não foi possível carregar detalhes do cliente.');
+        console.error('Erro:', err);
+        alert('Não foi possível carregar dados.');
       });
     });
   });

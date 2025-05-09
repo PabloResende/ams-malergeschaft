@@ -1,3 +1,5 @@
+// public/js/projects.js
+
 const baseUrl = window.location.origin + '/ams-malergeschaft/public';
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -20,7 +22,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   addProjectBtn.addEventListener("click", () => projectModal.classList.remove("hidden"));
   closeCreateBtns.forEach(btn => btn.addEventListener("click", resetCreateModal));
-  window.addEventListener("click", e => { if (e.target === projectModal) resetCreateModal(); });
+  window.addEventListener("click", e => {
+    if (e.target === projectModal) resetCreateModal();
+  });
 
   function resetCreateModal() {
     projectModal.classList.add("hidden");
@@ -114,6 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const detailsModal               = document.getElementById("projectDetailsModal");
   const closeDetailsBtn            = document.getElementById("closeProjectDetailsModal");
   const cancelDetailsBtn           = document.getElementById("cancelDetailsBtn");
+  const deleteDetailsBtn           = document.getElementById("deleteDetailsBtn");
   const detailsProjectId           = document.getElementById("detailsProjectId");
   const detailsClientName          = document.getElementById("detailsProjectClientName");
   const detailsStatusSelect        = document.getElementById("detailsProjectStatusSelect");
@@ -139,12 +144,24 @@ document.addEventListener("DOMContentLoaded", () => {
   let detailEmployees = [];
   let detailInventory = [];
 
+  // abrir modal de detalhes
   projectItems.forEach(item =>
     item.addEventListener("click", () => loadDetails(item.dataset.projectId))
   );
   closeDetailsBtn.addEventListener("click", closeDetails);
   cancelDetailsBtn.addEventListener("click", closeDetails);
-  window.addEventListener("click", e => { if (e.target === detailsModal) closeDetails(); });
+  window.addEventListener("click", e => {
+    if (e.target === detailsModal) closeDetails();
+  });
+
+  // listener do botão de excluir
+  deleteDetailsBtn.addEventListener("click", () => {
+    const id = detailsProjectId.value;
+    if (!id) return;
+    if (confirm("Tem certeza que deseja excluir este projeto?")) {
+      window.location.href = `${baseUrl}/projects/delete?id=${id}`;
+    }
+  });
 
   function loadDetails(projectId) {
     fetch(`${baseUrl}/projects/show?id=${projectId}`, { credentials: 'same-origin' })
@@ -161,9 +178,16 @@ document.addEventListener("DOMContentLoaded", () => {
         detailsLocation.textContent    = data.location || '—';
         detailsDescription.value       = data.description || '';
 
-        detailTasks     = (data.tasks     || []).map(t => ({ id: t.id, description: t.description, completed: !!t.completed }));
-        detailEmployees = (data.employees || []).map(e => ({ id: e.id, text: e.name + ' ' + e.last_name }));
-        detailInventory = data.inventory  || [];
+        detailTasks     = (data.tasks     || []).map(t => ({
+          id: t.id,
+          description: t.description,
+          completed: !!t.completed
+        }));
+        detailEmployees = (data.employees || []).map(e => ({
+          id: e.id,
+          text: e.name + ' ' + e.last_name
+        }));
+        detailInventory = data.inventory || [];
 
         renderDetailTasks();
         renderDetailEmployees();
@@ -221,7 +245,6 @@ document.addEventListener("DOMContentLoaded", () => {
     detailsProgressBar.style.width  = pct + '%';
     detailsProgressText.textContent = pct + '%';
 
-    // Auto-status: completed quando todas marcadas; in_progress ao desmarcar
     if (total > 0 && done === total) {
       detailsStatusSelect.value = 'completed';
     } else if (detailsStatusSelect.value === 'completed') {
@@ -261,8 +284,8 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
       detailsEmployeesContainer.appendChild(div);
     });
-    detailsEmployeesData.value   = JSON.stringify(detailEmployees.map(e => e.id));
-    detailsEmployeeCount.value   = detailEmployees.length;
+    detailsEmployeesData.value = JSON.stringify(detailEmployees.map(e => e.id));
+    detailsEmployeeCount.value = detailEmployees.length;
     detailsEmployeesContainer.querySelectorAll(".remove-detail-emp").forEach(btn =>
       btn.addEventListener("click", () => {
         detailEmployees.splice(btn.dataset.index, 1);

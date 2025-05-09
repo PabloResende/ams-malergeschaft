@@ -300,6 +300,9 @@ $baseUrl = '/ams-malergeschaft/public';
         <div class="flex justify-end space-x-2">
           <button id="cancelDetailsBtn" type="button" class="px-4 py-2 border rounded"><?= htmlspecialchars($langText['cancel'] ?? 'Cancel', ENT_QUOTES, 'UTF-8') ?></button>
           <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded"><?= htmlspecialchars($langText['save_changes'] ?? 'Save Changes', ENT_QUOTES, 'UTF-8') ?></button>
+          <button id="deleteDetailsBtn" type="button" class="bg-red-500 text-white px-4 py-2 rounded">
+          <?= htmlspecialchars($langText['delete'] ?? 'Delete', ENT_QUOTES, 'UTF-8') ?>
+          </button>
         </div>
       </form>
     </div>

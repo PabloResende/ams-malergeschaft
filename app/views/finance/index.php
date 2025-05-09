@@ -14,7 +14,7 @@ require __DIR__ . '/../layout/header.php';
   };
 </script>
 
-<main class="md:pl-56 pt-20 p-6">
+<main class="md:pl-70 pt-20 p-6">
   <h1 class="text-3xl font-bold mb-6"><?= $langText['finance'] ?></h1>
 
   <!-- Resumo -->
@@ -182,4 +182,3 @@ require __DIR__ . '/../layout/header.php';
 </main>
 
 <script defer src="<?= $baseUrl ?>/js/finance.js"></script>
-<script src="<?= $baseUrl ?>/js/header.js"></script>

@@ -178,6 +178,13 @@ require __DIR__ . '/../layout/header.php';
           <button type="button" id="txCancelBtn" class="px-4 py-2 border rounded"><?= $langText['cancel'] ?></button>
           <button type="submit" id="txSaveBtn" class="bg-green-500 text-white px-4 py-2 rounded"><?= $langText['save'] ?></button>
         </div>
+        
+          <!-- link de excluir, escondido por padrão -->
+          <a href="#"
+            id="txDeleteLink"
+            class="absolute bottom-6 left-6 text-red-600 hover:underline hidden">
+            <?= $langText['delete'] ?>
+          </a>
       </form>
     </div>
   </div>

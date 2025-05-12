@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const createTasksData          = document.getElementById("createTasksData");
   const createEmployeesData      = document.getElementById("createEmployeesData");
   const createEmployeeCount      = document.getElementById("createEmployeeCount");
+  const createProjectStatus      = document.getElementById("createProjectStatus");
 
   let createTasks     = [];
   let createEmployees = [];
@@ -69,7 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const empText = createEmployeeSelect.options[createEmployeeSelect.selectedIndex].text;
     if (!empId || createEmployees.find(e => e.id == empId)) return;
 
-    // alerta de alocação
     fetch(`${baseUrl}/projects/checkEmployee?id=${empId}`)
       .then(res => res.ok ? res.json() : Promise.reject(res.status))
       .then(json => {
@@ -111,6 +111,8 @@ document.addEventListener("DOMContentLoaded", () => {
     createTasksData.value      = JSON.stringify(createTasks);
     createEmployeesData.value  = JSON.stringify(createEmployees.map(e => e.id));
     createEmployeeCount.value  = createEmployees.length;
+    // status automático: sem tarefas = pending, com tarefas = in_progress
+    createProjectStatus.value  = createTasks.length === 0 ? 'pending' : 'in_progress';
   }
 
   // ─── Detalhes de Projetos ───────────────────────────────────────────────
@@ -120,15 +122,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const cancelDetailsBtn           = document.getElementById("cancelDetailsBtn");
   const deleteDetailsBtn           = document.getElementById("deleteDetailsBtn");
   const detailsProjectId           = document.getElementById("detailsProjectId");
-  const detailsClientName          = document.getElementById("detailsProjectClientName");
-  const detailsStatusSelect        = document.getElementById("detailsProjectStatusSelect");
+  const detailsProjectStatusHidden = document.getElementById("detailsProjectStatus");
   const detailsStartDate           = document.getElementById("detailsProjectStartDate");
   const detailsEndDate             = document.getElementById("detailsProjectEndDate");
+  const detailsName                = document.getElementById("detailsProjectName");
+  const detailsDescription         = document.getElementById("detailsProjectDescription");
   const detailsProgressBar         = document.getElementById("detailsProgressBar");
   const detailsProgressText        = document.getElementById("detailsProgressText");
-  const detailsName                = document.getElementById("detailsProjectName");
-  const detailsLocation            = document.getElementById("detailsProjectLocation");
-  const detailsDescription         = document.getElementById("detailsProjectDescription");
   const detailsTasksContainer      = document.getElementById("detailsTasksContainer");
   const detailsNewTaskInput        = document.getElementById("detailsNewTaskInput");
   const detailsAddTaskBtn          = document.getElementById("detailsAddTaskBtn");
@@ -144,7 +144,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let detailEmployees = [];
   let detailInventory = [];
 
-  // abrir modal de detalhes
+  // abrir/fechar detalhes
   projectItems.forEach(item =>
     item.addEventListener("click", () => loadDetails(item.dataset.projectId))
   );
@@ -153,8 +153,6 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("click", e => {
     if (e.target === detailsModal) closeDetails();
   });
-
-  // listener do botão de excluir
   deleteDetailsBtn.addEventListener("click", () => {
     const id = detailsProjectId.value;
     if (!id) return;
@@ -169,14 +167,11 @@ document.addEventListener("DOMContentLoaded", () => {
       .then(data => {
         if (data.error) return alert(data.error);
 
-        detailsProjectId.value         = data.id;
-        detailsClientName.textContent  = data.client_name || '—';
-        detailsStatusSelect.value      = data.status;
-        detailsStartDate.value         = data.start_date;
-        detailsEndDate.value           = data.end_date;
-        detailsName.value              = data.name;
-        detailsLocation.textContent    = data.location || '—';
-        detailsDescription.value       = data.description || '';
+        detailsProjectId.value     = data.id;
+        detailsStartDate.value     = data.start_date;
+        detailsEndDate.value       = data.end_date;
+        detailsName.value          = data.name;
+        detailsDescription.value   = data.description || '';
 
         detailTasks     = (data.tasks     || []).map(t => ({
           id: t.id,
@@ -192,7 +187,8 @@ document.addEventListener("DOMContentLoaded", () => {
         renderDetailTasks();
         renderDetailEmployees();
         renderDetailInventory();
-
+        updateDetailProgress();   // gera status e progress
+        activateDetailTab('geral');
         detailsModal.classList.remove("hidden");
       })
       .catch(err => {
@@ -205,7 +201,28 @@ document.addEventListener("DOMContentLoaded", () => {
     detailsModal.classList.add("hidden");
   }
 
-  // ─── Tasks ─────────────────────────────────────────
+  // Tabs Detalhes
+  const detailTabButtons = document.querySelectorAll("#projectDetailsModal .tab-btn");
+  const detailTabPanels  = document.querySelectorAll("#projectDetailsModal .tab-panel");
+  function activateDetailTab(tabName) {
+    detailTabButtons.forEach(b => {
+      if (b.dataset.tab === tabName) {
+        b.classList.replace('text-gray-600','text-blue-600');
+        b.classList.add('border-b-2','border-blue-600');
+      } else {
+        b.classList.replace('text-blue-600','text-gray-600');
+        b.classList.remove('border-b-2','border-blue-600');
+      }
+    });
+    detailTabPanels.forEach(p => {
+      p.id === `tab-${tabName}` ? p.classList.remove('hidden') : p.classList.add('hidden');
+    });
+  }
+  detailTabButtons.forEach(btn =>
+    btn.addEventListener("click", () => activateDetailTab(btn.dataset.tab))
+  );
+
+  // Tasks
   detailsAddTaskBtn.addEventListener("click", () => {
     const desc = detailsNewTaskInput.value.trim();
     if (!desc) return;
@@ -244,15 +261,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const pct   = total ? Math.round(done / total * 100) : 0;
     detailsProgressBar.style.width  = pct + '%';
     detailsProgressText.textContent = pct + '%';
-
-    if (total > 0 && done === total) {
-      detailsStatusSelect.value = 'completed';
-    } else if (detailsStatusSelect.value === 'completed') {
-      detailsStatusSelect.value = 'in_progress';
-    }
+    const status = total === 0
+      ? 'pending'
+      : (done === total ? 'completed' : 'in_progress');
+    detailsProjectStatusHidden.value = status;
   }
 
-  // ─── Employees ─────────────────────────────────────
+  // Employees
   detailsAddEmployeeBtn.addEventListener("click", () => {
     const empId   = detailsEmployeeSelect.value;
     const empText = detailsEmployeeSelect.options[detailsEmployeeSelect.selectedIndex].text;
@@ -294,7 +309,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  // ─── Inventory ─────────────────────────────────────
+  // Inventory
   function renderDetailInventory() {
     detailsInventoryContainer.innerHTML = "";
     if (!detailInventory.length) {

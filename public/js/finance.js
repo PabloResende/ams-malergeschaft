@@ -1,150 +1,175 @@
 // public/js/finance.js
-(function() {
-  // detecta base da rota a partir da URL deste script
-  const me = document.currentScript;
-  const base = me.src.replace(/\/js\/finance\.js$/, '');
-  // FINANCE_PREFIX e STR devem ter sido atribuídos em index.php
-  const FINANCE_PREFIX = window.FINANCE_PREFIX || (base + '/finance');
-  const STR            = window.FINANCE_STR || {};
+(function(){
+  const PREFIX       = window.FINANCE_PREFIX;
+  const PROJECT_CAT  = window.PROJECT_CAT;
+  const STR          = window.FINANCE_STR;
 
-  document.addEventListener('DOMContentLoaded', () => {
-    // botões e elementos do modal
-    const openNewBtn   = document.getElementById('openTxModalBtn');
-    const modal        = document.getElementById('transactionModal');
-    const closeBtn     = document.getElementById('closeTxModalBtn');
-    const cancelBtn    = document.getElementById('txCancelBtn');
-    const form         = document.getElementById('transactionForm');
-    const titleEl      = document.getElementById('txModalTitle');
-    const saveBtn      = document.getElementById('txSaveBtn');
-    const deleteLink   = document.getElementById('txDeleteLink');
+  document.addEventListener('DOMContentLoaded', ()=>{
+    // Modal controls
+    const openBtn    = document.getElementById('openTxModalBtn');
+    const modal      = document.getElementById('transactionModal');
+    const closeBtn   = document.getElementById('closeTxModalBtn');
+    const cancelBtn  = document.getElementById('txCancelBtn');
+    const deleteLink = document.getElementById('txDeleteLink');
+    const titleEl    = document.getElementById('txModalTitle');
 
-    // campos do formulário
-    const idInput      = document.getElementById('txId');
-    const typeSel      = document.getElementById('txTypeSelect');
-    const dateInput    = document.getElementById('txDateInput');
-    const catSel       = document.getElementById('txCategorySelect');
-    const amtInput     = document.getElementById('txAmountInput');
-    const descInput    = document.getElementById('txDescInput');
-    const dueCont      = document.getElementById('dueDateContainer');
-    const dueInput     = document.getElementById('txDueDateInput');
-    const attachList   = document.getElementById('txAttachments');
+    // Tabs
+    const tabGenBtn  = document.getElementById('modalTabGenBtn');
+    const tabDebtBtn = document.getElementById('modalTabDebtBtn');
+    const panelGen   = document.getElementById('tabGeneral');
+    const panelDebt  = document.getElementById('tabDebt');
 
-    // armazena opções originais de categoria
-    const origOpts = Array.from(catSel.options).map(o => ({
-      value: o.value,
-      text:  o.textContent,
-      type:  o.getAttribute('data-type')
+    // Form fields
+    const form        = document.getElementById('transactionForm');
+    const fldId       = document.getElementById('txId');
+    const selType     = document.getElementById('txTypeSelect');
+    const inpDate     = document.getElementById('txDateInput');
+    const selCat      = document.getElementById('txCategorySelect');
+    const projCont    = document.getElementById('projectContainer');
+    const selProj     = document.getElementById('txProjectSelect');
+    const chkInit     = document.getElementById('initialPaymentChk');
+    const selInst     = document.getElementById('installmentsSelect');
+    const infoInst    = document.getElementById('installmentInfo');
+    const inpDue      = document.getElementById('txDueDateInput');
+    const inpAmt      = document.getElementById('txAmountInput');
+    const attachList  = document.getElementById('txAttachments');
+
+    // Preserve original options
+    const origCats  = Array.from(selCat.options).map(o=>({
+      value:o.value,
+      type:o.getAttribute('data-type'),
+      proj:o.getAttribute('data-project')==='1'
     }));
+    const origProjs = Array.from(selProj.options);
 
-    // abre/fecha modal
-    function toggleModal(show) {
-      modal.classList.toggle('hidden', !show);
+    // Helpers
+    function show(el, cond){ el.classList.toggle('hidden', !cond); }
+    function showTabGen(){
+      panelGen.classList.remove('hidden');
+      panelDebt.classList.add('hidden');
+      tabGenBtn.classList.add('border-blue-600','text-blue-600');
+      tabDebtBtn.classList.remove('border-blue-600','text-blue-600');
     }
-
-    // mostra/esconde campo de due_date
-    function toggleDue() {
-      dueCont.classList.toggle('hidden', typeSel.value !== 'debt');
+    function showTabDebt(){
+      panelDebt.classList.remove('hidden');
+      panelGen.classList.add('hidden');
+      tabDebtBtn.classList.add('border-blue-600','text-blue-600');
+      tabGenBtn.classList.remove('border-blue-600','text-blue-600');
     }
-
-    // filtra categorias conforme tipo
-    function filterCategories() {
-      const t = typeSel.value;
-      catSel.innerHTML = '';
-      origOpts.forEach(o => {
-        if (!t || o.type === t) {
-          const opt = document.createElement('option');
-          opt.value       = o.value;
-          opt.textContent = o.text;
-          catSel.appendChild(opt);
+    function filterCats(){
+      const t = selType.value;
+      selCat.innerHTML = '';
+      origCats.forEach(o=>{
+        if (!t || o.type===t) {
+          const opt=document.createElement('option');
+          opt.value=o.value; opt.textContent=o.value; // text overwritten by server-render
+          opt.dataset.type=o.type;
+          opt.dataset.project=o.proj?'1':'0';
+          selCat.appendChild(opt);
         }
       });
     }
-
-    // configura modal em modo "novo"
-    function openModalNew() {
-      titleEl.textContent = STR.newTransaction || 'Nova Transação';
-      form.action         = FINANCE_PREFIX + '/store';
-      saveBtn.textContent = STR.save           || 'Salvar';
-      idInput.value       = '';
-      typeSel.value       = 'income';
-      dateInput.value     = new Date().toISOString().slice(0,10);
-      amtInput.value      = '';
-      descInput.value     = '';
-      dueInput.value      = '';
-      attachList.innerHTML= '';
-      deleteLink.classList.add('hidden');
-      toggleDue();
-      filterCategories();
-      toggleModal(true);
+    function updateFields(){
+      const isDebt = selType.value==='debt';
+      const catOpt = selCat.selectedOptions[0];
+      const needProj = catOpt && catOpt.dataset.project==='1' && selType.value!=='income';
+      show(projCont, needProj);
+      show(panelDebt, isDebt && tabDebtBtn.classList.contains('border-blue-600'));
+      show(tabDebtBtn, isDebt);
+      showTabGen();
+      calcInstall();
     }
-
-    // configura modal em modo "editar"
-    function openModalEdit(tx) {
-      titleEl.textContent = STR.editTransaction || 'Editar Transação';
-      form.action         = FINANCE_PREFIX + '/update';
-      saveBtn.textContent = STR.saveChanges    || 'Salvar';
-      idInput.value       = tx.id;
-      typeSel.value       = tx.type;
-      dateInput.value     = tx.date;
-      amtInput.value      = tx.amount;
-      descInput.value     = tx.description;
-      dueInput.value      = tx.due_date || '';
-      attachList.innerHTML= '';
-
-      // popula lista de anexos
-      if (Array.isArray(tx.attachments)) {
-        tx.attachments.forEach(a => {
-          const li  = document.createElement('li');
-          const ael = document.createElement('a');
-          ael.href        = FINANCE_PREFIX.replace('/finance','') + '/' + a.file_path;
-          ael.textContent = a.file_path.split('/').pop();
-          ael.target      = '_blank';
-          li.appendChild(ael);
-          attachList.appendChild(li);
-        });
+    function calcInstall(){
+      const v= parseFloat(inpAmt.value)||0;
+      const n= parseInt(selInst.value)||0;
+      if (!chkInit.checked && v>0 && n>0) {
+        infoInst.textContent = `${n}× R$ ${(v/n).toFixed(2)}`;
+      } else {
+        infoInst.textContent = '';
       }
-
-      // configura link de excluir
-      deleteLink.href = FINANCE_PREFIX + '/delete?id=' + tx.id;
-      deleteLink.classList.remove('hidden');
-      deleteLink.onclick = e => {
-        const msg = STR.confirmDelete || 'Excluir esta transação?';
-        if (!confirm(msg)) e.preventDefault();
-      };
-
-      toggleDue();
-      filterCategories();
-      catSel.value = tx.category_id;
-      toggleModal(true);
     }
 
-    // eventos de abertura/fechamento
-    openNewBtn.addEventListener('click', openModalNew);
-    closeBtn.addEventListener('click', () => toggleModal(false));
-    cancelBtn.addEventListener('click', () => toggleModal(false));
-    modal.addEventListener('click', e => { if (e.target === modal) toggleModal(false); });
+    // Open / Close Modal
+    function openNew(){
+      titleEl.textContent = STR.newTransaction;
+      form.action         = PREFIX + '/store';
+      fldId.value         = '';
+      selType.value       = '';
+      inpDate.value       = new Date().toISOString().slice(0,10);
+      inpAmt.value        = '';
+      document.getElementById('txDescInput').value = '';
+      inpDue.value        = '';
+      selInst.value       = '';
+      chkInit.checked     = false;
+      attachList.innerHTML= '';
 
-    // ao mudar tipo, ajusta vencimento e categoria
-    typeSel.addEventListener('change', () => {
-      toggleDue();
-      filterCategories();
-    });
+      filterCats(); selCat.value='';
+      selProj.innerHTML=''; origProjs.forEach(o=>selProj.appendChild(o.cloneNode(true)));
 
-    // vincula o clique a cada linha da tabela
-    document.querySelectorAll('.tx-row').forEach(row => {
-      row.addEventListener('click', () => {
-        const id = row.dataset.txId;
-        fetch(FINANCE_PREFIX + '/edit?id=' + id)
-          .then(r => {
-            if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.json();
-          })
-          .then(tx => openModalEdit(tx))
-          .catch(err => {
-            console.error(err);
-            alert('Não foi possível carregar os detalhes.');
-          });
+      deleteLink.classList.add('hidden');
+      updateFields();
+      show(modal,true);
+    }
+    function openEdit(tx){
+      titleEl.textContent  = STR.editTransaction;
+      form.action          = PREFIX + '/update';
+      fldId.value          = tx.id;
+      selType.value        = tx.type;
+      inpDate.value        = tx.date;
+      inpAmt.value         = tx.amount;
+      document.getElementById('txDescInput').value = tx.description||'';
+      inpDue.value         = tx.due_date||'';
+
+      attachList.innerHTML='';
+      (tx.attachments||[]).forEach(a=>{
+        const li=document.createElement('li'),
+              ael=document.createElement('a');
+        ael.href=window.BASE_URL+'/'+a.file_path;
+        ael.textContent=a.file_path.split('/').pop();
+        ael.target='_blank';
+        li.appendChild(ael);
+        attachList.appendChild(li);
+      });
+
+      filterCats(); selCat.value=tx.category_id;
+      selProj.innerHTML=''; origProjs.forEach(o=>selProj.appendChild(o.cloneNode(true)));
+      selProj.value=tx.project_id||'';
+
+      selInst.value      = tx.installments_count||'';
+      chkInit.checked    = tx.initial_payment==1;
+
+      deleteLink.href    = PREFIX+'/delete?id='+tx.id;
+      deleteLink.classList.remove('hidden');
+
+      updateFields();
+      show(modal,true);
+    }
+
+    // Event bindings
+    openBtn.addEventListener('click', openNew);
+    closeBtn.addEventListener('click', ()=>show(modal,false));
+    cancelBtn.addEventListener('click', ()=>show(modal,false));
+    tabGenBtn.addEventListener('click', showTabGen);
+    tabDebtBtn.addEventListener('click', showTabDebt);
+
+    selType.addEventListener('change', updateFields);
+    selCat .addEventListener('change', updateFields);
+    selInst.addEventListener('change', calcInstall);
+    inpAmt .addEventListener('input', calcInstall);
+    chkInit.addEventListener('change', calcInstall);
+
+    document.querySelectorAll('.editBtn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        fetch(PREFIX+'/edit?id='+btn.dataset.id)
+          .then(r=>r.ok?r.json():Promise.reject())
+          .then(openEdit)
+          .catch(()=>alert('Não foi possível carregar detalhes.'));
       });
     });
+
+    // Init
+    filterCats();
+    updateFields();
+    calcInstall();
   });
 })();

@@ -1,8 +1,4 @@
-Pensou por 6 segundos
-
-
-sql
--- Users (sem alterações)
+-- Users
 CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100),
@@ -11,7 +7,7 @@ CREATE TABLE users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Clients (agora com active e loyalty_points)
+-- Clients
 CREATE TABLE client (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
@@ -24,7 +20,7 @@ CREATE TABLE client (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Projects (substitui client_name por client_id + FK)
+-- Projects
 CREATE TABLE projects (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
@@ -44,7 +40,7 @@ CREATE TABLE projects (
     ON DELETE SET NULL
 );
 
--- Employees (sem alterações)
+-- Employees
 CREATE TABLE employees (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
@@ -87,7 +83,7 @@ CREATE TABLE inventory (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tasks do projeto
+-- Tasks
 CREATE TABLE tasks (
   id INT AUTO_INCREMENT PRIMARY KEY,
   project_id INT NOT NULL,
@@ -99,7 +95,7 @@ CREATE TABLE tasks (
     ON DELETE CASCADE
 );
 
--- Resources alocados ao projeto (funcionários ou inventário)
+-- Project Resources
 CREATE TABLE project_resources (
   id INT AUTO_INCREMENT PRIMARY KEY,
   project_id INT NOT NULL,
@@ -112,7 +108,7 @@ CREATE TABLE project_resources (
     ON DELETE CASCADE
 );
 
--- Lembretes de calendário
+-- Reminders
 CREATE TABLE reminders (
   id INT AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
@@ -121,7 +117,7 @@ CREATE TABLE reminders (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Movimentações de estoque
+-- Inventory Movements
 CREATE TABLE inventory_movements (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_name VARCHAR(255) NOT NULL,
@@ -134,7 +130,6 @@ CREATE TABLE inventory_movements (
     REFERENCES projects(id)
 );
 
--- Detalhes das movimentações
 CREATE TABLE inventory_movement_details (
   id INT AUTO_INCREMENT PRIMARY KEY,
   movement_id INT NOT NULL,
@@ -147,7 +142,7 @@ CREATE TABLE inventory_movement_details (
     REFERENCES inventory(id)
 );
 
--- Pagamentos (Stripe, etc.)
+-- Payments & Invoices
 CREATE TABLE payments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   intent_id VARCHAR(255) NOT NULL UNIQUE,
@@ -157,7 +152,6 @@ CREATE TABLE payments (
   created_at DATETIME NOT NULL
 );
 
--- Faturas (invoices)
 CREATE TABLE invoices (
   id INT AUTO_INCREMENT PRIMARY KEY,
   number VARCHAR(50),
@@ -169,7 +163,7 @@ CREATE TABLE invoices (
   status VARCHAR(50)
 );
 
--- Categorias de transação
+-- Finance Categories
 CREATE TABLE finance_categories (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
@@ -177,7 +171,7 @@ CREATE TABLE finance_categories (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Transações financeiras
+-- Financial Transactions
 CREATE TABLE financial_transactions (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
@@ -187,11 +181,11 @@ CREATE TABLE financial_transactions (
   date DATE NOT NULL,
   description TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id)    REFERENCES users(id),
+  FOREIGN KEY (user_id)     REFERENCES users(id),
   FOREIGN KEY (category_id) REFERENCES finance_categories(id)
 );
 
--- Comprovantes (anexos) de cada transação
+-- Attachments
 CREATE TABLE transaction_attachments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   transaction_id INT NOT NULL,
@@ -202,17 +196,19 @@ CREATE TABLE transaction_attachments (
     ON DELETE CASCADE
 );
 
--- Dívidas específicas (facultativo: você pode tratar dívida como type='debt' em financial_transactions)
+-- Debts (Dívidas)
 CREATE TABLE debts (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  client_id INT,
-  transaction_id INT NULL,
+  client_id INT NULL,
+  transaction_id INT NOT NULL,
+  project_id INT NULL,
   amount DECIMAL(12,2) NOT NULL,
   due_date DATE NOT NULL,
+  installments_count INT NULL,
+  initial_payment TINYINT(1) DEFAULT 0,
   status ENUM('open','paid','overdue') DEFAULT 'open',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (client_id) 
-    REFERENCES client(id),
-  FOREIGN KEY (transaction_id)
-    REFERENCES financial_transactions(id)
+  FOREIGN KEY (client_id)      REFERENCES client(id),
+  FOREIGN KEY (transaction_id) REFERENCES financial_transactions(id) ON DELETE CASCADE,
+  FOREIGN KEY (project_id)     REFERENCES projects(id)         ON DELETE SET NULL
 );

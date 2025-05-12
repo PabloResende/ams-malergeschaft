@@ -5,6 +5,11 @@ require_once __DIR__ . '/../../config/Database.php';
 
 class Client
 {
+    /**
+     * Retorna todos os clientes cadastrados.
+     *
+     * @return array
+     */
     public static function all()
     {
         $pdo  = Database::connect();
@@ -12,14 +17,26 @@ class Client
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Encontra um cliente pelo ID.
+     *
+     * @param int $id
+     * @return array|false
+     */
     public static function find($id)
     {
-        $pdo   = Database::connect();
-        $stmt  = $pdo->prepare("SELECT * FROM client WHERE id = ?");
+        $pdo  = Database::connect();
+        $stmt = $pdo->prepare("SELECT * FROM client WHERE id = ?");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Cria um novo cliente.
+     *
+     * @param array $data
+     * @return bool
+     */
     public static function create($data)
     {
         $pdo = Database::connect();
@@ -31,13 +48,20 @@ class Client
         ");
         return $stmt->execute([
             $data['name'],
-            $data['address'],
-            $data['phone'],
-            $data['active'] ?? 1,
+            $data['address']        ?? null,
+            $data['phone']          ?? null,
+            $data['active']         ?? 1,
             $data['loyalty_points'] ?? 0
         ]);
     }
 
+    /**
+     * Atualiza um cliente existente.
+     *
+     * @param int   $id
+     * @param array $data
+     * @return bool
+     */
     public static function update($id, $data)
     {
         $pdo = Database::connect();
@@ -51,13 +75,19 @@ class Client
         ");
         return $stmt->execute([
             $data['name'],
-            $data['address'],
-            $data['phone'],
-            $data['active'] ?? 1,
+            $data['address'] ?? null,
+            $data['phone']   ?? null,
+            $data['active']  ?? 1,
             $id
         ]);
     }
 
+    /**
+     * Remove um cliente.
+     *
+     * @param int $id
+     * @return bool
+     */
     public static function delete($id)
     {
         $pdo  = Database::connect();
@@ -65,6 +95,12 @@ class Client
         return $stmt->execute([$id]);
     }
 
+    /**
+     * Conta quantos projetos estão associados a este cliente.
+     *
+     * @param int $id
+     * @return int
+     */
     public static function countProjects($id)
     {
         $pdo  = Database::connect();
@@ -72,5 +108,23 @@ class Client
         $stmt->execute([$id]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return (int)($row['cnt'] ?? 0);
+    }
+
+    /**
+     * Atualiza os pontos de fidelidade do cliente.
+     *
+     * @param int $id
+     * @param int $points
+     * @return bool
+     */
+    public static function setPoints($id, $points)
+    {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare("
+            UPDATE client
+               SET loyalty_points = ?
+             WHERE id = ?
+        ");
+        return $stmt->execute([$points, $id]);
     }
 }

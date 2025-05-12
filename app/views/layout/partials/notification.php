@@ -11,24 +11,18 @@ require_once __DIR__ . '/../../../../config/Database.php';
 $pdo     = Database::connect();
 $baseUrl = '/ams-malergeschaft/public';
 
-// 3) Helper para adicionar apenas não-lidas
+// 3) Helper para adicionar NOTIFICAÇÕES SEM FILTRO DE “LIDAS”
 if (! function_exists('addNotif')) {
     /**
-     * Adiciona uma notificação no array, se ainda não foi marcada como lida
+     * Adiciona uma notificação no array SEM checar se já foi marcada como lida
      *
-     * @param array  $arr Recebedor das notificações
-     * @param string $key Identificador único
-     * @param string $text Texto a exibir
-     * @param string $url  Link de destino
+     * @param array  $arr   Recebedor das notificações
+     * @param string $key   Identificador único
+     * @param string $text  Texto a exibir
+     * @param string $url   Link de destino
      */
     function addNotif(array &$arr, string $key, string $text, string $url): void {
-        $readKeys = $_SESSION['read_notifications'] ?? [];
-        if (! is_array($readKeys)) {
-            $readKeys = [];
-        }
-        if (! in_array($key, $readKeys, true)) {
-            $arr[] = compact('key','text','url');
-        }
+        $arr[] = compact('key','text','url');
     }
 }
 
@@ -86,5 +80,5 @@ while ($c = $stmt->fetch(PDO::FETCH_ASSOC)) {
     addNotif($notifications, $key, $text, $url);
 }
 
-// 5) Retorna somente as não-lidas
+// 5) Retorna todas as notificações (sem filtro de lidas)
 return $notifications;

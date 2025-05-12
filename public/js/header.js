@@ -1,65 +1,66 @@
 // public/js/header.js
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Sidebar mobile toggle
-  const mobileBtn = document.getElementById('mobileMenuButton');
-  const sidebar   = document.getElementById('sidebar');
-  const overlay   = document.getElementById('contentOverlay');
-  if (mobileBtn && sidebar && overlay) {
-    mobileBtn.addEventListener('click', () => {
-      sidebar.classList.toggle('sidebar-open');
-      overlay.classList.toggle('hidden');
-      document.body.classList.toggle('overflow-hidden');
-    });
-    overlay.addEventListener('click', () => {
-      sidebar.classList.add('hidden');
-      overlay.classList.add('hidden');
-      document.body.classList.remove('overflow-hidden');
-    });
+  const STORAGE_KEY = 'readNotifications';
+
+  // Lê do localStorage as keys já marcadas como lidas
+  let readSet = new Set();
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (Array.isArray(saved)) readSet = new Set(saved);
+  } catch (e) {
+    console.warn('Não foi possível ler readNotifications do localStorage');
   }
 
-  // Language dropdown
-  const langBtn = document.getElementById('language-button');
-  const langMenu = document.getElementById('language-menu');
-  if (langBtn && langMenu) {
-    langBtn.addEventListener('click', e => {
+  /**
+   * Inicia o badge de notificações.
+   * @param {string} btnId       id do botão de sino
+   * @param {string} listId      id da lista <ul>
+   * @param {string} countId     id do badge <span>
+   */
+  function initBadge(btnId, listId, countId) {
+    const btn   = document.getElementById(btnId);
+    const list  = document.getElementById(listId);
+    const badge = document.getElementById(countId);
+    if (!btn || !list || !badge) return;
+
+    // Coleta todas as keys atuais das notificações
+    const items   = Array.from(list.querySelectorAll('.notification-item'));
+    const allKeys = items
+      .map(i => i.dataset.key)
+      .filter(k => k);
+
+    // Calcula quantas NÃO estão em readSet
+    const unreadKeys = allKeys.filter(k => !readSet.has(k));
+
+    if (unreadKeys.length > 0) {
+      badge.textContent = unreadKeys.length;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+
+    // Ao clicar no sino, marca todas como lidas
+    btn.addEventListener('click', e => {
       e.stopPropagation();
-      langMenu.classList.toggle('hidden');
+      list.classList.toggle('hidden');
+
+      allKeys.forEach(k => readSet.add(k));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(readSet)));
+
+      badge.textContent = '0';
+      badge.classList.add('hidden');
     });
+
+    // Fecha dropdown ao clicar fora
     document.addEventListener('click', e => {
-      if (!langBtn.contains(e.target) && !langMenu.contains(e.target)) {
-        langMenu.classList.add('hidden');
+      if (!btn.contains(e.target) && !list.contains(e.target)) {
+        list.classList.add('hidden');
       }
     });
   }
 
-  // Notifications desktop
-  const notifBtn = document.getElementById('notificationBtn');
-  const notifList = document.getElementById('notificationList');
-  if (notifBtn && notifList) {
-    notifBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      notifList.classList.toggle('hidden');
-    });
-    document.addEventListener('click', e => {
-      if (!notifBtn.contains(e.target) && !notifList.contains(e.target)) {
-        notifList.classList.add('hidden');
-      }
-    });
-  }
-
-  // Notifications mobile
-  const notifBtnM = document.getElementById('notificationBtnMobile');
-  const notifListM = document.getElementById('notificationListMobile');
-  if (notifBtnM && notifListM) {
-    notifBtnM.addEventListener('click', e => {
-      e.stopPropagation();
-      notifListM.classList.toggle('hidden');
-    });
-    document.addEventListener('click', e => {
-      if (!notifBtnM.contains(e.target) && !notifListM.contains(e.target)) {
-        notifListM.classList.add('hidden');
-      }
-    });
-  }
+  // Inicializa desktop e mobile
+  initBadge('notificationBtn',       'notificationList',       'notificationCount');
+  initBadge('notificationBtnMobile', 'notificationListMobile', 'notificationCountMobile');
 });

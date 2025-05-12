@@ -1,17 +1,14 @@
 <?php
 // app/views/layout/partials/notification.php
 
-// 1) Inicia sessão se necessário
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// 2) Conexão com o banco
 require_once __DIR__ . '/../../../../config/Database.php';
 $pdo     = Database::connect();
 $baseUrl = '/ams-malergeschaft/public';
 
-// 3) Helper para adicionar NOTIFICAÇÕES SEM FILTRO DE “LIDAS”
 if (! function_exists('addNotif')) {
     /**
      * Adiciona uma notificação no array SEM checar se já foi marcada como lida
@@ -26,10 +23,9 @@ if (! function_exists('addNotif')) {
     }
 }
 
-// 4) Array de retorno
 $notifications = [];
 
-// ——— 1) Materiais com estoque < 10 ———
+// ——— Materiais com estoque < 10 ———
 $stmt = $pdo->query("
     SELECT id, name, quantity
     FROM inventory
@@ -44,7 +40,7 @@ while ($it = $stmt->fetch(PDO::FETCH_ASSOC)) {
     addNotif($notifications, $key, $text, $url);
 }
 
-// ——— 2) Projetos vencendo em ≤5 dias ———
+// Projetos vencendo em ≤5 dias ———
 $today = date('Y-m-d');
 $limit = date('Y-m-d', strtotime('+5 days'));
 $stmt  = $pdo->prepare("
@@ -65,7 +61,7 @@ while ($pj = $stmt->fetch(PDO::FETCH_ASSOC)) {
     addNotif($notifications, $key, $text, $url);
 }
 
-// ——— 3) Clientes com ≥5 projetos ———
+// Clientes com ≥5 projetos ———
 $stmt = $pdo->query("
     SELECT c.id, c.name, COUNT(p.id) AS cnt
     FROM client c
@@ -80,5 +76,4 @@ while ($c = $stmt->fetch(PDO::FETCH_ASSOC)) {
     addNotif($notifications, $key, $text, $url);
 }
 
-// 5) Retorna todas as notificações (sem filtro de lidas)
 return $notifications;

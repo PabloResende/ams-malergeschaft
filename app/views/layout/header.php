@@ -1,36 +1,20 @@
 <?php
 // app/views/layout/header.php
 
-// 1) Inicia sessão se necessário
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// 2) Marca como lida e redireciona
-if (isset($_GET['mark_read'], $_GET['redirect'])) {
-    if (empty($_SESSION['read_notifications']) || ! is_array($_SESSION['read_notifications'])) {
-        $_SESSION['read_notifications'] = [];
-    }
-    $_SESSION['read_notifications'] = array_unique(array_merge(
-        $_SESSION['read_notifications'],
-        [ $_GET['mark_read'] ]
-    ));
-    header('Location: ' . $_GET['redirect']);
-    exit;
-}
+$notifications       = include __DIR__ . '/partials/notification.php';
+$notificationCount   = count($notifications);
 
-// 3) Carrega notificações não-lidas
-$notifications = include __DIR__ . '/partials/notification.php';
 
-// 4) Config geral
 $baseUrl = '/ams-malergeschaft/public';
 require __DIR__ . '/../../lang/lang.php';
 
-// 5) Idioma
 $lang = $_GET['lang'] ?? $_SESSION['lang'] ?? 'pt';
 $_SESSION['lang'] = $lang;
 
-// 6) Flags
 $flags = [
     'pt'=>['name'=>'Português','flag'=>"$baseUrl/assets/flags/pt.png"],
     'en'=>['name'=>'English',  'flag'=>"$baseUrl/assets/flags/us.png"],
@@ -41,7 +25,6 @@ $currentFlag = isset($flags[$lang])
     ? '<img src="'.htmlspecialchars($flags[$lang]['flag']).'" class="w-5 h-5" alt="'.htmlspecialchars($flags[$lang]['name']).'">'
     : '🌎';
 
-// 7) Controle de exibição
 $isLoginPage = str_contains($_SERVER['REQUEST_URI'],'login')
             || str_contains($_SERVER['REQUEST_URI'],'register');
 $isLoggedIn = isset($_SESSION['user']);
@@ -177,35 +160,30 @@ $isLoggedIn = isset($_SESSION['user']);
           <?= $langText['new_project'] ?? 'Novo Projeto +' ?>
         </a>
 
-        <!-- Notificações -->
         <div class="relative">
-          <button id="notificationBtn" class="relative bg-transparent focus:outline-none">
-            <!-- Heroicon: Bell -->
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0h6z" />
-            </svg>
-            <?php if ($notifications): ?>
-              <span id="notificationDot" class="absolute top-0 right-0 bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px]">
-                <?= count($notifications) ?>
-              </span>
-            <?php endif; ?>
-          </button>
-          <div id="notificationList" class="dropdown-menu hidden">
-            <h3 class="text-lg font-bold text-gray-800 border-b px-2 py-1"><?= $langText['notifications'] ?? 'Notificações' ?></h3>
-            <ul class="mt-1">
-              <?php foreach ($notifications as $n): ?>
-                <li class="px-2 py-1 border-b last:border-b-0 text-sm text-gray-700">
-                  <a href="?mark_read=<?= $n['key'] ?>&redirect=<?= urlencode($n['url']) ?>" class="block hover:bg-gray-100">
-                    <?= htmlspecialchars($n['text']) ?>
-                  </a>
-                </li>
-              <?php endforeach; ?>
-              <?php if (empty($notifications)): ?>
-                <li class="px-2 py-1 text-center text-sm text-gray-500"><?= $langText['no_new_notifications'] ?? 'Sem novas notificações' ?></li>
-              <?php endif; ?>
-            </ul>
-          </div>
-        </div>
+        <button id="notificationBtn" class="relative p-2 focus:outline-none">
+          <!-- Bell icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0h6z" />
+          </svg>
+          <span id="notificationCount"
+                class="hidden absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+            0
+          </span>
+        </button>
+        <ul id="notificationList"
+            class="dropdown-menu hidden absolute right-0 mt-2 w-64 bg-white shadow-lg max-h-80 overflow-auto z-50">
+          <?php foreach ($notifications as $n): ?>
+            <li class="notification-item px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                data-key="<?= htmlspecialchars($n['key'], ENT_QUOTES) ?>">
+              <a href="<?= $n['url'] ?>" class="block">
+                <?= htmlspecialchars($n['text'], ENT_QUOTES) ?>
+              </a>
+            </li>
+          <?php endforeach; ?>
+        </ul>
+      </div>
 
         <!-- Idioma -->
         <div class="relative">
@@ -240,33 +218,29 @@ $isLoggedIn = isset($_SESSION['user']);
       </div>
       <div class="flex items-center space-x-4">
         <!-- Notificações Mobile -->
-        <div class="relative">
-          <button id="notificationBtnMobile" class="relative bg-transparent focus:outline-none">
-            <!-- Heroicon: Bell -->
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0h6z" />
+        <div class="relative md:hidden">
+          <button id="notificationBtnMobile" class="relative p-2 focus:outline-none">
+            <!-- Bell icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0h6z" />
             </svg>
-            <?php if ($notifications): ?>
-              <span class="absolute top-0 right-0 bg-red-600 text-white w-4 h-4 rounded-full flex items-center justify-center text-[10px]">
-                <?= count($notifications) ?>
-              </span>
-            <?php endif; ?>
+            <span id="notificationCountMobile"
+                  class="hidden absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              0
+            </span>
           </button>
-          <div id="notificationListMobile" class="dropdown-menu hidden">
-            <h3 class="text-sm font-bold text-gray-800 border-b px-2 py-1"><?= $langText['notifications'] ?? 'Notificações' ?></h3>
-            <ul class="mt-1">
-              <?php foreach ($notifications as $n): ?>
-                <li class="px-2 py-1 border-b last:border-b-0 text-xs text-gray-700">
-                  <a href="?mark_read=<?= $n['key'] ?>&redirect=<?= urlencode($n['url']) ?>" class="block hover:bg-gray-100">
-                    <?= htmlspecialchars($n['text']) ?>
-                  </a>
-                </li>
-              <?php endforeach; ?>
-              <?php if (empty($notifications)): ?>
-                <li class="px-2 py-1 text-center text-xs text-gray-500"><?= $langText['no_new_notifications'] ?? 'Sem novas notificações' ?></li>
-              <?php endif; ?>
-            </ul>
-          </div>
+          <ul id="notificationListMobile"
+              class="dropdown-menu hidden absolute right-0 mt-2 w-64 bg-white shadow-lg max-h-80 overflow-auto z-50">
+            <?php foreach ($notifications as $n): ?>
+              <li class="notification-item px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                  data-key="<?= htmlspecialchars($n['key'], ENT_QUOTES) ?>">
+                <a href="<?= $n['url'] ?>" class="block">
+                  <?= htmlspecialchars($n['text'], ENT_QUOTES) ?>
+                </a>
+              </li>
+            <?php endforeach; ?>
+          </ul>
         </div>
         <!-- Idioma Mobile -->
         <div class="relative">

@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const quarterSel  = document.getElementById('filterQuarter');
   const semesterSel = document.getElementById('filterSemester');
   const form        = document.getElementById('filterForm');
-  const apiBase     = window.apiBase;  // definido no view
+  const apiBase     = window.apiBase;
 
   let chartCreated, chartCompleted, chartComparison, chartStatus;
 
@@ -20,20 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (q) params.set('quarter', q);
     if (s) params.set('semester', s);
     return params.toString();
-  }
-
-  function getPrevPeriod(y, q, s) {
-    let py = parseInt(y), pq = q, ps = s;
-    if (s) {
-      if (s === '1') { py -= 1; ps = '2'; }
-      else           { ps = '1';       }
-    } else if (q) {
-      if (q === '1') { py -= 1; pq = '4'; }
-      else            pq = String(parseInt(q) - 1);
-    } else {
-      py -= 1;
-    }
-    return [String(py), pq, ps];
   }
 
   async function fetchStats(y, q, s) {
@@ -100,58 +86,6 @@ document.addEventListener('DOMContentLoaded', () => {
   form.addEventListener('submit', e => {
     e.preventDefault();
     loadAll();
-  });
-
-  document.getElementById('btnExportPdf').addEventListener('click', e => {
-    e.preventDefault();
-    window.open(`${apiBase}/exportPdf?${buildQuery(yearSel.value, quarterSel.value, semesterSel.value)}`);
-  });
-
-  document.getElementById('btnExportExcel').addEventListener('click', e => {
-    e.preventDefault();
-    window.open(`${apiBase}/exportExcel?${buildQuery(yearSel.value, quarterSel.value, semesterSel.value)}`);
-  });
-
-  document.getElementById('btnSendEmail').addEventListener('click', async e => {
-    e.preventDefault();
-    const y = yearSel.value, q = quarterSel.value, s = semesterSel.value;
-
-    // busca dados atuais e do período anterior
-    const [curr, prev] = await Promise.all([
-      fetchStats(y, q, s),
-      (async () => {
-        const [py, pq, ps] = getPrevPeriod(y, q, s);
-        return await fetchStats(py, pq, ps);
-      })()
-    ]);
-
-    // helper para porcentagem
-    const pct = (n, o) => o ? ((n - o) / o * 100).toFixed(1) + '%' : '—';
-
-    // totais
-    const totCreated   = curr.created.reduce((a, b) => a + b, 0);
-    const totCompleted = curr.completed.reduce((a, b) => a + b, 0);
-
-    // monta resumo
-    const summary = [
-      `Report Period: Year ${y}${q ? ' Q' + q : ''}${s ? ' S' + s : ''}`,
-      '',
-      `Budget Total: ${curr.budget_total} (${pct(curr.budget_total, prev.budget_total)} vs prev)`,
-      `Total Hours: ${curr.hours} (${pct(curr.hours, prev.hours)} vs prev)`,
-      `Projects Created: ${totCreated} (${pct(totCreated, prev.created.reduce((a,b)=>a+b,0))} vs prev)`,
-      `Projects Completed: ${totCompleted} (${pct(totCompleted, prev.completed.reduce((a,b)=>a+b,0))} vs prev)`
-    ];
-
-    const res = await fetch(`${apiBase}/sendEmail`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ summary })
-    });
-    const json = await res.json();
-    alert(json.success
-      ? 'Email sent with detailed analysis!'
-      : 'Error sending email: ' + json.message
-    );
   });
 
   // inicializa

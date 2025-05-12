@@ -78,19 +78,6 @@ for ($i = 0; $i <= 10; $i++) {
       </div>
     </div>
   </div>
-
-  <!-- ações -->
-  <div class="flex gap-4 mt-4">
-    <a href="#" id="btnExportPdf"   class="bg-gray-700 text-white px-4 py-2 rounded">
-      <?= $langText['export_pdf']   ?? 'Export PDF'   ?>
-    </a>
-    <a href="#" id="btnExportExcel" class="bg-gray-700 text-white px-4 py-2 rounded">
-      <?= $langText['export_excel'] ?? 'Export Excel' ?>
-    </a>
-    <button id="btnSendEmail"       class="bg-gray-600 text-white px-4 py-2 rounded">
-      <?= $langText['send_email']   ?? 'Send by Email'?>
-    </button>
-  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
@@ -98,4 +85,3 @@ for ($i = 0; $i <= 10; $i++) {
   window.apiBase = '<?= $baseUrl ?>/analytics';
 </script>
 <script src="<?= $baseUrl ?>/js/analytics.js"></script>
-

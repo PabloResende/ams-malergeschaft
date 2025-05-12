@@ -1,11 +1,10 @@
 // public/js/finance.js
 (function(){
-  const PREFIX       = window.FINANCE_PREFIX;
-  const PROJECT_CAT  = window.PROJECT_CAT;
-  const STR          = window.FINANCE_STR;
+  const PREFIX = window.FINANCE_PREFIX;
+  const STR    = window.FINANCE_STR;
 
   document.addEventListener('DOMContentLoaded', ()=>{
-    // Modal controls
+
     const openBtn    = document.getElementById('openTxModalBtn');
     const modal      = document.getElementById('transactionModal');
     const closeBtn   = document.getElementById('closeTxModalBtn');
@@ -13,163 +12,145 @@
     const deleteLink = document.getElementById('txDeleteLink');
     const titleEl    = document.getElementById('txModalTitle');
 
-    // Tabs
-    const tabGenBtn  = document.getElementById('modalTabGenBtn');
-    const tabDebtBtn = document.getElementById('modalTabDebtBtn');
+    const tabGenBtn  = document.getElementById('tabGeneralBtn');
+    const tabDebtBtn = document.getElementById('tabDebtBtn');
     const panelGen   = document.getElementById('tabGeneral');
     const panelDebt  = document.getElementById('tabDebt');
 
-    // Form fields
-    const form        = document.getElementById('transactionForm');
-    const fldId       = document.getElementById('txId');
-    const selType     = document.getElementById('txTypeSelect');
-    const inpDate     = document.getElementById('txDateInput');
-    const selCat      = document.getElementById('txCategorySelect');
-    const projCont    = document.getElementById('projectContainer');
-    const selProj     = document.getElementById('txProjectSelect');
-    const chkInit     = document.getElementById('initialPaymentChk');
-    const selInst     = document.getElementById('installmentsSelect');
-    const infoInst    = document.getElementById('installmentInfo');
-    const inpDue      = document.getElementById('txDueDateInput');
-    const inpAmt      = document.getElementById('txAmountInput');
-    const attachList  = document.getElementById('txAttachments');
+    const form       = document.getElementById('transactionForm');
+    const fldId      = document.getElementById('txId');
+    const selType    = document.getElementById('txTypeSelect');
+    const dateCont   = document.getElementById('dateContainer');
+    const dueCont    = document.getElementById('dueDateContainer');
+    const inpDate    = document.getElementById('txDateInput');
+    const inpDue     = document.getElementById('txDueDateInput');
+    const inpAmt     = document.getElementById('txAmountInput');
+    const selCat     = document.getElementById('txCategorySelect');
+    const projCont   = document.getElementById('projectContainer');
+    const selProj    = document.getElementById('txProjectSelect');
+    const descInput  = document.getElementById('txDescInput');
+    const attachList = document.getElementById('txAttachments');
 
-    // Preserve original options
-    const origCats  = Array.from(selCat.options).map(o=>({
-      value:o.value,
-      type:o.getAttribute('data-type'),
-      proj:o.getAttribute('data-project')==='1'
-    }));
-    const origProjs = Array.from(selProj.options);
+    const chkInit    = document.getElementById('initialPaymentChk');
+    const initCont   = document.getElementById('initialPaymentContainer');
+    const initAmt    = document.getElementById('initialPaymentAmt');
+    const selInst    = document.getElementById('installmentsSelect');
+    const infoInst   = document.getElementById('installmentInfo');
 
-    // Helpers
-    function show(el, cond){ el.classList.toggle('hidden', !cond); }
-    function showTabGen(){
-      panelGen.classList.remove('hidden');
-      panelDebt.classList.add('hidden');
-      tabGenBtn.classList.add('border-blue-600','text-blue-600');
-      tabDebtBtn.classList.remove('border-blue-600','text-blue-600');
+    const show = (el, cond=true) => el.classList.toggle('hidden', !cond);
+
+    function resetForm() {
+      form.reset();
+      fldId.value = '';
+      attachList.innerHTML = '';
+      deleteLink.classList.add('hidden');
+      activateTab('general');
     }
-    function showTabDebt(){
-      panelDebt.classList.remove('hidden');
-      panelGen.classList.add('hidden');
-      tabDebtBtn.classList.add('border-blue-600','text-blue-600');
-      tabGenBtn.classList.remove('border-blue-600','text-blue-600');
-    }
-    function filterCats(){
-      const t = selType.value;
-      selCat.innerHTML = '';
-      origCats.forEach(o=>{
-        if (!t || o.type===t) {
-          const opt=document.createElement('option');
-          opt.value=o.value; opt.textContent=o.value; // text overwritten by server-render
-          opt.dataset.type=o.type;
-          opt.dataset.project=o.proj?'1':'0';
-          selCat.appendChild(opt);
-        }
-      });
-    }
-    function updateFields(){
-      const isDebt = selType.value==='debt';
-      const catOpt = selCat.selectedOptions[0];
-      const needProj = catOpt && catOpt.dataset.project==='1' && selType.value!=='income';
-      show(projCont, needProj);
-      show(panelDebt, isDebt && tabDebtBtn.classList.contains('border-blue-600'));
-      show(tabDebtBtn, isDebt);
-      showTabGen();
-      calcInstall();
-    }
-    function calcInstall(){
-      const v= parseFloat(inpAmt.value)||0;
-      const n= parseInt(selInst.value)||0;
-      if (!chkInit.checked && v>0 && n>0) {
-        infoInst.textContent = `${n}× R$ ${(v/n).toFixed(2)}`;
+
+    function activateTab(tab) {
+      if (tab==='general') {
+        show(panelGen, true);
+        show(panelDebt, false);
+        tabGenBtn.classList.add('border-blue-600','font-medium','text-blue-600');
+        tabDebtBtn.classList.remove('border-blue-600','font-medium','text-blue-600');
       } else {
-        infoInst.textContent = '';
+        show(panelGen, false);
+        show(panelDebt, true);
+        tabDebtBtn.classList.add('border-blue-600','font-medium','text-blue-600');
+        tabGenBtn.classList.remove('border-blue-600','font-medium','text-blue-600');
       }
     }
 
-    // Open / Close Modal
-    function openNew(){
+    function updateVisibility() {
+      const type = selType.value;
+      show(dateCont, type!=='debt');
+      show(dueCont,  type==='debt');
+      show(tabDebtBtn, type==='debt');
+      if (type!=='debt') activateTab('general');
+      const opt = selCat.selectedOptions[0];
+      const needProj = opt && opt.dataset.project==='1' && type!=='income';
+      show(projCont, needProj);
+      show(initCont, chkInit.checked);
+      calculateInstallment();
+    }
+
+    function calculateInstallment() {
+      const total = parseFloat(inpAmt.value)||0;
+      const parts = parseInt(selInst.value)||0;
+      const init  = chkInit.checked ? (parseFloat(initAmt.value)||0) : 0;
+      const base  = total - init;
+      if (parts>0 && base>0) {
+        infoInst.textContent = `${parts}× R$ ${(base/parts).toFixed(2)}`;
+      } else infoInst.textContent = '';
+    }
+
+    function openNew() {
+      resetForm();
       titleEl.textContent = STR.newTransaction;
-      form.action         = PREFIX + '/store';
-      fldId.value         = '';
-      selType.value       = '';
-      inpDate.value       = new Date().toISOString().slice(0,10);
-      inpAmt.value        = '';
-      document.getElementById('txDescInput').value = '';
-      inpDue.value        = '';
-      selInst.value       = '';
-      chkInit.checked     = false;
-      attachList.innerHTML= '';
-
-      filterCats(); selCat.value='';
-      selProj.innerHTML=''; origProjs.forEach(o=>selProj.appendChild(o.cloneNode(true)));
-
-      deleteLink.classList.add('hidden');
-      updateFields();
-      show(modal,true);
-    }
-    function openEdit(tx){
-      titleEl.textContent  = STR.editTransaction;
-      form.action          = PREFIX + '/update';
-      fldId.value          = tx.id;
-      selType.value        = tx.type;
-      inpDate.value        = tx.date;
-      inpAmt.value         = tx.amount;
-      document.getElementById('txDescInput').value = tx.description||'';
-      inpDue.value         = tx.due_date||'';
-
-      attachList.innerHTML='';
-      (tx.attachments||[]).forEach(a=>{
-        const li=document.createElement('li'),
-              ael=document.createElement('a');
-        ael.href=window.BASE_URL+'/'+a.file_path;
-        ael.textContent=a.file_path.split('/').pop();
-        ael.target='_blank';
-        li.appendChild(ael);
-        attachList.appendChild(li);
-      });
-
-      filterCats(); selCat.value=tx.category_id;
-      selProj.innerHTML=''; origProjs.forEach(o=>selProj.appendChild(o.cloneNode(true)));
-      selProj.value=tx.project_id||'';
-
-      selInst.value      = tx.installments_count||'';
-      chkInit.checked    = tx.initial_payment==1;
-
-      deleteLink.href    = PREFIX+'/delete?id='+tx.id;
-      deleteLink.classList.remove('hidden');
-
-      updateFields();
-      show(modal,true);
+      form.action = PREFIX + '/store';
+      updateVisibility();
+      show(modal, true);
     }
 
-    // Event bindings
+    function openEdit(id) {
+      if (!id) return alert('ID não encontrado!');
+      fetch(`${PREFIX}/edit?id=${encodeURIComponent(id)}`)
+        .then(r=>r.ok? r.json() : Promise.reject(r))
+        .then(tx=>{
+          resetForm();
+          titleEl.textContent = STR.editTransaction;
+          form.action = PREFIX + '/update';
+
+          fldId.value     = tx.id;
+          selType.value   = tx.type;
+          inpDate.value   = tx.date;
+          inpDue.value    = tx.due_date||'';
+          inpAmt.value    = tx.amount;
+          descInput.value = tx.description||'';
+          selCat.value    = tx.category_id;
+          selProj.value   = tx.project_id||'';
+          chkInit.checked = !!tx.initial_payment;
+          initAmt.value   = tx.initial_payment_amount||'';
+          selInst.value   = tx.installments_count||'';
+
+          attachList.innerHTML = '';
+          (tx.attachments||[]).forEach(a=>{
+            const li=document.createElement('li'),
+                  ael=document.createElement('a');
+            ael.href      = `${window.BASE_URL}/${a.file_path}`;
+            ael.textContent = a.file_path.split('/').pop();
+            ael.target    = '_blank';
+            li.appendChild(ael);
+            attachList.appendChild(li);
+          });
+
+          deleteLink.href = PREFIX + '/delete?id=' + tx.id;
+          show(deleteLink, true);
+
+          updateVisibility();
+          show(modal, true);
+        })
+        .catch(err=>{
+          console.error(err);
+          alert('Não foi possível carregar detalhes.');
+        });
+    }
+
+    function closeModal() { show(modal, false); }
+
     openBtn.addEventListener('click', openNew);
-    closeBtn.addEventListener('click', ()=>show(modal,false));
-    cancelBtn.addEventListener('click', ()=>show(modal,false));
-    tabGenBtn.addEventListener('click', showTabGen);
-    tabDebtBtn.addEventListener('click', showTabDebt);
-
-    selType.addEventListener('change', updateFields);
-    selCat .addEventListener('change', updateFields);
-    selInst.addEventListener('change', calcInstall);
-    inpAmt .addEventListener('input', calcInstall);
-    chkInit.addEventListener('change', calcInstall);
-
-    document.querySelectorAll('.editBtn').forEach(btn=>{
-      btn.addEventListener('click', ()=>{
-        fetch(PREFIX+'/edit?id='+btn.dataset.id)
-          .then(r=>r.ok?r.json():Promise.reject())
-          .then(openEdit)
-          .catch(()=>alert('Não foi possível carregar detalhes.'));
-      });
-    });
-
-    // Init
-    filterCats();
-    updateFields();
-    calcInstall();
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    tabGenBtn.addEventListener('click', ()=>activateTab('general'));
+    tabDebtBtn.addEventListener('click', ()=>activateTab('debt'));
+    selType.addEventListener('change', updateVisibility);
+    selCat.addEventListener('change', updateVisibility);
+    chkInit.addEventListener('change', updateVisibility);
+    selInst.addEventListener('change', calculateInstallment);
+    initAmt.addEventListener('input', calculateInstallment);
+    inpAmt.addEventListener('input', calculateInstallment);
+    document.querySelectorAll('.tx-row').forEach(r=>
+      r.addEventListener('click', ()=>openEdit(r.getAttribute('data-tx-id')))
+    );
   });
 })();

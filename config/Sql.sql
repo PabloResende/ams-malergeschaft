@@ -1,14 +1,18 @@
+-- Garanta que o banco de dados usado seja InnoDB
+SET FOREIGN_KEY_CHECKS = 0;
+
 -- Users
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100),
   email VARCHAR(100) UNIQUE,
   password VARCHAR(255),
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Clients
-CREATE TABLE client (
+CREATE TABLE IF NOT EXISTS client (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   address VARCHAR(255),
@@ -18,10 +22,11 @@ CREATE TABLE client (
   active TINYINT(1) NOT NULL DEFAULT 1,
   loyalty_points INT NOT NULL DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Projects
-CREATE TABLE projects (
+CREATE TABLE IF NOT EXISTS projects (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   client_id INT NULL,
@@ -38,10 +43,11 @@ CREATE TABLE projects (
   FOREIGN KEY (client_id)
     REFERENCES client(id)
     ON DELETE SET NULL
-);
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Employees
-CREATE TABLE employees (
+CREATE TABLE IF NOT EXISTS employees (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   last_name VARCHAR(255) NOT NULL,
@@ -69,22 +75,24 @@ CREATE TABLE employees (
   marriage_certificate LONGBLOB,
   active TINYINT(1) DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-ALTER TABLE employees ADD INDEX idx_name (name);
-ALTER TABLE employees ADD INDEX idx_role (role);
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_name (name),
+  INDEX idx_role (role)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Inventory
-CREATE TABLE inventory (
+CREATE TABLE IF NOT EXISTS inventory (
   id INT AUTO_INCREMENT PRIMARY KEY,
   type ENUM('material','equipment','rented') NOT NULL,
   name VARCHAR(255) NOT NULL,
   quantity INT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tasks
-CREATE TABLE tasks (
+CREATE TABLE IF NOT EXISTS tasks (
   id INT AUTO_INCREMENT PRIMARY KEY,
   project_id INT NOT NULL,
   description TEXT NOT NULL,
@@ -93,10 +101,11 @@ CREATE TABLE tasks (
   FOREIGN KEY (project_id)
     REFERENCES projects(id)
     ON DELETE CASCADE
-);
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Project Resources
-CREATE TABLE project_resources (
+CREATE TABLE IF NOT EXISTS project_resources (
   id INT AUTO_INCREMENT PRIMARY KEY,
   project_id INT NOT NULL,
   resource_type ENUM('employee','inventory') NOT NULL,
@@ -106,19 +115,21 @@ CREATE TABLE project_resources (
   FOREIGN KEY (project_id)
     REFERENCES projects(id)
     ON DELETE CASCADE
-);
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Reminders
-CREATE TABLE reminders (
+CREATE TABLE IF NOT EXISTS reminders (
   id INT AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
   reminder_date DATE NOT NULL,
   color VARCHAR(20) DEFAULT '#00ff00',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Inventory Movements
-CREATE TABLE inventory_movements (
+CREATE TABLE IF NOT EXISTS inventory_movements (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_name VARCHAR(255) NOT NULL,
   datetime DATETIME NOT NULL,
@@ -128,9 +139,12 @@ CREATE TABLE inventory_movements (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (project_id)
     REFERENCES projects(id)
-);
+    ON DELETE SET NULL
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE inventory_movement_details (
+-- Inventory Movement Details
+CREATE TABLE IF NOT EXISTS inventory_movement_details (
   id INT AUTO_INCREMENT PRIMARY KEY,
   movement_id INT NOT NULL,
   item_id INT NOT NULL,
@@ -140,19 +154,22 @@ CREATE TABLE inventory_movement_details (
     ON DELETE CASCADE,
   FOREIGN KEY (item_id)
     REFERENCES inventory(id)
-);
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Payments & Invoices
-CREATE TABLE payments (
+-- Payments
+CREATE TABLE IF NOT EXISTS payments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   intent_id VARCHAR(255) NOT NULL UNIQUE,
   amount INT NOT NULL,
   currency VARCHAR(10) NOT NULL,
   status VARCHAR(50) NOT NULL,
   created_at DATETIME NOT NULL
-);
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE invoices (
+-- Invoices
+CREATE TABLE IF NOT EXISTS invoices (
   id INT AUTO_INCREMENT PRIMARY KEY,
   number VARCHAR(50),
   client_name VARCHAR(255),
@@ -161,18 +178,20 @@ CREATE TABLE invoices (
   issue_date DATE,
   due_date DATE,
   status VARCHAR(50)
-);
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Finance Categories
-CREATE TABLE finance_categories (
+CREATE TABLE IF NOT EXISTS finance_categories (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
   type ENUM('income','expense','debt') NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Financial Transactions
-CREATE TABLE financial_transactions (
+CREATE TABLE IF NOT EXISTS financial_transactions (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
   category_id INT NOT NULL,
@@ -181,12 +200,17 @@ CREATE TABLE financial_transactions (
   date DATE NOT NULL,
   description TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id)     REFERENCES users(id),
-  FOREIGN KEY (category_id) REFERENCES finance_categories(id)
-);
+  FOREIGN KEY (user_id)
+    REFERENCES users(id)
+    ON DELETE CASCADE,
+  FOREIGN KEY (category_id)
+    REFERENCES finance_categories(id)
+    ON DELETE RESTRICT
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Attachments
-CREATE TABLE transaction_attachments (
+-- Transaction Attachments
+CREATE TABLE IF NOT EXISTS transaction_attachments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   transaction_id INT NOT NULL,
   file_path VARCHAR(255) NOT NULL,
@@ -194,10 +218,11 @@ CREATE TABLE transaction_attachments (
   FOREIGN KEY (transaction_id)
     REFERENCES financial_transactions(id)
     ON DELETE CASCADE
-);
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Debts (Dívidas)
-CREATE TABLE debts (
+CREATE TABLE IF NOT EXISTS debts (
   id INT AUTO_INCREMENT PRIMARY KEY,
   client_id INT NULL,
   transaction_id INT NOT NULL,
@@ -205,10 +230,19 @@ CREATE TABLE debts (
   amount DECIMAL(12,2) NOT NULL,
   due_date DATE NOT NULL,
   installments_count INT NULL,
-  initial_payment TINYINT(1) DEFAULT 0,
-  status ENUM('open','paid','overdue') DEFAULT 'open',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (client_id)      REFERENCES client(id),
-  FOREIGN KEY (transaction_id) REFERENCES financial_transactions(id) ON DELETE CASCADE,
-  FOREIGN KEY (project_id)     REFERENCES projects(id)         ON DELETE SET NULL
-);
+  initial_payment TINYINT(1) NOT NULL DEFAULT 0,
+  status ENUM('open','paid','overdue') NOT NULL DEFAULT 'open',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (client_id)
+    REFERENCES client(id)
+    ON DELETE SET NULL,
+  FOREIGN KEY (transaction_id)
+    REFERENCES financial_transactions(id)
+    ON DELETE CASCADE,
+  FOREIGN KEY (project_id)
+    REFERENCES projects(id)
+    ON DELETE SET NULL
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET FOREIGN_KEY_CHECKS = 1;

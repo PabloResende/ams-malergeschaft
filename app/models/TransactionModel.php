@@ -5,100 +5,72 @@ require_once __DIR__ . '/../../config/Database.php';
 
 class TransactionModel
 {
-
     public static function connect(): PDO
     {
         return Database::connect();
     }
 
-  private static array $categoryMap = [
-        'funcionarios'=> 'Funcionários',
-        'clientes'=> 'Clientes',
-        'projetos'=> 'Projetos',
-        'compras_materiais'=> 'Compras de Materiais',
-        'emprestimos'=> 'Empréstimos',
-        'gastos_gerais'=> 'Gastos Gerais',
-        'parcelamento'=> 'Parcelamento',
-    ];
-
     public static function getAll(array $f = []): array
     {
         $sql = "
             SELECT
-              ft.*, 
-              d.due_date, d.installments_count, d.initial_payment, d.initial_payment_amount
+              ft.*,
+              d.due_date,
+              d.installments_count,
+              d.initial_payment,
+              d.initial_payment_amount
             FROM financial_transactions ft
-            LEFT JOIN debts d ON d.transaction_id = ft.id
+            LEFT JOIN debts d
+              ON d.transaction_id = ft.id
             WHERE ft.date BETWEEN ? AND ?
         ";
         $params = [$f['start'], $f['end']];
 
-        if (!empty($f['type'])) {
-            $sql      .= " AND ft.type = ?";
-            $params[]  = $f['type'];
-        }
-        if (!empty($f['category'])) {
-            $sql      .= " AND ft.category = ?";
-            $params[]  = $f['category'];
-        }
-        if (!empty($f['client_id'])) {
-            $sql      .= " AND ft.client_id = ?";
-            $params[]  = $f['client_id'];
-        }
-        if (!empty($f['project_id'])) {
-            $sql      .= " AND ft.project_id = ?";
-            $params[]  = $f['project_id'];
-        }
-        if (!empty($f['employee_id'])) {
-            $sql      .= " AND ft.employee_id = ?";
-            $params[]  = $f['employee_id'];
+        foreach (['type','category','client_id','project_id','employee_id'] as $field) {
+            if (!empty($f[$field])) {
+                $sql      .= " AND ft.{$field} = ?";
+                $params[]  = $f[$field];
+            }
         }
 
         $sql .= " ORDER BY ft.date DESC";
 
         $stmt = self::connect()->prepare($sql);
         $stmt->execute($params);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        foreach ($rows as &$row) {
-            $row['category_name'] = self::$categoryMap[$row['category']] ?? '';
-        }
-
-        return $rows;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public static function getSummary(string $start, string $end): array
     {
         $pdo = self::connect();
-        $in  = $pdo->prepare(
-          "SELECT COALESCE(SUM(amount),0) FROM financial_transactions
-           WHERE type='income' AND date BETWEEN ? AND ?"
-        );
-        $ex  = $pdo->prepare(
-          "SELECT COALESCE(SUM(amount),0) FROM financial_transactions
-           WHERE type='expense' AND date BETWEEN ? AND ?"
-        );
+        $in  = $pdo->prepare("
+            SELECT COALESCE(SUM(amount),0)
+            FROM financial_transactions
+            WHERE type='income'  AND date BETWEEN ? AND ?
+        ");
+        $ex  = $pdo->prepare("
+            SELECT COALESCE(SUM(amount),0)
+            FROM financial_transactions
+            WHERE type='expense' AND date BETWEEN ? AND ?
+        ");
         $in->execute([$start, $end]);
         $ex->execute([$start, $end]);
         $totIn = (float)$in->fetchColumn();
         $totEx = (float)$ex->fetchColumn();
         return [
-          'income'  => $totIn,
-          'expense' => $totEx,
-          'net'     => $totIn - $totEx
+            'income'  => $totIn,
+            'expense' => $totEx,
+            'net'     => $totIn - $totEx,
         ];
     }
 
-    public static function find(int $id)
+    public static function find(int $id): ?array
     {
         $stmt = self::connect()
             ->prepare("SELECT * FROM financial_transactions WHERE id = ?");
         $stmt->execute([$id]);
         $tx = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($tx) {
-            $tx['category_name'] = self::$categoryMap[$tx['category']] ?? '';
-        }
-        return $tx;
+        return $tx ?: null;
     }
 
     public static function getAttachments(int $txId): array
@@ -137,7 +109,7 @@ class TransactionModel
             $data['employee_id']  ?: null,
             $data['amount'],
             $data['date'],
-            $data['description']
+            $data['description'],
         ]);
         $txId = (int)$pdo->lastInsertId();
 
@@ -162,7 +134,7 @@ class TransactionModel
                 $debtData['status'],
                 $debtData['installments_count'],
                 $debtData['initial_payment'],
-                $debtData['initial_payment_amount']
+                $debtData['initial_payment_amount'],
             ]);
         }
 
@@ -189,7 +161,7 @@ class TransactionModel
             $data['amount'],
             $data['date'],
             $data['description'],
-            $id
+            $id,
         ]);
 
         foreach ($attachments as $a) {
@@ -215,7 +187,7 @@ class TransactionModel
                     $debtData['installments_count'],
                     $debtData['initial_payment'],
                     $debtData['initial_payment_amount'],
-                    $id
+                    $id,
                 ]);
             } else {
                 $pdo->prepare("
@@ -231,7 +203,7 @@ class TransactionModel
                     $debtData['status'],
                     $debtData['installments_count'],
                     $debtData['initial_payment'],
-                    $debtData['initial_payment_amount']
+                    $debtData['initial_payment_amount'],
                 ]);
             }
         } elseif ($existDebt) {

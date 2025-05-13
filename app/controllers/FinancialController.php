@@ -1,6 +1,7 @@
 <?php
 // app/controllers/FinancialController.php
 
+require_once __DIR__ . '/../../config/Database.php';
 require_once __DIR__ . '/../models/TransactionModel.php';
 require_once __DIR__ . '/../models/Project.php';
 require_once __DIR__ . '/../models/Employees.php';
@@ -8,8 +9,35 @@ require_once __DIR__ . '/../models/Clients.php';
 
 class FinancialController
 {
+    private array $langText;
+    private string $baseUrl = '/ams-malergeschaft/public';
+
+    public function __construct()
+    {
+        // 1) Inicia sessão e detecta idioma
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        $lang = $_GET['lang'] ?? $_SESSION['lang'] ?? 'pt';
+        $_SESSION['lang'] = $lang;
+
+        // 2) Monta o caminho para app/lang/{pt,en,de,fr}.php
+        $langFile = __DIR__ . '/../lang/' . $lang . '.php';
+
+        // 3) Fallback para pt se não existir
+        if (! file_exists($langFile)) {
+            $langFile = __DIR__ . '/../lang/pt.php';
+        }
+
+        // 4) Carrega o array de traduções
+        $this->langText = require $langFile;
+    }
+
     public function index()
     {
+        // Extrai as traduções para a view
+        $langText = $this->langText;
+
         $start    = $_GET['start']    ?? date('Y-m-01');
         $end      = $_GET['end']      ?? date('Y-m-d');
         $type     = $_GET['type']     ?? '';
@@ -26,27 +54,29 @@ class FinancialController
         $employees = Employee::all();
         $clients   = Client::all();
 
+        // Dropdown de categorias com nomes traduzidos
         $categories = [
-            ['value'=>'funcionarios',      'name'=>'Funcionários',        'assoc'=>'employee'],
-            ['value'=>'clientes',          'name'=>'Clientes',            'assoc'=>'client'],
-            ['value'=>'projetos',          'name'=>'Projetos',            'assoc'=>'project'],
-            ['value'=>'compras_materiais', 'name'=>'Compras de Materiais', 'assoc'=>null],
-            ['value'=>'emprestimos',       'name'=>'Empréstimos',         'assoc'=>null],
-            ['value'=>'gastos_gerais',     'name'=>'Gastos Gerais',       'assoc'=>null],
-            ['value'=>'parcelamento',      'name'=>'Parcelamento',        'assoc'=>null],
+            ['value'=>'funcionarios',      'name'=>$langText['category_funcionarios'],      'assoc'=>'employee'],
+            ['value'=>'clientes',          'name'=>$langText['category_clientes'],          'assoc'=>'client'],
+            ['value'=>'projetos',          'name'=>$langText['category_projetos'],          'assoc'=>'project'],
+            ['value'=>'compras_materiais', 'name'=>$langText['category_compras_materiais'], 'assoc'=>null],
+            ['value'=>'emprestimos',       'name'=>$langText['category_emprestimos'],       'assoc'=>null],
+            ['value'=>'gastos_gerais',     'name'=>$langText['category_gastos_gerais'],     'assoc'=>null],
+            ['value'=>'parcelamento',      'name'=>$langText['category_parcelamento'],      'assoc'=>null],
         ];
 
-        $baseUrl = '/ams-malergeschaft/public';
         require __DIR__ . '/../views/finance/index.php';
     }
 
     public function edit()
     {
+        $langText = $this->langText;
+
         $id = (int)($_GET['id'] ?? 0);
         $tx = TransactionModel::find($id);
         if (!$tx) {
             http_response_code(404);
-            echo json_encode(['error'=>'ID não encontrado']);
+            echo json_encode(['error' => $langText['error_tx_not_found']]);
             exit;
         }
         $tx['attachments']            = TransactionModel::getAttachments($id);
@@ -63,24 +93,29 @@ class FinancialController
 
     public function store()
     {
-        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+        $langText = $this->langText;
+
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
         $userId = $_SESSION['user']['id'] ?? null;
 
         $data = [
-            'user_id'                   => $userId,
-            'category'                  => $_POST['category']             ?? null,
-            'type'                      => $_POST['type']                 ?? null,
-            'client_id'                 => $_POST['client_id']            ?? null,
-            'project_id'                => $_POST['project_id']           ?? null,
-            'employee_id'               => $_POST['employee_id']          ?? null,
-            'amount'                    => $_POST['amount']               ?? null,
-            'date'                      => $_POST['date']                 ?? null,
-            'description'               => $_POST['description']          ?? '',
+            'user_id'     => $userId,
+            'category'    => $_POST['category']            ?? null,
+            'type'        => $_POST['type']                ?? null,
+            'client_id'   => $_POST['client_id']           ?? null,
+            'project_id'  => $_POST['project_id']          ?? null,
+            'employee_id' => $_POST['employee_id']         ?? null,
+            'amount'      => $_POST['amount']              ?? null,
+            'date'        => $_POST['date']                ?? null,
+            'description' => $_POST['description']         ?? '',
         ];
 
+        // Validação básica
         foreach (['category','type','amount','date'] as $f) {
             if (empty($data[$f])) {
-                die("Campo obrigatório faltando: $f");
+                die(htmlspecialchars($langText['required_field_missing'] . $f, ENT_QUOTES));
             }
         }
 
@@ -95,34 +130,39 @@ class FinancialController
                 'status'                 => 'open',
                 'project_id'             => $_POST['project_id']            ?? null,
                 'installments_count'     => $_POST['installments_count']    ?? null,
-                'initial_payment'        => isset($_POST['initial_payment'])?1:0,
+                'initial_payment'        => isset($_POST['initial_payment']) ? 1 : 0,
                 'initial_payment_amount' => $_POST['initial_payment_amount'] ?? null,
             ];
         }
 
         TransactionModel::store($data, $attachments, $debtData);
-        header('Location: ' . $_SERVER['HTTP_REFERER']);
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? $this->baseUrl . '/finance'));
+        exit;
     }
 
     public function update()
     {
-        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+        $langText = $this->langText;
+
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
         $id = (int)($_POST['id'] ?? 0);
 
         $data = [
-            'category'                  => $_POST['category']             ?? null,
-            'type'                      => $_POST['type']                 ?? null,
-            'client_id'                 => $_POST['client_id']            ?? null,
-            'project_id'                => $_POST['project_id']           ?? null,
-            'employee_id'               => $_POST['employee_id']          ?? null,
-            'amount'                    => $_POST['amount']               ?? null,
-            'date'                      => $_POST['date']                 ?? null,
-            'description'               => $_POST['description']          ?? '',
+            'category'    => $_POST['category']            ?? null,
+            'type'        => $_POST['type']                ?? null,
+            'client_id'   => $_POST['client_id']           ?? null,
+            'project_id'  => $_POST['project_id']          ?? null,
+            'employee_id' => $_POST['employee_id']         ?? null,
+            'amount'      => $_POST['amount']              ?? null,
+            'date'        => $_POST['date']                ?? null,
+            'description' => $_POST['description']         ?? '',
         ];
 
         foreach (['category','type','amount','date'] as $f) {
             if (empty($data[$f])) {
-                die("Campo obrigatório faltando: $f");
+                die(htmlspecialchars($langText['required_field_missing'] . $f, ENT_QUOTES));
             }
         }
 
@@ -137,13 +177,14 @@ class FinancialController
                 'status'                 => $_POST['status']                ?? 'open',
                 'project_id'             => $_POST['project_id']            ?? null,
                 'installments_count'     => $_POST['installments_count']    ?? null,
-                'initial_payment'        => isset($_POST['initial_payment'])?1:0,
+                'initial_payment'        => isset($_POST['initial_payment']) ? 1 : 0,
                 'initial_payment_amount' => $_POST['initial_payment_amount'] ?? null,
             ];
         }
 
         TransactionModel::update($id, $data, $attachments, $debtData);
-        header('Location: ' . $_SERVER['HTTP_REFERER']);
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? $this->baseUrl . '/finance'));
+        exit;
     }
 
     public function delete()
@@ -151,17 +192,24 @@ class FinancialController
         if (isset($_GET['id'])) {
             TransactionModel::delete((int)$_GET['id']);
         }
-        header('Location: ' . $_SERVER['HTTP_REFERER']);
+        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? $this->baseUrl . '/finance'));
+        exit;
     }
 
     private function processAttachments($files): array
     {
         $res = [];
-        if (!$files || !isset($files['tmp_name'])) return $res;
+        if (!$files || !isset($files['tmp_name'])) {
+            return $res;
+        }
         $dir = __DIR__ . '/../../public/uploads/finance/';
-        if (!is_dir($dir)) mkdir($dir, 0755, true);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
         foreach ($files['tmp_name'] as $i => $tmp) {
-            if ($files['error'][$i] !== UPLOAD_ERR_OK) continue;
+            if ($files['error'][$i] !== UPLOAD_ERR_OK) {
+                continue;
+            }
             $ext  = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
             $name = time() . '_' . uniqid() . '.' . $ext;
             move_uploaded_file($tmp, $dir . $name);

@@ -1,11 +1,11 @@
 <?php
 // lang/de.php
 return [
-    // Auth
+    // Anmeldung & Authentifizierung
     'login'                 => 'Anmelden',
     'register'              => 'Registrieren',
     'logout_button'         => 'Abmelden',
-    'dont_register'         => 'Kein Konto? Registrieren',
+    'dont_register'         => 'Noch keinen Account? Registrieren',
     'confirm_password'      => 'Passwort bestätigen',
     'password'              => 'Passwort',
 
@@ -19,13 +19,13 @@ return [
     'inventory'             => 'Inventar',
     'analytics'             => 'Analyse',
 
-    // Header
-    'Malergeschäft'         => 'Farbenläden',
+    // Kopfzeile
+    'Malergeschäft'         => 'Malerbetrieb',
     'new_project'           => 'Neues Projekt +',
 
-    // Profile
+    // Profil
     'profile_picture'       => 'Profilbild',
-    'name'                  => 'Name',
+    'name'                  => 'Vorname',
     'last_name'             => 'Nachname',
     'email'                 => 'E-Mail',
     'address'               => 'Adresse',
@@ -41,9 +41,9 @@ return [
     // Dashboard
     'welcome'               => 'Willkommen',
     'view_profile'          => 'Profil ansehen',
-    'projects_overview'     => 'Projekteübersicht',
+    'projects_overview'     => 'Projektübersicht',
     'track_and_manage'      => 'Verwalten Sie Ihre Projekte effizient',
-    'vs_last_month'         => 'vs. letzten Monat',
+    'vs_last_month'         => 'vs. letzter Monat',
     'active_projects'       => 'Aktive Projekte',
     'completed_projects'    => 'Abgeschlossene Projekte',
     'total_hours'           => 'Gesamtstunden',
@@ -53,15 +53,15 @@ return [
     'clients'               => 'Kunden',
     'active_clients'        => 'Aktive Kunden',
     'tasks'                 => 'Aufgaben',
-    'inventory_items'       => 'Lagerartikel',
+    'inventory_items'       => 'Inventarposten',
     'pending_tasks'         => 'Ausstehende Aufgaben',
-    'upcoming_reminders'    => 'Kommende Erinnerungen',
+    'upcoming_reminders'    => 'Bevorstehende Erinnerungen',
     'no_projects_available' => 'Keine Projekte verfügbar.',
 
-    // Projects
+    // Projekte
     'projects_list'         => 'Projektliste',
     'add_project'           => 'Projekt hinzufügen',
-    'create_project'        => 'Projekt erstellen',
+    'create_project'        => 'Neues Projekt erstellen',
     'edit_project'          => 'Projekt bearbeiten',
     'delete_project'        => 'Projekt löschen',
     'project_name'          => 'Projektname',
@@ -81,10 +81,8 @@ return [
     'projects_created'      => 'Erstellte Projekte pro Monat',
     'projects_completed'    => 'Abgeschlossene Projekte pro Monat',
     'created_vs_completed'  => 'Erstellt vs Abgeschlossen',
-    'project_status'        => 'Projektstatus',
-    'no_projects_available' => 'Keine Projekte verfügbar.',
 
-    // Employees
+    // Mitarbeiter
     'employees_list'        => 'Mitarbeiterliste',
     'add_employee'          => 'Mitarbeiter hinzufügen',
     'create_employee'       => 'Mitarbeiter erstellen',
@@ -94,56 +92,52 @@ return [
     'employee_email'        => 'E-Mail',
     'role'                  => 'Rolle',
     'start_date'            => 'Startdatum',
-    'time_in_company'       => 'Unternehmenszugehörigkeit',
+    'time_in_company'       => 'Betriebszugehörigkeit',
     'no_employees_available'=> 'Keine Mitarbeiter verfügbar.',
 
-    // Calendar
+    // Kalender
     'add_event'             => 'Ereignis hinzufügen',
     'event_name'            => 'Ereignisname',
     'event_date'            => 'Ereignisdatum',
     'event_description'     => 'Ereignisbeschreibung',
     'no_events'             => 'Keine Ereignisse gefunden.',
 
-    // Clients
+    // Kunden
     'clients_list'          => 'Kundenliste',
     'no_clients_available'  => 'Keine Kunden verfügbar.',
-    'create_client'         => 'Kunden erstellen',
-    'edit_client'           => 'Kunden bearbeiten',
-    'delete_client'         => 'Kunden löschen',
+    'create_client'         => 'Kunde erstellen',
+    'edit_client'           => 'Kunde bearbeiten',
+    'delete_client'         => 'Kunde löschen',
     'client_details'        => 'Kundendetails',
     'details'               => 'Details',
     'transactions'          => 'Transaktionen',
-    'client_transactions'   => 'Kunden-Transaktionen',
+    'client_transactions'   => 'Kundentransaktionen',
     'confirm_delete'        => 'Sind Sie sicher, dass Sie diesen Eintrag löschen möchten?',
 
-    // Inventory
-    'manage_inventory'      => 'Verwalten Sie Ihren Lagerbestand',
-    'stock_control'         => 'Bestandskontrolle',
-    'stock_history'         => 'Bestandsverlauf',
+    // Inventar
+    'manage_inventory'      => 'Verwalten Sie Ihre Bestände',
+    'stock_control'         => 'Lagerverwaltung',
+    'stock_history'         => 'Lagerhistorie',
     'filter_by'             => 'Filtern nach',
     'material'              => 'Material',
     'equipment'             => 'Ausrüstung',
-    'rented'                => 'Gemietet',
+    'rented'                => 'Vermietet',
     'quantity'              => 'Menge',
-    'no_inventory'          => 'Kein Inventar vorhanden.',
+    'no_inventory'          => 'Keine Lagerartikel.',
     'select'                => '-- Auswählen --',
     'custom_reason'         => 'Eigener Grund',
-    'add_inventory_item'    => 'Bestandselement hinzufügen',
-    'projects'              => 'Projekte',
-    'delete'                => 'Löschen',
-    'add'                   => 'Hinzufügen',
+    'add_inventory_item'    => 'Artikel hinzufügen',
     'others'                => 'Andere',
 
-    // Docs & Export
-    'export_excel'          => 'Excel exportieren',
-    'export_pdf'            => 'PDF exportieren',
+    // Export & Dokumente
+    'export_excel'          => 'Als Excel exportieren',
+    'export_pdf'            => 'Als PDF exportieren',
     'documents'             => 'Dokumente',
 
-    // Forms & placeholders
+    // Formulare & Platzhalter
     'add'                   => 'Hinzufügen',
     'edit'                  => 'Bearbeiten',
     'delete'                => 'Löschen',
-    'filter_by_status'      => 'Nach Status filtern:',
     'send_email'            => 'Per E-Mail senden',
     'task_placeholder'      => 'Aufgabe beschreiben…',
     'month'                 => 'Monat',
@@ -151,37 +145,52 @@ return [
     'months'                => 'Monate',
     'years'                 => 'Jahre',
     'cancel'                => 'Abbrechen',
-    'submit'                => 'Absenden',
+    'submit'                => 'Senden',
 
-    // Finance
+    // Finanzen
     'finance'               => 'Finanzen',
     'new_transaction'       => 'Neue Transaktion',
     'edit_transaction'      => 'Transaktion bearbeiten',
     'save'                  => 'Speichern',
     'save_changes'          => 'Änderungen speichern',
-    'total_income'          => 'Gesamte Einnahmen',
+    'confirm_delete'        => 'Löschung bestätigen',
+    'total_income'          => 'Gesamteinnahmen',
     'total_expense'         => 'Gesamtausgaben',
-    'net_balance'           => 'Nettobilanz',
+    'net_balance'           => 'Saldo',
     'all_types'             => 'Alle Typen',
     'income'                => 'Einnahme',
     'expense'               => 'Ausgabe',
     'debt'                  => 'Schuld',
     'all_categories'        => 'Alle Kategorien',
     'category'              => 'Kategorie',
-    'associate'             => 'Zugeordnet',
-    'filter'                => 'Filtern',
+    'associate'             => 'Zugeordnet an',
     'date'                  => 'Datum',
     'type'                  => 'Typ',
     'amount'                => 'Betrag',
     'no_transactions'       => 'Keine Transaktionen.',
+    'general'               => 'Allgemein',
+    'debt_tab'              => 'Ratenzahlung',
+    'select_category'       => 'Kategorie wählen',
+    'select_client'         => 'Kunde wählen',
+    'select_project'        => 'Projekt wählen',
+    'select_employee'       => 'Mitarbeiter wählen',
+    'transaction_date'      => 'Transaktionsdatum',
+    'attachments'           => 'Anhänge',
+    'due_date'              => 'Fälligkeitsdatum',
+    'initial_payment'       => 'Anzahlung',
+    'initial_payment_amount'=> 'Anzahlungsbetrag',
+    'installments_count'    => 'Anzahl Raten',
+    'required_field_missing'=> 'Pflichtfeld fehlt: ',
+    'error_tx_not_found'    => 'Transaktion nicht gefunden',
+    'errorFetch'            => 'Fehler beim Laden',
 
-    // Analytics
-    'analytics'             => 'Analyse-Dashboard',
-    'all_quarters'          => 'Alle Quartale',
-    'all_semesters'         => 'Alle Semester',
-    'filter'                => 'Filtern',
-    'projects_created'      => 'Erstellte Projekte pro Monat',
-    'projects_completed'    => 'Abgeschlossene Projekte pro Monat',
-    'created_vs_completed'  => 'Erstellt vs Abgeschlossen',
-    'project_status'        => 'Projektstatus',
+    // Übersetzbare Kategorien
+    'category_funcionarios'      => 'Mitarbeiter',
+    'category_clientes'          => 'Kunden',
+    'category_projetos'          => 'Projekte',
+    'category_compras_materiais' => 'Materialkäufe',
+    'category_emprestimos'       => 'Darlehen',
+    'category_gastos_gerais'     => 'Allgemeine Ausgaben',
+    'category_parcelamento'      => 'Ratenzahlung',
+    'description' => 'Beschreibung',
 ];

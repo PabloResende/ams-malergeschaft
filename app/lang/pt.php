@@ -1,9 +1,7 @@
 <?php
 // lang/pt.php
 return [
-    // ---------------------------
     // Login & Autenticação
-    // ---------------------------
     'login'                 => 'Entrar',
     'register'              => 'Registrar',
     'logout_button'         => 'Sair',
@@ -11,9 +9,7 @@ return [
     'confirm_password'      => 'Confirmar Senha',
     'password'              => 'Senha',
 
-    // ---------------------------
     // Navegação
-    // ---------------------------
     'profile'               => 'Perfil',
     'dashboard'             => 'Painel de Controle',
     'projects'              => 'Projetos',
@@ -23,15 +19,11 @@ return [
     'inventory'             => 'Estoque',
     'analytics'             => 'Análise',
 
-    // ---------------------------
     // Cabeçalho
-    // ---------------------------
     'Malergeschäft'         => 'Lojas de Pintura',
     'new_project'           => 'Novo Projeto +',
 
-    // ---------------------------
     // Perfil
-    // ---------------------------
     'profile_picture'       => 'Foto de Perfil',
     'name'                  => 'Nome',
     'last_name'             => 'Sobrenome',
@@ -46,9 +38,7 @@ return [
     'save_changes'          => 'Salvar Alterações',
     'update_profile'        => 'Atualizar Perfil',
 
-    // ---------------------------
     // Dashboard
-    // ---------------------------
     'welcome'               => 'Bem-vindo',
     'view_profile'          => 'Ver Perfil',
     'projects_overview'     => 'Visão Geral de Projetos',
@@ -68,9 +58,7 @@ return [
     'upcoming_reminders'    => 'Lembretes Pendentes',
     'no_projects_available' => 'Nenhum projeto disponível.',
 
-    // ---------------------------
     // Projetos
-    // ---------------------------
     'projects_list'         => 'Lista de Projetos',
     'add_project'           => 'Adicionar Projeto',
     'create_project'        => 'Criar Novo Projeto',
@@ -93,12 +81,8 @@ return [
     'projects_created'      => 'Projetos Criados por Mês',
     'projects_completed'    => 'Projetos Concluídos por Mês',
     'created_vs_completed'  => 'Criados vs Concluídos',
-    'project_status'        => 'Status do Projeto',
-    'no_projects_available' => 'Nenhum projeto disponível.',
 
-    // ---------------------------
     // Funcionários
-    // ---------------------------
     'employees_list'        => 'Lista de Funcionários',
     'add_employee'          => 'Adicionar Funcionário',
     'create_employee'       => 'Criar Funcionário',
@@ -111,18 +95,14 @@ return [
     'time_in_company'       => 'Tempo na Empresa',
     'no_employees_available'=> 'Nenhum funcionário disponível.',
 
-    // ---------------------------
     // Calendário
-    // ---------------------------
     'add_event'             => 'Adicionar Evento',
     'event_name'            => 'Nome do Evento',
     'event_date'            => 'Data do Evento',
     'event_description'     => 'Descrição do Evento',
     'no_events'             => 'Nenhum evento encontrado.',
 
-    // ---------------------------
     // Clientes
-    // ---------------------------
     'clients_list'          => 'Lista de Clientes',
     'no_clients_available'  => 'Nenhum cliente disponível.',
     'create_client'         => 'Criar Cliente',
@@ -134,9 +114,7 @@ return [
     'client_transactions'   => 'Transações do Cliente',
     'confirm_delete'        => 'Tem certeza que deseja excluir este registro?',
 
-    // ---------------------------
     // Inventário
-    // ---------------------------
     'manage_inventory'      => 'Gerencie seus itens de estoque',
     'stock_control'         => 'Controle de Estoque',
     'stock_history'         => 'Histórico de Estoque',
@@ -149,25 +127,17 @@ return [
     'select'                => '-- Selecione --',
     'custom_reason'         => 'Razão personalizada',
     'add_inventory_item'    => 'Adicionar Item ao Estoque',
-    'projects'              => 'Projetos',
-    'delete'                => 'Excluir',
-    'add'                   => 'Adicionar',
     'others'                => 'Outros',
 
-    // ---------------------------
     // Export & Documentos
-    // ---------------------------
     'export_excel'          => 'Exportar Excel',
     'export_pdf'            => 'Exportar PDF',
     'documents'             => 'Documentos',
 
-    // ---------------------------
     // Formulários & Placeholders
-    // ---------------------------
     'add'                   => 'Adicionar',
     'edit'                  => 'Editar',
     'delete'                => 'Excluir',
-    'filter_by_status'      => 'Filtrar por status:',
     'send_email'            => 'Enviar por E-mail',
     'task_placeholder'      => 'Descreva a tarefa…',
     'month'                 => 'Mês',
@@ -177,14 +147,13 @@ return [
     'cancel'                => 'Cancelar',
     'submit'                => 'Enviar',
 
-    // ---------------------------
     // Financeiro
-    // ---------------------------
     'finance'               => 'Financeiro',
     'new_transaction'       => 'Nova Transação',
     'edit_transaction'      => 'Editar Transação',
     'save'                  => 'Salvar',
     'save_changes'          => 'Salvar Alterações',
+    'confirm_delete'        => 'Confirmar Exclusão',
     'total_income'          => 'Total Entradas',
     'total_expense'         => 'Total Saídas',
     'net_balance'           => 'Saldo Líquido',
@@ -195,9 +164,33 @@ return [
     'all_categories'        => 'Todas Categorias',
     'category'              => 'Categoria',
     'associate'             => 'Associado',
-    'filter'                => 'Filtrar',
     'date'                  => 'Data',
     'type'                  => 'Tipo',
     'amount'                => 'Valor',
     'no_transactions'       => 'Nenhuma transação.',
+    'general'               => 'Geral',
+    'debt_tab'              => 'Parcelamento',
+    'select_category'       => 'Selecione categoria',
+    'select_client'         => 'Selecione cliente',
+    'select_project'        => 'Selecione projeto',
+    'select_employee'       => 'Selecione funcionário',
+    'transaction_date'      => 'Data da Transação',
+    'attachments'           => 'Anexos',
+    'due_date'              => 'Data de Vencimento',
+    'initial_payment'       => 'Entrada',
+    'initial_payment_amount'=> 'Valor da Entrada',
+    'installments_count'    => 'Número de Parcelas',
+    'required_field_missing'=> 'Campo obrigatório faltando: ',
+    'error_tx_not_found'    => 'Transação não encontrada',
+    'errorFetch'            => 'Erro ao carregar',
+
+    // Categorias traduzíveis
+    'category_funcionarios'      => 'Funcionários',
+    'category_clientes'          => 'Clientes',
+    'category_projetos'          => 'Projetos',
+    'category_compras_materiais' => 'Compras de Materiais',
+    'category_emprestimos'       => 'Empréstimos',
+    'category_gastos_gerais'     => 'Gastos Gerais',
+    'category_parcelamento'      => 'Parcelamento',
+    'description' => 'Descrição',
 ];

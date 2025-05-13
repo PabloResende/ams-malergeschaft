@@ -168,6 +168,17 @@ class ProjectModel
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public static function getActiveProjects() {
+        $pdo = Database::connect();
+        $stmt = $pdo->query("
+                    SELECT id, name
+                    FROM projects
+                    WHERE status = 'in_progress'
+                    ORDER BY name
+                ");
+                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public static function getEmployees(int $projectId): array
     {
         $pdo = Database::connect();

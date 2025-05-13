@@ -1,19 +1,15 @@
 <?php
 // lang/fr.php
 return [
-    // ---------------------------
-    // Connexion & Authentification
-    // ---------------------------
-    'login'                 => 'Se connecter',
-    'register'              => 'S’inscrire',
-    'logout_button'         => 'Se déconnecter',
-    'dont_register'         => 'Pas de compte ? Inscrivez-vous',
+    // Auth
+    'login'                 => 'Connexion',
+    'register'              => 'Inscription',
+    'logout_button'         => 'Déconnexion',
+    'dont_register'         => "Pas de compte ? Inscrivez-vous",
     'confirm_password'      => 'Confirmer le mot de passe',
     'password'              => 'Mot de passe',
 
-    // ---------------------------
     // Navigation
-    // ---------------------------
     'profile'               => 'Profil',
     'dashboard'             => 'Tableau de bord',
     'projects'              => 'Projets',
@@ -23,39 +19,33 @@ return [
     'inventory'             => 'Inventaire',
     'analytics'             => 'Analytique',
 
-    // ---------------------------
-    // En-tête
-    // ---------------------------
+    // Header
     'Malergeschäft'         => 'Magasins de peinture',
     'new_project'           => 'Nouveau projet +',
 
-    // ---------------------------
-    // Profil
-    // ---------------------------
+    // Profile
     'profile_picture'       => 'Photo de profil',
-    'name'                  => 'Prénom',
-    'last_name'             => 'Nom',
+    'name'                  => 'Nom',
+    'last_name'             => 'Prénom',
     'email'                 => 'E-mail',
     'address'               => 'Adresse',
     'nationality'           => 'Nationalité',
-    'marital_status'        => 'Situation familiale',
+    'marital_status'        => 'État civil',
     'sex'                   => 'Sexe',
     'birth_date'            => 'Date de naissance',
     'phone'                 => 'Téléphone',
     'about_me'              => 'À propos de moi',
-    'save_changes'          => 'Enregistrer',
+    'save_changes'          => 'Enregistrer les modifications',
     'update_profile'        => 'Mettre à jour le profil',
 
-    // ---------------------------
-    // Tableau de bord
-    // ---------------------------
-    'welcome_dashboard'     => 'Bienvenue sur votre tableau de bord',
+    // Dashboard
+    'welcome'               => 'Bienvenue',
     'view_profile'          => 'Voir le profil',
-    'projects_overview'     => 'Aperçu des projets',
-    'track_and_manage'      => 'Gérez et suivez vos projets de rénovation efficacement',
+    'projects_overview'     => 'Vue d’ensemble des projets',
+    'track_and_manage'      => 'Suivez et gérez efficacement vos projets',
     'vs_last_month'         => 'vs le mois dernier',
     'active_projects'       => 'Projets actifs',
-    'completed_projects'    => 'Projets terminés par mois',
+    'completed_projects'    => 'Projets terminés',
     'total_hours'           => 'Heures totales',
     'team_members'          => 'Membres de l’équipe',
     'notifications'         => 'Notifications',
@@ -63,21 +53,24 @@ return [
     'clients'               => 'Clients',
     'active_clients'        => 'Clients actifs',
     'tasks'                 => 'Tâches',
+    'inventory_items'       => 'Articles en stock',
+    'pending_tasks'         => 'Tâches en attente',
+    'upcoming_reminders'    => 'Rappels à venir',
+    'no_projects_available' => 'Aucun projet disponible.',
 
-    // ---------------------------
-    // Projets
-    // ---------------------------
+    // Projects
     'projects_list'         => 'Liste des projets',
     'add_project'           => 'Ajouter un projet',
     'create_project'        => 'Créer un projet',
     'edit_project'          => 'Modifier le projet',
     'delete_project'        => 'Supprimer le projet',
     'project_name'          => 'Nom du projet',
-    'client_name'           => 'Nom du client',
+    'client_name'           => 'Client',
     'project_description'   => 'Description du projet',
-    'project_status'        => 'Statut',
+    'project_status'        => 'Statut du projet',
     'project_not_found'     => 'Projet introuvable.',
     'filter_by_status'      => 'Filtrer par statut :',
+    'filter'                => 'Filtrer',
     'status'                => 'Statut',
     'active'                => 'Actif',
     'pending'               => 'En attente',
@@ -86,10 +79,12 @@ return [
     'actions'               => 'Actions',
     'back'                  => 'Retour',
     'projects_created'      => 'Projets créés par mois',
+    'projects_completed'    => 'Projets terminés par mois',
+    'created_vs_completed'  => 'Créés vs Terminés',
+    'project_status'        => 'Statut du projet',
+    'no_projects_available' => 'Aucun projet disponible.',
 
-    // ---------------------------
-    // Employés
-    // ---------------------------
+    // Employees
     'employees_list'        => 'Liste des employés',
     'add_employee'          => 'Ajouter un employé',
     'create_employee'       => 'Créer un employé',
@@ -99,104 +94,94 @@ return [
     'employee_email'        => 'E-mail',
     'role'                  => 'Rôle',
     'start_date'            => 'Date de début',
-    'time_in_company'       => 'Ancienneté',
+    'time_in_company'       => 'Temps en entreprise',
     'no_employees_available'=> 'Aucun employé disponible.',
 
-    // ---------------------------
-    // Calendrier
-    // ---------------------------
+    // Calendar
     'add_event'             => 'Ajouter un événement',
-    'event_name'            => 'Nom de l’événement',
-    'event_date'            => 'Date de l’événement',
-    'event_description'     => 'Description',
+    'event_name'            => "Nom de l'événement",
+    'event_date'            => "Date de l'événement",
+    'event_description'     => "Description de l'événement",
     'no_events'             => 'Aucun événement trouvé.',
 
-    // ---------------------------
     // Clients
-    // ---------------------------
+    'clients_list'          => 'Liste des clients',
+    'no_clients_available'  => 'Aucun client disponible.',
     'create_client'         => 'Créer un client',
     'edit_client'           => 'Modifier le client',
     'delete_client'         => 'Supprimer le client',
-    'client_name'           => 'Nom du client',
-    'client_email'          => 'E-mail du client',
-    'no_clients_available'  => 'Aucun client disponible.',
+    'client_details'        => 'Détails du client',
+    'details'               => 'Détails',
+    'transactions'          => 'Transactions',
+    'client_transactions'   => 'Transactions du client',
+    'confirm_delete'        => 'Êtes-vous sûr de vouloir supprimer cet enregistrement ?',
 
-    // ---------------------------
-    // Inventaire
-    // ---------------------------
-    'manage_inventory'      => 'Gérer l’inventaire',
-    'add_inventory_item'    => 'Ajouter un article',
+    // Inventory
+    'manage_inventory'      => 'Gérez vos articles de stock',
+    'stock_control'         => 'Contrôle des stocks',
+    'stock_history'         => 'Historique des stocks',
     'filter_by'             => 'Filtrer par',
-    'material'              => 'Matériau',
+    'material'              => 'Matériel',
     'equipment'             => 'Équipement',
     'rented'                => 'Loué',
     'quantity'              => 'Quantité',
-    'no_inventory'          => 'Aucun article trouvé.',
-    'stock_control'         => 'Contrôle de Stock',
-    'stock_history'         => 'Historique de Stock',
+    'no_inventory'          => 'Aucun article en stock.',
     'select'                => '-- Sélectionner --',
-    'cancel'                => 'Annuler',
-    'save'                  => 'Enregistrer',
-    'submit'                => 'Envoyer',
-    'welcome'               => 'Bienvenue',
-    'upcoming_reminders'    => 'Rappels à venir',
-    'all_quarters'          => 'Tous les Trimestres',
-    'all_semesters'         => 'Tous les Semestres',
-    'other'                 => 'Autres',
+    'custom_reason'         => 'Raison personnalisée',
+    'add_inventory_item'    => 'Ajouter un article',
+    'projects'              => 'Projets',
+    'delete'                => 'Supprimer',
+    'add'                   => 'Ajouter',
+    'others'                => 'Autres',
 
-    // ---------------------------
-    // Export & Documents
-    // ---------------------------
+    // Docs & Export
     'export_excel'          => 'Exporter Excel',
     'export_pdf'            => 'Exporter PDF',
     'documents'             => 'Documents',
 
-    // ---------------------------
-    // Formulaires & Placeholders
-    // ---------------------------
+    // Forms & placeholders
     'add'                   => 'Ajouter',
     'edit'                  => 'Modifier',
     'delete'                => 'Supprimer',
     'filter_by_status'      => 'Filtrer par statut :',
-    'send_email'            => 'Envoyer par e-mail',
+    'send_email'            => 'Envoyer par email',
     'task_placeholder'      => 'Décrivez la tâche…',
     'month'                 => 'Mois',
     'year'                  => 'Année',
     'months'                => 'Mois',
     'years'                 => 'Années',
+    'cancel'                => 'Annuler',
+    'submit'                => 'Envoyer',
 
-    // ---------------------------
-    // Finances
-    // ---------------------------
-    'finance'             => 'Finances',
-    'new_transaction'     => 'Nouvelle transaction',
-    'edit_transaction'    => 'Modifier la transaction',
-    'start_date'          => 'Date de début',
-    'end_date'            => 'Date de fin',
-    'all_types'           => 'Tous types',
-    'all_categories'      => 'Toutes catégories',
-    'filter'              => 'Filtrer',
-    'report'              => 'Rapport',
-    'date'                => 'Date',
-    'type'                => 'Type',
-    'category'            => 'Catégorie',
-    'amount'              => 'Montant',
-    'actions'             => 'Actions',
-    'edit'                => 'Modifier',
-    'delete'              => 'Supprimer',
-    'confirm_delete'      => 'Supprimer cette transaction ?',
-    'no_transactions'     => 'Aucune transaction.',
-    'description'         => 'Description',
-    'attachments'         => 'Pièces jointes',
-    'current_attachments' => 'Pièces jointes actuelles :',
-    'due_date'            => 'Date d’échéance',
-    'save'                => 'Enregistrer',
-    'financial_report'    => 'Rapport financier',
-    'period'              => 'Période',
-    'total_income'        => 'Total des revenus',
-    'total_expense'       => 'Total des dépenses',
-    'net_balance'         => 'Solde net',
-    'income'              => 'Revenu',
-    'expense'             => 'Dépense',
-    'debt'                => 'Dette',
+    // Finance
+    'finance'               => 'Finances',
+    'new_transaction'       => 'Nouvelle transaction',
+    'edit_transaction'      => 'Modifier la transaction',
+    'save'                  => 'Enregistrer',
+    'save_changes'          => 'Enregistrer les modifications',
+    'total_income'          => 'Revenu total',
+    'total_expense'         => 'Dépense totale',
+    'net_balance'           => 'Solde net',
+    'all_types'             => 'Tous types',
+    'income'                => 'Revenu',
+    'expense'               => 'Dépense',
+    'debt'                  => 'Dette',
+    'all_categories'        => 'Toutes catégories',
+    'category'              => 'Catégorie',
+    'associate'             => 'Associé',
+    'filter'                => 'Filtrer',
+    'date'                  => 'Date',
+    'type'                  => 'Type',
+    'amount'                => 'Montant',
+    'no_transactions'       => 'Aucune transaction.',
+
+    // Analytics
+    'analytics'             => 'Tableau de bord analytique',
+    'all_quarters'          => 'Tous les trimestres',
+    'all_semesters'         => 'Tous les semestres',
+    'filter'                => 'Filtrer',
+    'projects_created'      => 'Projets créés par mois',
+    'projects_completed'    => 'Projets terminés par mois',
+    'created_vs_completed'  => 'Créés vs Terminés',
+    'project_status'        => 'Statut du projet',
 ];

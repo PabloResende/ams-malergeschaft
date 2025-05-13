@@ -1,19 +1,15 @@
 <?php
 // lang/en.php
 return [
-    // ---------------------------
-    // Login & Authentication
-    // ---------------------------
+    // Login & Auth
     'login'                 => 'Login',
     'register'              => 'Register',
     'logout_button'         => 'Logout',
-    'dont_register'         => 'Don’t have an account? Register',
+    'dont_register'         => "Don't have an account? Register",
     'confirm_password'      => 'Confirm Password',
     'password'              => 'Password',
 
-    // ---------------------------
     // Navigation
-    // ---------------------------
     'profile'               => 'Profile',
     'dashboard'             => 'Dashboard',
     'projects'              => 'Projects',
@@ -23,19 +19,15 @@ return [
     'inventory'             => 'Inventory',
     'analytics'             => 'Analytics',
 
-    // ---------------------------
     // Header
-    // ---------------------------
-    'Malergeschäft'         => 'Painting Shops',
+    'Malergeschäft'         => 'Painting Stores',
     'new_project'           => 'New Project +',
 
-    // ---------------------------
-    // Profile Page
-    // ---------------------------
+    // Profile
     'profile_picture'       => 'Profile Picture',
     'name'                  => 'Name',
     'last_name'             => 'Last Name',
-    'email'                 => 'Email',
+    'email'                 => 'E-mail',
     'address'               => 'Address',
     'nationality'           => 'Nationality',
     'marital_status'        => 'Marital Status',
@@ -46,16 +38,14 @@ return [
     'save_changes'          => 'Save Changes',
     'update_profile'        => 'Update Profile',
 
-    // ---------------------------
     // Dashboard
-    // ---------------------------
-    'welcome_dashboard'     => 'Welcome to your Dashboard',
+    'welcome'               => 'Welcome',
     'view_profile'          => 'View Profile',
     'projects_overview'     => 'Projects Overview',
-    'track_and_manage'      => 'Track and manage your renovation projects efficiently',
+    'track_and_manage'      => 'Track and manage your projects efficiently',
     'vs_last_month'         => 'vs last month',
     'active_projects'       => 'Active Projects',
-    'completed_projects'    => 'Projects Completed by Month',
+    'completed_projects'    => 'Completed Projects',
     'total_hours'           => 'Total Hours',
     'team_members'          => 'Team Members',
     'notifications'         => 'Notifications',
@@ -63,21 +53,24 @@ return [
     'clients'               => 'Clients',
     'active_clients'        => 'Active Clients',
     'tasks'                 => 'Tasks',
+    'inventory_items'       => 'Inventory Items',
+    'pending_tasks'         => 'Pending Tasks',
+    'upcoming_reminders'    => 'Upcoming Reminders',
+    'no_projects_available' => 'No projects available.',
 
-    // ---------------------------
     // Projects
-    // ---------------------------
-    'projects_list'         => 'Project List',
+    'projects_list'         => 'Projects List',
     'add_project'           => 'Add Project',
-    'create_project'        => 'Create New Project',
+    'create_project'        => 'Create Project',
     'edit_project'          => 'Edit Project',
     'delete_project'        => 'Delete Project',
     'project_name'          => 'Project Name',
-    'client_name'           => 'Client Name',
+    'client_name'           => 'Client',
     'project_description'   => 'Project Description',
-    'project_status'        => 'Status',
+    'project_status'        => 'Project Status',
     'project_not_found'     => 'Project not found.',
     'filter_by_status'      => 'Filter by status:',
+    'filter'                => 'Filter',
     'status'                => 'Status',
     'active'                => 'Active',
     'pending'               => 'Pending',
@@ -86,128 +79,109 @@ return [
     'actions'               => 'Actions',
     'back'                  => 'Back',
     'projects_created'      => 'Projects Created by Month',
+    'projects_completed'    => 'Projects Completed by Month',
+    'created_vs_completed'  => 'Created vs Completed',
+    'project_status'        => 'Project Status',
+    'no_projects_available' => 'No projects available.',
 
-    // ---------------------------
     // Employees
-    // ---------------------------
     'employees_list'        => 'Employees List',
     'add_employee'          => 'Add Employee',
     'create_employee'       => 'Create Employee',
     'edit_employee'         => 'Edit Employee',
     'delete_employee'       => 'Delete Employee',
-    'employee_name'         => 'Employee Name',
-    'employee_email'        => 'Employee Email',
+    'employee_name'         => 'Name',
+    'employee_email'        => 'E-mail',
     'role'                  => 'Role',
     'start_date'            => 'Start Date',
     'time_in_company'       => 'Time in Company',
     'no_employees_available'=> 'No employees available.',
 
-    // ---------------------------
     // Calendar
-    // ---------------------------
     'add_event'             => 'Add Event',
     'event_name'            => 'Event Name',
     'event_date'            => 'Event Date',
     'event_description'     => 'Event Description',
     'no_events'             => 'No events found.',
 
-    // ---------------------------
     // Clients
-    // ---------------------------
+    'clients_list'          => 'Clients List',
+    'no_clients_available'  => 'No clients available.',
     'create_client'         => 'Create Client',
     'edit_client'           => 'Edit Client',
     'delete_client'         => 'Delete Client',
-    'client_name'           => 'Client Name',
-    'client_email'          => 'Client Email',
-    'no_clients_available'  => 'No clients available.',
+    'client_details'        => 'Client Details',
+    'details'               => 'Details',
+    'transactions'          => 'Transactions',
+    'client_transactions'   => 'Client Transactions',
+    'confirm_delete'        => 'Are you sure you want to delete this record?',
 
-    // ---------------------------
     // Inventory
-    // ---------------------------
     'manage_inventory'      => 'Manage your inventory items',
-    'add_inventory_item'    => 'Add Inventory Item',
+    'stock_control'         => 'Stock Control',
+    'stock_history'         => 'Stock History',
     'filter_by'             => 'Filter by',
     'material'              => 'Material',
     'equipment'             => 'Equipment',
     'rented'                => 'Rented',
     'quantity'              => 'Quantity',
     'no_inventory'          => 'No inventory items found.',
-    'stock_control'         => 'Stock Control',
-    'stock_history'         => 'Stock History',
     'select'                => '-- Select --',
-    'cancel'                => 'Cancel',
-    'save'                  => 'Save',
-    'submit'                => 'Submit',
-    'welcome'               => 'Welcome',
-    'upcoming_reminders'    => 'Upcoming Reminders',
-    'all_quarters'          => 'All Quarters',
-    'all_semesters'         => 'All Semesters',
-    'other'                 => 'Other',
+    'custom_reason'         => 'Custom Reason',
+    'add_inventory_item'    => 'Add Inventory Item',
+    'projects'              => 'Projects',
+    'delete'                => 'Delete',
+    'add'                   => 'Add',
+    'others'                => 'Others',
 
-    // ---------------------------
-    // Export & Documents
-    // ---------------------------
+    // Documents & Export
     'export_excel'          => 'Export Excel',
     'export_pdf'            => 'Export PDF',
     'documents'             => 'Documents',
 
-    // ---------------------------
-    // Forms & Placeholders
-    // ---------------------------
+    // Forms & placeholders
     'add'                   => 'Add',
     'edit'                  => 'Edit',
     'delete'                => 'Delete',
     'filter_by_status'      => 'Filter by status:',
-    'send_email'            => 'Send by Email',
+    'send_email'            => 'Send by E-mail',
     'task_placeholder'      => 'Describe the task…',
     'month'                 => 'Month',
     'year'                  => 'Year',
     'months'                => 'Months',
     'years'                 => 'Years',
+    'cancel'                => 'Cancel',
+    'submit'                => 'Submit',
 
-    // ---------------------------
     // Finance
-    // ---------------------------
-    'app_title'             => 'Ams Malergeschäft',
-    'app_short'             => 'Ams',
-    'app_full'              => 'Malergeschäft',
-    'dashboard'             => 'Dashboard',
-    'projects'              => 'Projects',
-    'employees'             => 'Employees',
-    'inventory'             => 'Inventory',
-    'calendar'              => 'Calendar',
-    'clients'               => 'Clients',
-    'analytics'             => 'Analytics',
-    'new_project'           => 'New Project +',
     'finance'               => 'Finance',
     'new_transaction'       => 'New Transaction',
     'edit_transaction'      => 'Edit Transaction',
-    'start_date'            => 'Start Date',
-    'end_date'              => 'End Date',
+    'save'                  => 'Save',
+    'save_changes'          => 'Save Changes',
+    'total_income'          => 'Total Income',
+    'total_expense'         => 'Total Expense',
+    'net_balance'           => 'Net Balance',
     'all_types'             => 'All Types',
     'income'                => 'Income',
     'expense'               => 'Expense',
     'debt'                  => 'Debt',
     'all_categories'        => 'All Categories',
+    'category'              => 'Category',
+    'associate'             => 'Associated',
     'filter'                => 'Filter',
-    'report'                => 'Report',
     'date'                  => 'Date',
     'type'                  => 'Type',
-    'category'              => 'Category',
     'amount'                => 'Amount',
-    'actions'               => 'Actions',
-    'edit'                  => 'Edit',
-    'delete'                => 'Delete',
-    'confirm_delete'        => 'Are you sure you want to delete this transaction?',
     'no_transactions'       => 'No transactions.',
-    'description'           => 'Description',
-    'attachments'           => 'Attachments',
-    'current_attachments'   => 'Current Attachments:',
-    'due_date'              => 'Due Date',
-    'save'                  => 'Save',
-    'financial_report'      => 'Financial Report',
-    'period'                => 'Period',
-    'total_income'          => 'Total Income',
-    'total_expense'         => 'Total Expense',
-    'net_balance'           => 'Net Balance',
+
+    // Analytics
+    'analytics'             => 'Analytics Dashboard',
+    'all_quarters'          => 'All Quarters',
+    'all_semesters'         => 'All Semesters',
+    'filter'                => 'Filter',
+    'projects_created'      => 'Projects Created by Month',
+    'projects_completed'    => 'Projects Completed by Month',
+    'created_vs_completed'  => 'Created vs Completed',
+    'project_status'        => 'Project Status',
 ];

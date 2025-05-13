@@ -49,13 +49,13 @@ return [
     // ---------------------------
     // Dashboard
     // ---------------------------
-    'welcome_dashboard'     => 'Bem-vindo ao seu Painel',
+    'welcome'               => 'Bem-vindo',
     'view_profile'          => 'Ver Perfil',
     'projects_overview'     => 'Visão Geral de Projetos',
     'track_and_manage'      => 'Acompanhe e gerencie seus projetos de forma eficiente',
     'vs_last_month'         => 'vs mês passado',
     'active_projects'       => 'Projetos Ativos',
-    'completed_projects'    => 'Projetos Concluídos por Mês',
+    'completed_projects'    => 'Projetos Concluídos',
     'total_hours'           => 'Horas Totais',
     'team_members'          => 'Membros da Equipe',
     'notifications'         => 'Notificações',
@@ -63,6 +63,10 @@ return [
     'clients'               => 'Clientes',
     'active_clients'        => 'Clientes Ativos',
     'tasks'                 => 'Tarefas',
+    'inventory_items'       => 'Itens em Estoque',
+    'pending_tasks'         => 'Tarefas Pendentes',
+    'upcoming_reminders'    => 'Lembretes Pendentes',
+    'no_projects_available' => 'Nenhum projeto disponível.',
 
     // ---------------------------
     // Projetos
@@ -75,7 +79,7 @@ return [
     'project_name'          => 'Nome do Projeto',
     'client_name'           => 'Cliente',
     'project_description'   => 'Descrição do Projeto',
-    'project_status'        => 'Status',
+    'project_status'        => 'Status do Projeto',
     'project_not_found'     => 'Projeto não encontrado.',
     'filter_by_status'      => 'Filtrar por status:',
     'filter'                => 'Filtrar',
@@ -87,6 +91,10 @@ return [
     'actions'               => 'Ações',
     'back'                  => 'Voltar',
     'projects_created'      => 'Projetos Criados por Mês',
+    'projects_completed'    => 'Projetos Concluídos por Mês',
+    'created_vs_completed'  => 'Criados vs Concluídos',
+    'project_status'        => 'Status do Projeto',
+    'no_projects_available' => 'Nenhum projeto disponível.',
 
     // ---------------------------
     // Funcionários
@@ -115,36 +123,36 @@ return [
     // ---------------------------
     // Clientes
     // ---------------------------
+    'clients_list'          => 'Lista de Clientes',
+    'no_clients_available'  => 'Nenhum cliente disponível.',
     'create_client'         => 'Criar Cliente',
     'edit_client'           => 'Editar Cliente',
     'delete_client'         => 'Excluir Cliente',
-    'client_name'           => 'Nome do Cliente',
-    'client_email'          => 'E-mail do Cliente',
-    'no_clients_available'  => 'Nenhum cliente disponível.',
+    'client_details'        => 'Detalhes do Cliente',
+    'details'               => 'Detalhes',
+    'transactions'          => 'Transações',
+    'client_transactions'   => 'Transações do Cliente',
+    'confirm_delete'        => 'Tem certeza que deseja excluir este registro?',
 
     // ---------------------------
     // Inventário
     // ---------------------------
     'manage_inventory'      => 'Gerencie seus itens de estoque',
-    'add_inventory_item'    => 'Adicionar Item ao Estoque',
+    'stock_control'         => 'Controle de Estoque',
+    'stock_history'         => 'Histórico de Estoque',
     'filter_by'             => 'Filtrar por',
     'material'              => 'Material',
     'equipment'             => 'Equipamento',
     'rented'                => 'Alugado',
     'quantity'              => 'Quantidade',
-    'no_inventory'          => 'Nenhum item de estoque encontrado.',
-    'stock_control'         => 'Controle de Estoque',
-    'stock_history'         => 'Histórico de Estoque',
+    'no_inventory'          => 'Sem itens em estoque.',
     'select'                => '-- Selecione --',
-    'cancel'                => 'Cancelar',
-    'save'                  => 'Registrar',
-    'submit'                => 'Enviar',
-    'welcome'               => 'Bem-vindo',
-    'upcoming_reminders'    => 'Lembretes Pendentes',
-    'all_quarters'          => 'Todos os Trimestres',
-    'all_semesters'         => 'Todos os Semestres',
-    'other'                 => 'Outros',
-
+    'custom_reason'         => 'Razão personalizada',
+    'add_inventory_item'    => 'Adicionar Item ao Estoque',
+    'projects'              => 'Projetos',
+    'delete'                => 'Excluir',
+    'add'                   => 'Adicionar',
+    'others'                => 'Outros',
 
     // ---------------------------
     // Export & Documentos
@@ -166,40 +174,30 @@ return [
     'year'                  => 'Ano',
     'months'                => 'Meses',
     'years'                 => 'Anos',
+    'cancel'                => 'Cancelar',
+    'submit'                => 'Enviar',
 
     // ---------------------------
     // Financeiro
     // ---------------------------
-    'finance'             => 'Financeiro',
-    'new_transaction'     => 'Nova Transação',
-    'edit_transaction'    => 'Editar Transação',
-    'start_date'          => 'Data Início',
-    'end_date'            => 'Data Fim',
-    'all_types'           => 'Todos Tipos',
-    'all_categories'      => 'Todas Categorias',
-    'filter'              => 'Filtrar',
-    'report'              => 'Relatório',
-    'date'                => 'Data',
-    'type'                => 'Tipo',
-    'category'            => 'Categoria',
-    'amount'              => 'Valor',
-    'actions'             => 'Ações',
-    'edit'                => 'Editar',
-    'delete'              => 'Excluir',
-    'confirm_delete'      => 'Excluir esta transação?',
-    'no_transactions'     => 'Nenhuma transação.',
-    'description'         => 'Descrição',
-    'attachments'         => 'Anexar Comprovantes',
-    'current_attachments' => 'Comprovantes atuais:',
-    'due_date'            => 'Data de Vencimento',
-    'save'                => 'Salvar',
-    'financial_report'    => 'Relatório Financeiro',
-    'period'              => 'Período',
-    'total_income'        => 'Total Entradas',
-    'total_expense'       => 'Total Saídas',
-    'net_balance'         => 'Saldo Líquido',
-    'income'              => 'Entrada',
-    'expense'             => 'Saída',
-    'debt'                => 'Dívida',
+    'finance'               => 'Financeiro',
+    'new_transaction'       => 'Nova Transação',
+    'edit_transaction'      => 'Editar Transação',
+    'save'                  => 'Salvar',
+    'save_changes'          => 'Salvar Alterações',
+    'total_income'          => 'Total Entradas',
+    'total_expense'         => 'Total Saídas',
+    'net_balance'           => 'Saldo Líquido',
+    'all_types'             => 'Todos Tipos',
+    'income'                => 'Entrada',
+    'expense'               => 'Despesa',
+    'debt'                  => 'Dívida',
+    'all_categories'        => 'Todas Categorias',
+    'category'              => 'Categoria',
+    'associate'             => 'Associado',
+    'filter'                => 'Filtrar',
+    'date'                  => 'Data',
+    'type'                  => 'Tipo',
+    'amount'                => 'Valor',
+    'no_transactions'       => 'Nenhuma transação.',
 ];
-

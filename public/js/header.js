@@ -2,21 +2,18 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   const STORAGE_KEY = 'readNotifications';
-
-  // Lê do localStorage as keys já marcadas como lidas
   let readSet = new Set();
+
+  // Tenta carregar do localStorage as notificações já lidas
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (Array.isArray(saved)) readSet = new Set(saved);
-  } catch (e) {
+  } catch {
     console.warn('Não foi possível ler readNotifications do localStorage');
   }
 
   /**
    * Inicia o badge de notificações.
-   * @param {string} btnId       id do botão de sino
-   * @param {string} listId      id da lista <ul>
-   * @param {string} countId     id do badge <span>
    */
   function initBadge(btnId, listId, countId) {
     const btn   = document.getElementById(btnId);
@@ -24,23 +21,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const badge = document.getElementById(countId);
     if (!btn || !list || !badge) return;
 
-    // Coleta todas as keys atuais das notificações
     const items   = Array.from(list.querySelectorAll('.notification-item'));
-    const allKeys = items
-      .map(i => i.dataset.key)
-      .filter(k => k);
+    const allKeys = items.map(i => i.dataset.key).filter(k => k);
+    const unread  = allKeys.filter(k => !readSet.has(k));
 
-    // Calcula quantas NÃO estão em readSet
-    const unreadKeys = allKeys.filter(k => !readSet.has(k));
-
-    if (unreadKeys.length > 0) {
-      badge.textContent = unreadKeys.length;
+    if (unread.length > 0) {
+      badge.textContent = unread.length;
       badge.classList.remove('hidden');
     } else {
       badge.classList.add('hidden');
     }
 
-    // Ao clicar no sino, marca todas como lidas
     btn.addEventListener('click', e => {
       e.stopPropagation();
       list.classList.toggle('hidden');
@@ -51,16 +42,41 @@ document.addEventListener('DOMContentLoaded', () => {
       badge.textContent = '0';
       badge.classList.add('hidden');
     });
+  }
 
-    // Fecha dropdown ao clicar fora
-    document.addEventListener('click', e => {
-      if (!btn.contains(e.target) && !list.contains(e.target)) {
-        list.classList.add('hidden');
-      }
+  // Inicializa notificações desktop e mobile
+  initBadge('notificationBtn',       'notificationList',       'notificationCount');
+  initBadge('notificationBtnMobile', 'notificationListMobile', 'notificationCountMobile');
+
+  /**
+   * Toggle do menu de idiomas (desktop e mobile)
+   */
+  function initLanguageToggle(btnId, menuId) {
+    const btn  = document.getElementById(btnId);
+    const menu = document.getElementById(menuId);
+    if (!btn || !menu) return;
+
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      menu.classList.toggle('hidden');
     });
   }
 
-  // Inicializa desktop e mobile
-  initBadge('notificationBtn',       'notificationList',       'notificationCount');
-  initBadge('notificationBtnMobile', 'notificationListMobile', 'notificationCountMobile');
+  initLanguageToggle('language-button',        'language-menu');
+  initLanguageToggle('language-button-mobile', 'language-menu-mobile');
+
+  // Fecha dropdowns ao clicar fora
+  document.addEventListener('click', () => {
+    // notificações
+    const notifList        = document.getElementById('notificationList');
+    const notifListMobile  = document.getElementById('notificationListMobile');
+    if (notifList)       notifList.classList.add('hidden');
+    if (notifListMobile) notifListMobile.classList.add('hidden');
+
+    // idiomas
+    const langMenu        = document.getElementById('language-menu');
+    const langMenuMobile  = document.getElementById('language-menu-mobile');
+    if (langMenu)        langMenu.classList.add('hidden');
+    if (langMenuMobile)  langMenuMobile.classList.add('hidden');
+  });
 });

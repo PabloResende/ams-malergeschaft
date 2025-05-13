@@ -1,11 +1,11 @@
 <?php
 // lang/fr.php
 return [
-    // Connexion & Authentification
+    // Authentification
     'login'                 => 'Connexion',
     'register'              => 'Inscription',
     'logout_button'         => 'Déconnexion',
-    'dont_register'         => "Pas encore de compte ? Inscrivez-vous",
+    'dont_register'         => 'Vous n\'avez pas de compte ? Inscrivez-vous',
     'confirm_password'      => 'Confirmer le mot de passe',
     'password'              => 'Mot de passe',
 
@@ -15,18 +15,18 @@ return [
     'projects'              => 'Projets',
     'employees'             => 'Employés',
     'calendar'              => 'Calendrier',
-    'clients_list'          => 'Liste des clients',
+    'clients_list'          => 'Liste de clients',
     'inventory'             => 'Inventaire',
-    'analytics'             => 'Analytique',
+    'analytics'             => 'Analyse',
 
     // En-tête
-    'Malergeschäft'         => 'Magasin de peinture',
-    'new_project'           => 'Nouveau projet +',
+    'Malergeschäft'         => 'Magasins de peinture',
+    'new_project'           => 'Nouveau Projet +',
 
     // Profil
     'profile_picture'       => 'Photo de profil',
-    'name'                  => 'Prénom',
-    'last_name'             => 'Nom',
+    'name'                  => 'Nom',
+    'last_name'             => 'Nom de famille',
     'email'                 => 'E-mail',
     'address'               => 'Adresse',
     'nationality'           => 'Nationalité',
@@ -43,7 +43,7 @@ return [
     'view_profile'          => 'Voir le profil',
     'projects_overview'     => 'Aperçu des projets',
     'track_and_manage'      => 'Suivez et gérez vos projets efficacement',
-    'vs_last_month'         => 'vs mois dernier',
+    'vs_last_month'         => 'vs le mois dernier',
     'active_projects'       => 'Projets actifs',
     'completed_projects'    => 'Projets terminés',
     'total_hours'           => 'Heures totales',
@@ -61,11 +61,13 @@ return [
     // Projets
     'projects_list'         => 'Liste des projets',
     'add_project'           => 'Ajouter un projet',
-    'create_project'        => 'Créer un projet',
+    'create_project'        => 'Créer un nouveau projet',
     'edit_project'          => 'Modifier le projet',
     'delete_project'        => 'Supprimer le projet',
     'project_name'          => 'Nom du projet',
-    'client_name'           => 'Client',
+    'client_name'           => 'Nom du client',
+    'client'                => 'Client',
+    'location'              => 'Emplacement',
     'project_description'   => 'Description du projet',
     'project_status'        => 'Statut du projet',
     'project_not_found'     => 'Projet non trouvé.',
@@ -81,6 +83,11 @@ return [
     'projects_created'      => 'Projets créés par mois',
     'projects_completed'    => 'Projets terminés par mois',
     'created_vs_completed'  => 'Créés vs Terminés',
+    'budget'                => 'Budget',
+    'progress'              => 'Progression',
+    'project_details'       => 'Détails du projet',
+    'project_transactions'  => 'Transactions du projet',
+    'no_inventory_allocated'=> '— Aucun article alloué',
 
     // Employés
     'employees_list'        => 'Liste des employés',
@@ -92,7 +99,7 @@ return [
     'employee_email'        => 'E-mail',
     'role'                  => 'Rôle',
     'start_date'            => 'Date de début',
-    'time_in_company'       => 'Durée en poste',
+    'time_in_company'       => 'Temps dans l’entreprise',
     'no_employees_available'=> 'Aucun employé disponible.',
 
     // Calendrier
@@ -103,7 +110,7 @@ return [
     'no_events'             => 'Aucun événement trouvé.',
 
     // Clients
-    'clients_list'          => 'Liste des clients',
+    'clients_list'          => 'Liste de clients',
     'no_clients_available'  => 'Aucun client disponible.',
     'create_client'         => 'Créer un client',
     'edit_client'           => 'Modifier le client',
@@ -112,7 +119,7 @@ return [
     'details'               => 'Détails',
     'transactions'          => 'Transactions',
     'client_transactions'   => 'Transactions du client',
-    'confirm_delete'        => 'Voulez-vous vraiment supprimer cet enregistrement ?',
+    'confirm_delete'        => 'Êtes-vous sûr de vouloir supprimer cet enregistrement ?',
 
     // Inventaire
     'manage_inventory'      => 'Gérez vos articles en stock',
@@ -126,15 +133,15 @@ return [
     'no_inventory'          => 'Aucun article en stock.',
     'select'                => '-- Sélectionner --',
     'custom_reason'         => 'Raison personnalisée',
-    'add_inventory_item'    => 'Ajouter un article',
+    'add_inventory_item'    => 'Ajouter un article au stock',
     'others'                => 'Autres',
 
     // Export & Documents
-    'export_excel'          => 'Exporter en Excel',
+    'export_excel'          => 'Exporter vers Excel',
     'export_pdf'            => 'Exporter en PDF',
     'documents'             => 'Documents',
 
-    // Formulaires & Placeholders
+    // Formulaires & Placeholder
     'add'                   => 'Ajouter',
     'edit'                  => 'Modifier',
     'delete'                => 'Supprimer',
@@ -145,52 +152,51 @@ return [
     'months'                => 'Mois',
     'years'                 => 'Années',
     'cancel'                => 'Annuler',
-    'submit'                => 'Valider',
+    'submit'                => 'Envoyer',
 
-    // Finance
-    'finance'               => 'Finance',
+    // Finances
+    'finance'               => 'Finances',
     'new_transaction'       => 'Nouvelle transaction',
     'edit_transaction'      => 'Modifier la transaction',
     'save'                  => 'Enregistrer',
     'save_changes'          => 'Enregistrer les modifications',
-    'confirm_delete'        => 'Confirmer la suppression',
-    'total_income'          => 'Total des recettes',
-    'total_expense'         => 'Total des dépenses',
+    'total_income'          => 'Revenu total',
+    'total_expense'         => 'Dépense totale',
     'net_balance'           => 'Solde net',
     'all_types'             => 'Tous types',
-    'income'                => 'Recette',
+    'income'                => 'Revenu',
     'expense'               => 'Dépense',
     'debt'                  => 'Dette',
     'all_categories'        => 'Toutes catégories',
     'category'              => 'Catégorie',
-    'associate'             => 'Associé à',
+    'associate'             => 'Associer',
     'date'                  => 'Date',
     'type'                  => 'Type',
     'amount'                => 'Montant',
     'no_transactions'       => 'Aucune transaction.',
     'general'               => 'Général',
-    'debt_tab'              => 'Paiement échelonné',
+    'debt_tab'              => 'Échéancier',
     'select_category'       => 'Sélectionner une catégorie',
     'select_client'         => 'Sélectionner un client',
     'select_project'        => 'Sélectionner un projet',
     'select_employee'       => 'Sélectionner un employé',
-    'transaction_date'      => 'Date de transaction',
+    'transaction_date'      => 'Date de la transaction',
     'attachments'           => 'Pièces jointes',
     'due_date'              => 'Date d’échéance',
-    'initial_payment'       => 'Acompte',
-    'initial_payment_amount'=> 'Montant de l’acompte',
+    'initial_payment'       => 'Paiement initial',
+    'initial_payment_amount'=> 'Montant du paiement initial',
     'installments_count'    => 'Nombre de versements',
-    'required_field_missing'=> 'Champ obligatoire manquant : ',
+    'required_field_missing'=> 'Champ obligatoire manquant :',
     'error_tx_not_found'    => 'Transaction non trouvée',
-    'errorFetch'            => 'Erreur de chargement',
+    'errorFetch'            => 'Erreur lors du chargement',
 
     // Catégories traduisibles
-    'category_funcionarios'      => 'Employés',
-    'category_clientes'          => 'Clients',
-    'category_projetos'          => 'Projets',
-    'category_compras_materiais' => 'Achats de matériel',
-    'category_emprestimos'       => 'Prêts',
-    'category_gastos_gerais'     => 'Dépenses générales',
-    'category_parcelamento'      => 'Paiement échelonné',
-    'description' => 'Description',
+    'category_funcionarios' => 'Employés',
+    'category_clientes'     => 'Clients',
+    'category_projetos'     => 'Projets',
+    'category_compras_materiais' => 'Achat de matériaux',
+    'category_emprestimos'  => 'Prêts',
+    'category_gastos_gerais'=> 'Dépenses générales',
+    'category_parcelamento' => 'Échéancier',
+    'description'           => 'Description',
 ];

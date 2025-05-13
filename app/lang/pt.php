@@ -66,6 +66,8 @@ return [
     'delete_project'        => 'Excluir Projeto',
     'project_name'          => 'Nome do Projeto',
     'client_name'           => 'Cliente',
+    'client'                => 'Cliente',
+    'location'              => 'Localização',
     'project_description'   => 'Descrição do Projeto',
     'project_status'        => 'Status do Projeto',
     'project_not_found'     => 'Projeto não encontrado.',
@@ -81,6 +83,11 @@ return [
     'projects_created'      => 'Projetos Criados por Mês',
     'projects_completed'    => 'Projetos Concluídos por Mês',
     'created_vs_completed'  => 'Criados vs Concluídos',
+    'budget'                => 'Orçamento',
+    'progress'              => 'Progresso',
+    'project_details'       => 'Detalhes do Projeto',
+    'project_transactions'  => 'Transações do Projeto',
+    'no_inventory_allocated'=> '— Nenhum item alocado',
 
     // Funcionários
     'employees_list'        => 'Lista de Funcionários',
@@ -153,7 +160,6 @@ return [
     'edit_transaction'      => 'Editar Transação',
     'save'                  => 'Salvar',
     'save_changes'          => 'Salvar Alterações',
-    'confirm_delete'        => 'Confirmar Exclusão',
     'total_income'          => 'Total Entradas',
     'total_expense'         => 'Total Saídas',
     'net_balance'           => 'Saldo Líquido',
@@ -192,5 +198,5 @@ return [
     'category_emprestimos'       => 'Empréstimos',
     'category_gastos_gerais'     => 'Gastos Gerais',
     'category_parcelamento'      => 'Parcelamento',
-    'description' => 'Descrição',
+    'description'                => 'Descrição',
 ];

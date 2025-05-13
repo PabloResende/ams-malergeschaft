@@ -1,11 +1,11 @@
 <?php
 // lang/en.php
 return [
-    // Login & Authentication
-    'login'                 => 'Log in',
+    // Authentication
+    'login'                 => 'Login',
     'register'              => 'Register',
-    'logout_button'         => 'Log out',
-    'dont_register'         => "Don't have an account? Register",
+    'logout_button'         => 'Logout',
+    'dont_register'         => 'Don\'t have an account? Register',
     'confirm_password'      => 'Confirm Password',
     'password'              => 'Password',
 
@@ -20,12 +20,12 @@ return [
     'analytics'             => 'Analytics',
 
     // Header
-    'Malergeschäft'         => 'Painting Store',
+    'Malergeschäft'         => 'Paint Shops',
     'new_project'           => 'New Project +',
 
     // Profile
     'profile_picture'       => 'Profile Picture',
-    'name'                  => 'First Name',
+    'name'                  => 'Name',
     'last_name'             => 'Last Name',
     'email'                 => 'Email',
     'address'               => 'Address',
@@ -61,11 +61,13 @@ return [
     // Projects
     'projects_list'         => 'Projects List',
     'add_project'           => 'Add Project',
-    'create_project'        => 'Create Project',
+    'create_project'        => 'Create New Project',
     'edit_project'          => 'Edit Project',
     'delete_project'        => 'Delete Project',
     'project_name'          => 'Project Name',
     'client_name'           => 'Client',
+    'client'                => 'Client',
+    'location'              => 'Location',
     'project_description'   => 'Project Description',
     'project_status'        => 'Project Status',
     'project_not_found'     => 'Project not found.',
@@ -78,9 +80,14 @@ return [
     'all'                   => 'All',
     'actions'               => 'Actions',
     'back'                  => 'Back',
-    'projects_created'      => 'Projects Created by Month',
-    'projects_completed'    => 'Projects Completed by Month',
+    'projects_created'      => 'Projects Created per Month',
+    'projects_completed'    => 'Projects Completed per Month',
     'created_vs_completed'  => 'Created vs Completed',
+    'budget'                => 'Budget',
+    'progress'              => 'Progress',
+    'project_details'       => 'Project Details',
+    'project_transactions'  => 'Project Transactions',
+    'no_inventory_allocated'=> '— No inventory allocated',
 
     // Employees
     'employees_list'        => 'Employees List',
@@ -130,16 +137,16 @@ return [
     'others'                => 'Others',
 
     // Export & Documents
-    'export_excel'          => 'Export to Excel',
-    'export_pdf'            => 'Export to PDF',
+    'export_excel'          => 'Export Excel',
+    'export_pdf'            => 'Export PDF',
     'documents'             => 'Documents',
 
     // Forms & Placeholders
     'add'                   => 'Add',
     'edit'                  => 'Edit',
     'delete'                => 'Delete',
-    'send_email'            => 'Send by Email',
-    'task_placeholder'      => 'Describe the task…',
+    'send_email'            => 'Send Email',
+    'task_placeholder'      => 'Task description…',
     'month'                 => 'Month',
     'year'                  => 'Year',
     'months'                => 'Months',
@@ -153,7 +160,6 @@ return [
     'edit_transaction'      => 'Edit Transaction',
     'save'                  => 'Save',
     'save_changes'          => 'Save Changes',
-    'confirm_delete'        => 'Confirm Deletion',
     'total_income'          => 'Total Income',
     'total_expense'         => 'Total Expense',
     'net_balance'           => 'Net Balance',
@@ -169,28 +175,28 @@ return [
     'amount'                => 'Amount',
     'no_transactions'       => 'No transactions.',
     'general'               => 'General',
-    'debt_tab'              => 'Installments',
-    'select_category'       => 'Select category',
-    'select_client'         => 'Select client',
-    'select_project'        => 'Select project',
-    'select_employee'       => 'Select employee',
+    'debt_tab'              => 'Installment Plan',
+    'select_category'       => 'Select Category',
+    'select_client'         => 'Select Client',
+    'select_project'        => 'Select Project',
+    'select_employee'       => 'Select Employee',
     'transaction_date'      => 'Transaction Date',
     'attachments'           => 'Attachments',
     'due_date'              => 'Due Date',
     'initial_payment'       => 'Initial Payment',
     'initial_payment_amount'=> 'Initial Payment Amount',
-    'installments_count'    => 'Number of Installments',
+    'installments_count'    => 'Installments Count',
     'required_field_missing'=> 'Required field missing: ',
     'error_tx_not_found'    => 'Transaction not found',
     'errorFetch'            => 'Error fetching',
 
-    // Translatable categories
-    'category_funcionarios'      => 'Employees',
-    'category_clientes'          => 'Clients',
-    'category_projetos'          => 'Projects',
-    'category_compras_materiais' => 'Material Purchases',
-    'category_emprestimos'       => 'Loans',
-    'category_gastos_gerais'     => 'General Expenses',
-    'category_parcelamento'      => 'Installments',
-    'description' => 'Description',
+    // Translatable Categories
+    'category_funcionarios' => 'Employees',
+    'category_clientes'     => 'Clients',
+    'category_projetos'     => 'Projects',
+    'category_compras_materiais' => 'Purchases of Materials',
+    'category_emprestimos'  => 'Loans',
+    'category_gastos_gerais'=> 'General Expenses',
+    'category_parcelamento' => 'Installments',
+    'description'           => 'Description',
 ];

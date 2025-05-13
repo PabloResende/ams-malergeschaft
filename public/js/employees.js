@@ -4,12 +4,14 @@ const baseUrl = window.baseUrl;
 
 document.addEventListener('DOMContentLoaded', () => {
   // ─── Create Modal ─────────────────────────────────────────
-  const addBtn     = document.getElementById('addEmployeeBtn');
-  const createMod  = document.getElementById('employeeModal');
-  const closeCreate= createMod.querySelectorAll('#closeEmployeeModal');
+  const addBtn      = document.getElementById('addEmployeeBtn');
+  const createMod   = document.getElementById('employeeModal');
+  const closeCreate = createMod.querySelectorAll('#closeEmployeeModal');
   addBtn.addEventListener('click', () => createMod.classList.remove('hidden'));
   closeCreate.forEach(b => b.addEventListener('click', () => createMod.classList.add('hidden')));
-  window.addEventListener('click', e => { if (e.target === createMod) createMod.classList.add('hidden'); });
+  window.addEventListener('click', e => {
+    if (e.target === createMod) createMod.classList.add('hidden');
+  });
 
   // Create Tabs
   const cTabs = Array.from(createMod.querySelectorAll('.tab-btn'));
@@ -28,10 +30,12 @@ document.addEventListener('DOMContentLoaded', () => {
   activateCreate('general-create');
 
   // ─── Details Modal ────────────────────────────────────────
-  const detMod = document.getElementById('employeeDetailsModal');
-  const closeDet= detMod.querySelectorAll('.closeEmployeeDetailsModal');
+  const detMod   = document.getElementById('employeeDetailsModal');
+  const closeDet = detMod.querySelectorAll('.closeEmployeeDetailsModal');
   closeDet.forEach(b => b.addEventListener('click', () => detMod.classList.add('hidden')));
-  window.addEventListener('click', e => { if (e.target === detMod) detMod.classList.add('hidden'); });
+  window.addEventListener('click', e => {
+    if (e.target === detMod) detMod.classList.add('hidden');
+  });
 
   // Detail Tabs
   const dTabs = Array.from(detMod.querySelectorAll('.tab-btn'));
@@ -49,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
   dTabs.forEach(b => b.addEventListener('click', () => activateDetail(b.dataset.tab)));
 
   // Format currency
-  function fmt(v) { return 'R$ ' + parseFloat(v).toFixed(2).replace('.', ','); }
+  const fmt = v => 'R$ ' + parseFloat(v).toFixed(2).replace('.', ',');
 
   // Fill employee transactions
   function fillEmpTrans(trans, empId) {
@@ -76,12 +80,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.employee-card').forEach(card => {
     card.addEventListener('click', () => {
       const id = card.dataset.id;
-      fetch(`${baseUrl}/employees/get?id=${encodeURIComponent(id)}`, { credentials:'same-origin' })
+      fetch(`${baseUrl}/employees/get?id=${encodeURIComponent(id)}`, { credentials: 'same-origin' })
         .then(r => r.json())
         .then(data => {
-          if (data.error) return alert(data.error);
+          if (data.error) {
+            alert(data.error);
+            return;
+          }
 
-          // fill general fields
+          // 1) Fill general fields
           const fields = {
             detailsEmployeeId: data.id,
             detailsEmployeeName: data.name,
@@ -105,23 +112,49 @@ document.addEventListener('DOMContentLoaded', () => {
             if (el) el.value = val || '';
           });
 
-          // preview docs
-          ['profile_picture','passport','permission_photo_front','permission_photo_back',
-           'health_card_front','health_card_back','bank_card_front','bank_card_back','marriage_certificate']
-           .forEach(field => {
-             const img = document.getElementById('view'+field.charAt(0).toUpperCase()+field.slice(1));
-             if (!img) return;
-             if (data[field]) {
-               img.src = `${baseUrl}/employees/serveDocument?id=${data.id}&type=${field}`;
-               img.style.display = 'block';
-             } else {
-               img.style.display = 'none';
-             }
-           });
+          // 2) Fill documents (no profile_picture)
+          const docFields = [
+            'passport',
+            'permission_photo_front', 'permission_photo_back',
+            'health_card_front', 'health_card_back',
+            'bank_card_front', 'bank_card_back',
+            'marriage_certificate'
+          ];
+          docFields.forEach(field => {
+            const imgEl  = document.getElementById('view' + field.charAt(0).toUpperCase() + field.slice(1));
+            const linkEl = document.getElementById('link' + field.charAt(0).toUpperCase() + field.slice(1));
+            const val    = data[field];
 
-          // fill transactions
+            if (val) {
+              const url = `${baseUrl}/employees/serveDocument?id=${data.id}&type=${field}`;
+
+              // Only the photo fields are images
+              const isImg = [
+                'permission_photo_front', 'permission_photo_back',
+                'health_card_front', 'health_card_back',
+                'bank_card_front', 'bank_card_back'
+              ].includes(field);
+
+              if (isImg) {
+                imgEl.src = url;
+                imgEl.style.display = 'block';
+                linkEl.style.display = 'none';
+              } else {
+                linkEl.href = url;
+                linkEl.textContent = val.split('/').pop();
+                linkEl.style.display = 'block';
+                imgEl.style.display = 'none';
+              }
+            } else {
+              imgEl.style.display  = 'none';
+              linkEl.style.display = 'none';
+            }
+          });
+
+          // 3) Fill transactions
           fillEmpTrans(data.transactions, data.id);
 
+          // Show first tab
           activateDetail('general-details');
           detMod.classList.remove('hidden');
         })

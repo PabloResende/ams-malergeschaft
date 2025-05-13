@@ -76,7 +76,7 @@ $locale = $langText['locale'] ?? 'pt-BR';
             <?= htmlspecialchars($langText['year'] ?? 'Ano') ?>
           </label>
           <select id="yearSelector" class="mt-1 rounded-md border-gray-300 shadow-sm focus:ring-blue-500">
-            <?php for ($year = 2021; $year <= 2030; $year++): ?>
+            <?php for ($year = 2025; $year <= 2030; $year++): ?>
               <option value="<?= $year ?>" <?= ($year === date("Y") ? "selected" : "") ?>>
                 <?= $year ?>
               </option>

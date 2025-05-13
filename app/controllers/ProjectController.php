@@ -2,7 +2,8 @@
 // app/controllers/ProjectController.php
 
 require_once __DIR__ . '/../../config/Database.php';
-// carrega a lógica de idioma (define $langText)
+require_once __DIR__ . '/../models/Project.php';
+require_once __DIR__ . '/../models/Clients.php';
 require_once __DIR__ . '/../lang/lang.php';
 
 class ProjectController
@@ -21,34 +22,43 @@ class ProjectController
             exit;
         }
 
+        // 1) Processamento seguro de client_id
+        $clientId = null;
+        if (isset($_POST['client_id']) && $_POST['client_id'] !== '') {
+            $tmp = (int) $_POST['client_id'];
+            $clientId = $tmp > 0 ? $tmp : null;
+        }
+
+        // 2) Monta os dados do projeto
         $data = [
-            'name'           => $_POST['name']           ?? '',
-            'client_id'      => ($_POST['client_id'] !== '') ? (int)$_POST['client_id'] : null,
-            'location'       => $_POST['location']       ?? '',
-            'description'    => $_POST['description']    ?? '',
-            'start_date'     => $_POST['start_date']     ?? null,
-            'end_date'       => $_POST['end_date']       ?? null,
-            'total_hours'    => $_POST['total_hours']    ?? 0,
-            'budget'         => $_POST['budget']         ?? 0,
-            'employee_count' => $_POST['employee_count'] ?? 0,
-            'status'         => $_POST['status']         ?? 'pending',
-            'progress'       => $_POST['progress']       ?? 0,
+            'name'           => trim($_POST['name']           ?? ''),
+            'client_id'      => $clientId,
+            'location'       => trim($_POST['location']       ?? ''),
+            'description'    => trim($_POST['description']    ?? ''),
+            'start_date'     => $_POST['start_date']          ?? null,
+            'end_date'       => $_POST['end_date']            ?? null,
+            'total_hours'    => (int)($_POST['total_hours']    ?? 0),
+            'budget'         => (float)($_POST['budget']       ?? 0),
+            'employee_count' => (int)($_POST['employee_count'] ?? 0),
+            'status'         => $_POST['status']              ?? 'pending',
+            'progress'       => (int)($_POST['progress']       ?? 0),
         ];
 
-        $tasks     = json_decode($_POST['tasks'] ?? '[]', true);
+        $tasks     = json_decode($_POST['tasks']     ?? '[]', true);
         $employees = json_decode($_POST['employees'] ?? '[]', true);
 
+        // 3) Cria projeto
         if (ProjectModel::create($data, $tasks, $employees)) {
-            // atualiza pontos do cliente, se houver
-            if ($data['client_id']) {
-                $count = Client::countProjects($data['client_id']);
-                Client::setPoints($data['client_id'], $count);
+            // 4) Atualiza pontos do cliente (se houver)
+            if ($clientId) {
+                $count = Client::countProjects($clientId);
+                Client::setPoints($clientId, $count);
             }
             header("Location: /ams-malergeschaft/public/projects");
             exit;
-        } else {
-            echo $langText['error_saving_project'] ?? 'Erro ao salvar o projeto.';
         }
+
+        echo $langText['error_saving_project'] ?? 'Erro ao salvar o projeto.';
     }
 
     public function update()
@@ -70,35 +80,44 @@ class ProjectController
             exit;
         }
 
-        $clientId = ($_POST['client_id'] !== '') ? (int)$_POST['client_id'] : $existing['client_id'];
+        // 1) Processamento seguro de client_id
+        if (isset($_POST['client_id']) && $_POST['client_id'] !== '') {
+            $tmp = (int) $_POST['client_id'];
+            $clientId = $tmp > 0 ? $tmp : null;
+        } else {
+            $clientId = $existing['client_id'];
+        }
 
+        // 2) Monta dados para atualização
         $data = [
-            'name'           => $_POST['name']           ?? $existing['name'],
+            'name'           => trim($_POST['name']           ?? $existing['name']),
             'client_id'      => $clientId,
-            'location'       => $_POST['location']       ?? $existing['location'],
-            'description'    => $_POST['description']    ?? $existing['description'],
-            'start_date'     => $_POST['start_date']     ?? $existing['start_date'],
-            'end_date'       => $_POST['end_date']       ?? $existing['end_date'],
-            'total_hours'    => $_POST['total_hours']    ?? $existing['total_hours'],
-            'budget'         => $_POST['budget']         ?? $existing['budget'],
-            'employee_count' => $_POST['employee_count'] ?? $existing['employee_count'],
-            'status'         => $_POST['status']         ?? $existing['status'],
-            'progress'       => $_POST['progress']       ?? $existing['progress'],
+            'location'       => trim($_POST['location']       ?? $existing['location']),
+            'description'    => trim($_POST['description']    ?? $existing['description']),
+            'start_date'     => $_POST['start_date']          ?? $existing['start_date'],
+            'end_date'       => $_POST['end_date']            ?? $existing['end_date'],
+            'total_hours'    => (int)($_POST['total_hours']    ?? $existing['total_hours']),
+            'budget'         => (float)($_POST['budget']       ?? $existing['budget']),
+            'employee_count' => (int)($_POST['employee_count'] ?? $existing['employee_count']),
+            'status'         => $_POST['status']              ?? $existing['status'],
+            'progress'       => (int)($_POST['progress']       ?? $existing['progress']),
         ];
 
-        $tasks     = json_decode($_POST['tasks'] ?? '[]', true);
+        $tasks     = json_decode($_POST['tasks']     ?? '[]', true);
         $employees = json_decode($_POST['employees'] ?? '[]', true);
 
+        // 3) Atualiza no banco
         if (ProjectModel::update($id, $data, $tasks, $employees)) {
-            if ($data['client_id']) {
-                $count = Client::countProjects($data['client_id']);
-                Client::setPoints($data['client_id'], $count);
+            // 4) Atualiza pontos do cliente (se houver)
+            if ($clientId) {
+                $count = Client::countProjects($clientId);
+                Client::setPoints($clientId, $count);
             }
             header("Location: /ams-malergeschaft/public/projects");
             exit;
-        } else {
-            echo $langText['error_updating_project'] ?? 'Erro ao atualizar o projeto.';
         }
+
+        echo $langText['error_updating_project'] ?? 'Erro ao atualizar o projeto.';
     }
 
     public function show()
@@ -171,21 +190,17 @@ class ProjectController
 
         $pdo = Database::connect();
         $stmt = $pdo->prepare("
-        SELECT 
-            ft.date,
-            ft.type,
-            ft.amount,
-            ft.category
-        FROM financial_transactions ft
-        WHERE 
-            (ft.category = 'projetos' AND ft.project_id = ?)
-            OR EXISTS(
-            SELECT 1 
-            FROM debts d
-            WHERE d.transaction_id = ft.id
-                AND d.project_id = ?
-            )
-        ORDER BY ft.date DESC
+            SELECT ft.date, ft.type, ft.amount, ft.category
+            FROM financial_transactions ft
+            WHERE 
+                (ft.category = 'projetos' AND ft.project_id = ?)
+                OR EXISTS (
+                    SELECT 1
+                    FROM debts d
+                    WHERE d.transaction_id = ft.id
+                      AND d.project_id = ?
+                )
+            ORDER BY ft.date DESC
         ");
         $stmt->execute([$id, $id]);
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));

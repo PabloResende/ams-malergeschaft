@@ -1,67 +1,68 @@
 <?php
-// app/views/layout/partials/notification.php
-
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
 require_once __DIR__ . '/../../../../config/Database.php';
-$pdo     = Database::connect();
+$pdo = Database::connect();
 $baseUrl = '/ams-malergeschaft/public';
 
-if (! function_exists('addNotif')) {
-    /**
-     * Adiciona uma notificação no array SEM checar se já foi marcada como lida
-     *
-     * @param array  $arr   Recebedor das notificações
-     * @param string $key   Identificador único
-     * @param string $text  Texto a exibir
-     * @param string $url   Link de destino
-     */
+if (!function_exists('addNotif')) {
     function addNotif(array &$arr, string $key, string $text, string $url): void {
-        $arr[] = compact('key','text','url');
+        $arr[] = compact('key', 'text', 'url');
     }
 }
 
 $notifications = [];
 
-// ——— Materiais com estoque < 10 ———
+// ——— Materiais com estoque abaixo de faixas ———
+$faixas = [100, 75, 50, 25, 10, 5, 1, 0];
 $stmt = $pdo->query("
     SELECT id, name, quantity
     FROM inventory
-    WHERE type = 'material' AND quantity < 10
+    WHERE type = 'material' AND quantity < 100
 ");
 while ($it = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $key  = "inventory_{$it['id']}";
-    $text = $it['quantity'] == 0
-        ? "Acabou: «{$it['name']}»"
-        : "Tem {$it['quantity']}× «{$it['name']}»";
-    $url  = "{$baseUrl}/inventory?show={$it['id']}";
-    addNotif($notifications, $key, $text, $url);
+    foreach ($faixas as $limite) {
+        if ($it['quantity'] <= $limite) {
+            $key  = "inventory_{$it['id']}_q{$limite}";
+            $text = $it['quantity'] == 0
+                ? "Acabou: «{$it['name']}»"
+                : "Tem {$it['quantity']}× «{$it['name']}» (≤ {$limite})";
+            $url  = "{$baseUrl}/inventory?show={$it['id']}";
+            addNotif($notifications, $key, $text, $url);
+            break; // pega só a menor faixa atingida
+        }
+    }
 }
 
-// Projetos vencendo em ≤5 dias ———
+// ——— Projetos vencendo em até 7 dias ———
 $today = date('Y-m-d');
-$limit = date('Y-m-d', strtotime('+5 days'));
-$stmt  = $pdo->prepare("
+$limit = date('Y-m-d', strtotime('+7 days'));
+$stmt = $pdo->prepare("
     SELECT id, name, end_date
     FROM projects
     WHERE end_date BETWEEN ? AND ?
 ");
 $stmt->execute([$today, $limit]);
 while ($pj = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $diff  = (strtotime($pj['end_date']) - strtotime($today)) / 86400;
-    $dias  = (int)$diff;
-    $label = $dias === 0
-        ? "vence hoje"
-        : ($dias === 1 ? "vence em 1 dia" : "vence em {$dias} dias");
-    $key   = "project_{$pj['id']}";
-    $text  = "Projeto «{$pj['name']}» {$label}!";
-    $url   = "{$baseUrl}/projects?show={$pj['id']}";
+    $diff = (strtotime($pj['end_date']) - strtotime($today)) / 86400;
+    $dias = (int)$diff;
+
+    if ($dias < 0) continue;
+
+    $label = match($dias) {
+        0 => "vence hoje",
+        1 => "vence em 1 dia",
+        default => "vence em {$dias} dias"
+    };
+    $key  = "project_{$pj['id']}_d{$dias}";
+    $text = "Projeto «{$pj['name']}» {$label}!";
+    $url  = "{$baseUrl}/projects?show={$pj['id']}";
     addNotif($notifications, $key, $text, $url);
 }
 
-// Clientes com ≥5 projetos ———
+// ——— Clientes com múltiplos de 5 projetos ———
 $stmt = $pdo->query("
     SELECT c.id, c.name, COUNT(p.id) AS cnt
     FROM client c
@@ -70,10 +71,15 @@ $stmt = $pdo->query("
     HAVING cnt >= 5
 ");
 while ($c = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $key  = "client_{$c['id']}";
-    $text = "Cliente «{$c['name']}» fez {$c['cnt']} projetos";
-    $url  = "{$baseUrl}/clients?show={$c['id']}";
-    addNotif($notifications, $key, $text, $url);
+    $qtd = (int) $c['cnt'];
+    $faixa = floor($qtd / 5) * 5;
+
+    if ($faixa >= 5) {
+        $key  = "client_{$c['id']}_p{$faixa}";
+        $text = "Cliente «{$c['name']}» fez {$qtd} projetos";
+        $url  = "{$baseUrl}/clients?show={$c['id']}";
+        addNotif($notifications, $key, $text, $url);
+    }
 }
 
 return $notifications;

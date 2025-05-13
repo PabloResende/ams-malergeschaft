@@ -5,25 +5,26 @@ require_once __DIR__ . '/../../config/Database.php';
 
 class TransactionModel
 {
-    private static array $categoryMap = [
-        'funcionarios'      => 'Funcionários',
-        'clientes'          => 'Clientes',
-        'projetos'          => 'Projetos',
-        'compras_materiais' => 'Compras de Materiais',
-        'emprestimos'       => 'Empréstimos',
-        'gastos_gerais'     => 'Gastos Gerais',
-        'parcelamento'      => 'Parcelamento',
-    ];
 
     public static function connect(): PDO
     {
         return Database::connect();
     }
 
+  private static array $categoryMap = [
+        'funcionarios'=> 'Funcionários',
+        'clientes'=> 'Clientes',
+        'projetos'=> 'Projetos',
+        'compras_materiais'=> 'Compras de Materiais',
+        'emprestimos'=> 'Empréstimos',
+        'gastos_gerais'=> 'Gastos Gerais',
+        'parcelamento'=> 'Parcelamento',
+    ];
+
     public static function getAll(array $f = []): array
     {
         $sql = "
-            SELECT 
+            SELECT
               ft.*, 
               d.due_date, d.installments_count, d.initial_payment, d.initial_payment_amount
             FROM financial_transactions ft
@@ -31,6 +32,7 @@ class TransactionModel
             WHERE ft.date BETWEEN ? AND ?
         ";
         $params = [$f['start'], $f['end']];
+
         if (!empty($f['type'])) {
             $sql      .= " AND ft.type = ?";
             $params[]  = $f['type'];
@@ -39,6 +41,19 @@ class TransactionModel
             $sql      .= " AND ft.category = ?";
             $params[]  = $f['category'];
         }
+        if (!empty($f['client_id'])) {
+            $sql      .= " AND ft.client_id = ?";
+            $params[]  = $f['client_id'];
+        }
+        if (!empty($f['project_id'])) {
+            $sql      .= " AND ft.project_id = ?";
+            $params[]  = $f['project_id'];
+        }
+        if (!empty($f['employee_id'])) {
+            $sql      .= " AND ft.employee_id = ?";
+            $params[]  = $f['employee_id'];
+        }
+
         $sql .= " ORDER BY ft.date DESC";
 
         $stmt = self::connect()->prepare($sql);

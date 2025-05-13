@@ -169,7 +169,7 @@ CREATE TABLE IF NOT EXISTS invoices (
   status VARCHAR(50)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Financial Transactions (com categorias fixas via ENUM)
+-- Financial Transactions (categorias fixas + associações)
 CREATE TABLE IF NOT EXISTS financial_transactions (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
@@ -182,13 +182,25 @@ CREATE TABLE IF NOT EXISTS financial_transactions (
     'gastos_gerais'
   ) NOT NULL,
   type ENUM('income','expense','debt') NOT NULL,
+  client_id INT NULL,
+  project_id INT NULL,
+  employee_id INT NULL,
   amount DECIMAL(12,2) NOT NULL,
   date DATE NOT NULL,
   description TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id)
     REFERENCES users(id)
-    ON DELETE CASCADE
+    ON DELETE CASCADE,
+  FOREIGN KEY (client_id)
+    REFERENCES client(id)
+    ON DELETE SET NULL,
+  FOREIGN KEY (project_id)
+    REFERENCES projects(id)
+    ON DELETE SET NULL,
+  FOREIGN KEY (employee_id)
+    REFERENCES employees(id)
+    ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Transaction Attachments
@@ -202,7 +214,7 @@ CREATE TABLE IF NOT EXISTS transaction_attachments (
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Debts (Dívidas)
+-- Debts (agora com initial_payment_amount)
 CREATE TABLE IF NOT EXISTS debts (
   id INT AUTO_INCREMENT PRIMARY KEY,
   client_id INT NULL,
@@ -212,6 +224,7 @@ CREATE TABLE IF NOT EXISTS debts (
   due_date DATE NOT NULL,
   installments_count INT NULL,
   initial_payment TINYINT(1) NOT NULL DEFAULT 0,
+  initial_payment_amount DECIMAL(12,2) NULL,
   status ENUM('open','paid','overdue') NOT NULL DEFAULT 'open',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (client_id)

@@ -26,7 +26,6 @@ class FinancialController
         $employees = Employee::all();
         $clients   = Client::all();
 
-        // Categorias fixas
         $categories = [
             ['value'=>'funcionarios',      'name'=>'Funcionários',        'assoc'=>'employee'],
             ['value'=>'clientes',          'name'=>'Clientes',            'assoc'=>'client'],
@@ -49,12 +48,12 @@ class FinancialController
             echo json_encode(['error'=>'ID não encontrado']);
             exit;
         }
-        $tx['attachments'] = TransactionModel::getAttachments($id);
-        $debt = TransactionModel::getDebt($id);
-        $tx['due_date']               = $debt['due_date']           ?? null;
-        $tx['installments_count']     = $debt['installments_count'] ?? null;
-        $tx['initial_payment']        = $debt['initial_payment']    ?? 0;
-        $tx['initial_payment_amount'] = $debt['initial_payment_amount'] ?? null;
+        $tx['attachments']              = TransactionModel::getAttachments($id);
+        $debt                           = TransactionModel::getDebt($id);
+        $tx['due_date']                 = $debt['due_date']           ?? null;
+        $tx['installments_count']       = $debt['installments_count'] ?? null;
+        $tx['initial_payment']          = $debt['initial_payment']    ?? 0;
+        $tx['initial_payment_amount']   = $debt['initial_payment_amount'] ?? null;
 
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode($tx);
@@ -67,28 +66,23 @@ class FinancialController
         $userId = $_SESSION['user']['id'] ?? null;
 
         $data = [
-            'user_id'     => $userId,
-            'category'    => $_POST['category']     ?? null,
-            'type'        => $_POST['type']         ?? null,
-            'client_id'   => $_POST['client_id']    ?? null,
-            'project_id'  => $_POST['project_id']   ?? null,
-            'employee_id' => $_POST['employee_id']  ?? null,
-            'amount'      => $_POST['amount']       ?? null,
-            'date'        => $_POST['date']         ?? null,
-            'description' => $_POST['description']  ?? '',
+            'user_id'                   => $userId,
+            'category'                  => $_POST['category']     ?? null,
+            'type'                      => $_POST['type']         ?? null,
+            'client_id'                 => $_POST['client_id']    ?? null,
+            'project_id'                => $_POST['project_id']   ?? null,
+            'employee_id'               => $_POST['employee_id']  ?? null,
+            'amount'                    => $_POST['amount']       ?? null,
+            'date'                      => $_POST['date']         ?? null,
+            'description'               => $_POST['description']  ?? '',
         ];
-
-        // validação simples
         foreach (['category','type','amount','date'] as $f) {
-            if (empty($data[$f])) {
-                die("Campo obrigatório faltando: $f");
-            }
+            if (empty($data[$f])) die("Campo obrigatório faltando: $f");
         }
 
         $attachments = $this->processAttachments($_FILES['attachments'] ?? null);
-
-        $debtData = null;
-        if ($data['type']==='debt') {
+        $debtData    = null;
+        if ($data['type'] === 'debt') {
             $debtData = [
                 'client_id'              => $_POST['client_id']             ?? null,
                 'amount'                 => $data['amount'],
@@ -111,26 +105,22 @@ class FinancialController
         $id = (int)($_POST['id'] ?? 0);
 
         $data = [
-            'category'    => $_POST['category']     ?? null,
-            'type'        => $_POST['type']         ?? null,
-            'client_id'   => $_POST['client_id']    ?? null,
-            'project_id'  => $_POST['project_id']   ?? null,
-            'employee_id' => $_POST['employee_id']  ?? null,
-            'amount'      => $_POST['amount']       ?? null,
-            'date'        => $_POST['date']         ?? null,
-            'description' => $_POST['description']  ?? '',
+            'category'                  => $_POST['category']     ?? null,
+            'type'                      => $_POST['type']         ?? null,
+            'client_id'                 => $_POST['client_id']    ?? null,
+            'project_id'                => $_POST['project_id']   ?? null,
+            'employee_id'               => $_POST['employee_id']  ?? null,
+            'amount'                    => $_POST['amount']       ?? null,
+            'date'                      => $_POST['date']         ?? null,
+            'description'               => $_POST['description']  ?? '',
         ];
-
         foreach (['category','type','amount','date'] as $f) {
-            if (empty($data[$f])) {
-                die("Campo obrigatório faltando: $f");
-            }
+            if (empty($data[$f])) die("Campo obrigatório faltando: $f");
         }
 
         $attachments = $this->processAttachments($_FILES['attachments'] ?? null);
-
-        $debtData = null;
-        if ($data['type']==='debt') {
+        $debtData    = null;
+        if ($data['type'] === 'debt') {
             $debtData = [
                 'client_id'              => $_POST['client_id']             ?? null,
                 'amount'                 => $data['amount'],

@@ -14,11 +14,11 @@ require __DIR__ . '/../layout/header.php';
   window.BASE_URL       = '<?= $baseUrl ?>';
   window.FINANCE_PREFIX = window.BASE_URL + '/finance';
   window.FINANCE_STR    = {
-    newTransaction:  <?= json_encode($langText['new_transaction'] ?? 'Nova Transação') ?>,
-    editTransaction: <?= json_encode($langText['edit_transaction'] ?? 'Editar Transação') ?>,
-    save:            <?= json_encode($langText['save'] ?? 'Salvar') ?>,
-    saveChanges:     <?= json_encode($langText['save_changes'] ?? 'Salvar Alterações') ?>,
-    confirmDelete:   <?= json_encode($langText['confirm_delete'] ?? 'Confirmar Exclusão') ?>
+    newTransaction:  <?= json_encode($langText['new_transaction']    ?? 'Nova Transação') ?>,
+    editTransaction: <?= json_encode($langText['edit_transaction']   ?? 'Editar Transação') ?>,
+    save:            <?= json_encode($langText['save']               ?? 'Salvar') ?>,
+    saveChanges:     <?= json_encode($langText['save_changes']       ?? 'Salvar Alterações') ?>,
+    confirmDelete:   <?= json_encode($langText['confirm_delete']     ?? 'Confirmar Exclusão') ?>
   };
 </script>
 
@@ -79,9 +79,7 @@ require __DIR__ . '/../layout/header.php';
       </thead>
       <tbody>
         <?php if (empty($transactions)): ?>
-          <tr>
-            <td colspan="5" class="p-4 text-center"><?= htmlspecialchars($langText['no_transactions'] ?? 'Nenhuma transação') ?></td>
-          </tr>
+          <tr><td colspan="5" class="p-4 text-center"><?= htmlspecialchars($langText['no_transactions'] ?? 'Nenhuma transação') ?></td></tr>
         <?php else: foreach($transactions as $t): ?>
           <tr class="border-t tx-row cursor-pointer" data-tx-id="<?= htmlspecialchars($t['id'],ENT_QUOTES) ?>">
             <td class="p-2"><?= date('d/m/Y',strtotime($t['date'])) ?></td>
@@ -108,19 +106,17 @@ require __DIR__ . '/../layout/header.php';
     </svg>
   </button>
 
+  <!-- Modal -->
   <div id="transactionModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50">
     <div class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-4 overflow-hidden">
-      <!-- Cabeçalho -->
       <div class="flex justify-between items-center px-6 py-4 border-b">
         <h3 id="txModalTitle" class="text-xl font-semibold"></h3>
         <button id="closeTxModalBtn" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
       </div>
-      <!-- Abas -->
       <div class="flex border-b">
         <button id="tabGeneralBtn" class="flex-1 text-center px-4 py-2 border-b-2 border-blue-600 font-medium">Geral</button>
         <button id="tabDebtBtn"    class="flex-1 text-center px-4 py-2 text-gray-500 hover:text-gray-700 hidden">Parcelamento</button>
       </div>
-      <!-- Formulário -->
       <form id="transactionForm" method="POST" enctype="multipart/form-data" class="px-6 py-4 space-y-6">
         <input type="hidden" name="id" id="txId"/>
 
@@ -135,7 +131,7 @@ require __DIR__ . '/../layout/header.php';
           </select>
         </div>
 
-        <!-- Contêineres de associação -->
+        <!-- Containers de associação -->
         <div id="clientContainer" class="hidden">
           <label class="block mb-1 font-medium">Cliente</label>
           <select name="client_id" id="txClientSelect" class="w-full border rounded p-2">
@@ -231,5 +227,4 @@ require __DIR__ . '/../layout/header.php';
     </div>
   </div>
 </main>
-
 <script defer src="<?= $baseUrl ?>/js/finance.js"></script>

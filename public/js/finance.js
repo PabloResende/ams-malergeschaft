@@ -16,6 +16,7 @@
     const cliCont    = document.getElementById('clientContainer');
     const projCont   = document.getElementById('projectContainer');
     const empCont    = document.getElementById('employeeContainer');
+
     const selType    = document.getElementById('txTypeSelect');
     const dateCont   = document.getElementById('dateContainer');
     const dueCont    = document.getElementById('dueDateContainer');
@@ -99,22 +100,19 @@
           form.action = API + '/update';
           fldId.value = tx.id;
 
-          selCat.value = tx.category;
-          updateAssociation();
-
+          selCat.value = tx.category; updateAssociation();
           document.getElementById('txClientSelect').value   = tx.client_id    || '';
           document.getElementById('txProjectSelect').value  = tx.project_id   || '';
           document.getElementById('txEmployeeSelect').value = tx.employee_id  || '';
 
           selType.value  = tx.type; updateVisibility();
-
           inpDate.value  = tx.date;
           inpDue.value   = tx.due_date   || '';
           inpAmt.value   = tx.amount;
-          descInput.value= tx.description || '';
+          descInput.value= tx.description||'';
           chkInit.checked= !!tx.initial_payment;
-          initAmt.value  = tx.initial_payment_amount || '';
-          selInst.value  = tx.installments_count || '';
+          initAmt.value  = tx.initial_payment_amount||'';
+          selInst.value  = tx.installments_count||'';
           calculateInstallment();
 
           attachList.innerHTML='';
@@ -130,20 +128,17 @@
 
           deleteLink.href = `${API}/delete?id=${tx.id}`;
           deleteLink.classList.remove('hidden');
-
           show(modal,true);
         })
-        .catch(err=>{
-          alert('Erro: '+err.message);
-        });
+        .catch(err=>alert('Erro: '+err.message));
     }
 
-    // Delegação de clique na tabela
-    document.querySelector('table.w-full tbody').addEventListener('click', e=>{
-      const tr = e.target.closest('tr.tx-row');
-      if (!tr) return;
-      openEdit(tr.dataset.txId);
-    });
+    document.querySelector('table.w-full tbody')
+      .addEventListener('click', e=>{
+        const tr = e.target.closest('tr.tx-row');
+        if (!tr) return;
+        openEdit(tr.dataset.txId);
+      });
 
     openBtn.addEventListener('click',openNew);
     closeBtn.addEventListener('click',()=>show(modal,false));

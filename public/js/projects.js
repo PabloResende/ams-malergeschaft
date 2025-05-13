@@ -1,9 +1,9 @@
-// public/js/projects.js
-
 const baseUrl = window.location.origin + '/ams-malergeschaft/public';
 
 document.addEventListener("DOMContentLoaded", () => {
+  //
   // ─── Criação de Projetos ────────────────────────────────────────────────
+  //
   const addProjectBtn            = document.getElementById("addProjectBtn");
   const projectModal             = document.getElementById("projectModal");
   const closeCreateBtns          = document.querySelectorAll("#closeModal, #closeCreateModal");
@@ -68,10 +68,10 @@ document.addEventListener("DOMContentLoaded", () => {
   createAddEmployeeBtn.addEventListener("click", () => {
     const empId   = createEmployeeSelect.value;
     const empText = createEmployeeSelect.options[createEmployeeSelect.selectedIndex].text;
-    if (!empId || createEmployees.find(e => e.id == empId)) return;
+    if (!empId || createEmployees.some(e => e.id == empId)) return;
 
     fetch(`${baseUrl}/projects/checkEmployee?id=${empId}`)
-      .then(res => res.ok ? res.json() : Promise.reject(res.status))
+      .then(res => res.ok ? res.json() : Promise.reject())
       .then(json => {
         if (json.count > 0) {
           alert(`Este funcionário já está alocado em ${json.count} projeto(s) em andamento.`);
@@ -108,14 +108,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function syncCreateData() {
-    createTasksData.value      = JSON.stringify(createTasks);
-    createEmployeesData.value  = JSON.stringify(createEmployees.map(e => e.id));
-    createEmployeeCount.value  = createEmployees.length;
-    // status automático: sem tarefas = pending, com tarefas = in_progress
-    createProjectStatus.value  = createTasks.length === 0 ? 'pending' : 'in_progress';
+    createTasksData.value     = JSON.stringify(createTasks);
+    createEmployeesData.value = JSON.stringify(createEmployees.map(e => e.id));
+    createEmployeeCount.value = createEmployees.length;
+    createProjectStatus.value = createTasks.length === 0 ? 'pending' : 'in_progress';
   }
 
+  //
   // ─── Detalhes de Projetos ───────────────────────────────────────────────
+  //
   const projectItems               = document.querySelectorAll(".project-item");
   const detailsModal               = document.getElementById("projectDetailsModal");
   const closeDetailsBtn            = document.getElementById("closeProjectDetailsModal");
@@ -135,191 +136,207 @@ document.addEventListener("DOMContentLoaded", () => {
   const detailsEmployeesContainer  = document.getElementById("detailsEmployeesContainer");
   const detailsEmployeeSelect      = document.getElementById("detailsEmployeeSelect");
   const detailsAddEmployeeBtn      = document.getElementById("detailsAddEmployeeBtn");
+  const detailsInventoryContainer  = document.getElementById("detailsInventoryContainer");
   const detailsTasksData           = document.getElementById("detailsTasksData");
   const detailsEmployeesData       = document.getElementById("detailsEmployeesData");
   const detailsEmployeeCount       = document.getElementById("detailsEmployeeCountData");
-  const detailsInventoryContainer  = document.getElementById("detailsInventoryContainer");
+  const detailsProjTransBody       = document.getElementById("detailsProjTransBody");
 
   let detailTasks     = [];
   let detailEmployees = [];
   let detailInventory = [];
 
-  // abrir/fechar detalhes
-  projectItems.forEach(item =>
-    item.addEventListener("click", () => loadDetails(item.dataset.projectId))
-  );
+  function closeDetails() {
+    detailsModal.classList.add("hidden");
+  }
+
   closeDetailsBtn.addEventListener("click", closeDetails);
   cancelDetailsBtn.addEventListener("click", closeDetails);
   window.addEventListener("click", e => {
     if (e.target === detailsModal) closeDetails();
   });
   deleteDetailsBtn.addEventListener("click", () => {
+    if (!confirm("Tem certeza que deseja excluir este projeto?")) return;
     const id = detailsProjectId.value;
-    if (!id) return;
-    if (confirm("Tem certeza que deseja excluir este projeto?")) {
-      window.location.href = `${baseUrl}/projects/delete?id=${id}`;
-    }
+    window.location.href = `${baseUrl}/projects/delete?id=${id}`;
   });
 
-  function loadDetails(projectId) {
-    fetch(`${baseUrl}/projects/show?id=${projectId}`, { credentials: 'same-origin' })
-      .then(res => res.ok ? res.json() : Promise.reject(res.status))
+  projectItems.forEach(item =>
+    item.addEventListener("click", () => loadDetails(item.dataset.projectId))
+  );
+
+  function loadDetails(id) {
+    fetch(`${baseUrl}/projects/show?id=${id}`, { credentials:'same-origin' })
+      .then(r => r.ok ? r.json() : Promise.reject())
       .then(data => {
-        if (data.error) return alert(data.error);
+        if (data.error) {
+          alert(data.error);
+          return;
+        }
+        // geral
+        detailsProjectId.value   = data.id;
+        detailsStartDate.value   = data.start_date;
+        detailsEndDate.value     = data.end_date;
+        detailsName.value        = data.name;
+        detailsDescription.value = data.description || '';
 
-        detailsProjectId.value     = data.id;
-        detailsStartDate.value     = data.start_date;
-        detailsEndDate.value       = data.end_date;
-        detailsName.value          = data.name;
-        detailsDescription.value   = data.description || '';
-
-        detailTasks     = (data.tasks     || []).map(t => ({
+        // tarefas
+        detailTasks = (data.tasks || []).map(t=>({
           id: t.id,
           description: t.description,
           completed: !!t.completed
         }));
-        detailEmployees = (data.employees || []).map(e => ({
-          id: e.id,
-          text: e.name + ' ' + e.last_name
-        }));
-        detailInventory = data.inventory || [];
-
         renderDetailTasks();
+
+        // funcionários
+        detailEmployees = (data.employees || []).map(e=>({
+          id: e.id,
+          text: e.name+' '+e.last_name
+        }));
         renderDetailEmployees();
+
+        // inventário
+        detailInventory = data.inventory || [];
         renderDetailInventory();
-        updateDetailProgress();   // gera status e progress
+
+        // transações
+        fetch(`${baseUrl}/projects/transactions?id=${data.id}`,{ credentials:'same-origin'})
+          .then(r=>r.ok?r.json():Promise.reject())
+          .then(renderProjectTransactions)
+          .catch(()=>console.warn('Não foi possível carregar transações.'));
+
         activateDetailTab('geral');
         detailsModal.classList.remove("hidden");
       })
-      .catch(err => {
-        console.error(err);
-        alert("Não foi possível carregar detalhes do projeto.");
-      });
+      .catch(() => alert("Não foi possível carregar detalhes do projeto."));
   }
 
-  function closeDetails() {
-    detailsModal.classList.add("hidden");
-  }
-
-  // Tabs Detalhes
+  // Tabs
   const detailTabButtons = document.querySelectorAll("#projectDetailsModal .tab-btn");
   const detailTabPanels  = document.querySelectorAll("#projectDetailsModal .tab-panel");
-  function activateDetailTab(tabName) {
+  function activateDetailTab(tab) {
     detailTabButtons.forEach(b => {
-      if (b.dataset.tab === tabName) {
-        b.classList.replace('text-gray-600','text-blue-600');
-        b.classList.add('border-b-2','border-blue-600');
-      } else {
-        b.classList.replace('text-blue-600','text-gray-600');
-        b.classList.remove('border-b-2','border-blue-600');
-      }
+      const is = b.dataset.tab === tab;
+      b.classList.toggle('text-blue-600', is);
+      b.classList.toggle('border-b-2', is);
+      b.classList.toggle('border-blue-600', is);
+      b.classList.toggle('text-gray-600', !is);
     });
     detailTabPanels.forEach(p => {
-      p.id === `tab-${tabName}` ? p.classList.remove('hidden') : p.classList.add('hidden');
+      p.id === `tab-${tab}` ? p.classList.remove('hidden') : p.classList.add('hidden');
     });
   }
-  detailTabButtons.forEach(btn =>
-    btn.addEventListener("click", () => activateDetailTab(btn.dataset.tab))
+  detailTabButtons.forEach(b =>
+    b.addEventListener("click", () => activateDetailTab(b.dataset.tab))
   );
 
-  // Tasks
+  // tarefas
   detailsAddTaskBtn.addEventListener("click", () => {
-    const desc = detailsNewTaskInput.value.trim();
-    if (!desc) return;
-    detailTasks.push({ id: Date.now(), description: desc, completed: false });
+    const d = detailsNewTaskInput.value.trim();
+    if (!d) return;
+    detailTasks.push({ id: Date.now(), description: d, completed: false });
     detailsNewTaskInput.value = "";
     renderDetailTasks();
   });
-
   function renderDetailTasks() {
-    detailsTasksContainer.innerHTML = "";
-    detailTasks.forEach((t, i) => {
+    detailsTasksContainer.innerHTML = '';
+    detailTasks.forEach((t,i) => {
       const div = document.createElement("div");
       div.className = "flex items-center mb-2";
       div.innerHTML = `
-        <input type="checkbox" data-index="${i}" ${t.completed ? 'checked' : ''} class="mr-2">
+        <input type="checkbox" data-index="${i}" ${t.completed?'checked':''} class="mr-2">
         <span class="flex-1">${t.description}</span>
       `;
       detailsTasksContainer.appendChild(div);
     });
     detailsTasksData.value = JSON.stringify(detailTasks);
+    detailsTasksContainer.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+      cb.addEventListener("change", e=>{
+        detailTasks[e.target.dataset.index].completed = e.target.checked;
+        detailsTasksData.value = JSON.stringify(detailTasks);
+        updateDetailProgress();
+      });
+    });
     updateDetailProgress();
   }
-
-  detailsTasksContainer.addEventListener("change", e => {
-    if (e.target.matches('input[type="checkbox"]')) {
-      const i = e.target.dataset.index;
-      detailTasks[i].completed = e.target.checked;
-      detailsTasksData.value    = JSON.stringify(detailTasks);
-      updateDetailProgress();
-    }
-  });
-
   function updateDetailProgress() {
-    const total = detailTasks.length;
-    const done  = detailTasks.filter(t => t.completed).length;
-    const pct   = total ? Math.round(done / total * 100) : 0;
-    detailsProgressBar.style.width  = pct + '%';
-    detailsProgressText.textContent = pct + '%';
-    const status = total === 0
-      ? 'pending'
-      : (done === total ? 'completed' : 'in_progress');
-    detailsProjectStatusHidden.value = status;
+    const tot = detailTasks.length;
+    const done= detailTasks.filter(t=>t.completed).length;
+    const pct = tot?Math.round(done/tot*100):0;
+    detailsProgressBar.style.width = pct+'%';
+    detailsProgressText.textContent = pct+'%';
+    detailsProjectStatusHidden.value = tot===0?'pending':(done===tot?'completed':'in_progress');
   }
 
-  // Employees
-  detailsAddEmployeeBtn.addEventListener("click", () => {
-    const empId   = detailsEmployeeSelect.value;
-    const empText = detailsEmployeeSelect.options[detailsEmployeeSelect.selectedIndex].text;
-    if (!empId || detailEmployees.find(e => e.id == empId)) return;
-
-    fetch(`${baseUrl}/projects/checkEmployee?id=${empId}`)
-      .then(res => res.ok ? res.json() : Promise.reject(res.status))
-      .then(json => {
-        if (json.count > 0) {
-          alert(`Este funcionário já está alocado em ${json.count} projeto(s) em andamento.`);
-        }
-        detailEmployees.push({ id: empId, text: empText });
+  // funcionários
+  detailsAddEmployeeBtn.addEventListener("click", ()=>{
+    const eid = detailsEmployeeSelect.value;
+    const txt = detailsEmployeeSelect.options[detailsEmployeeSelect.selectedIndex].text;
+    if (!eid||detailEmployees.some(e=>e.id==eid)) return;
+    fetch(`${baseUrl}/projects/checkEmployee?id=${eid}`)
+      .then(r=>r.ok?r.json():Promise.reject())
+      .then(js=>{
+        if(js.count>0) alert(`Este funcionário já está em ${js.count} projeto(s) em andamento.`);
+        detailEmployees.push({id:eid,text:txt});
         renderDetailEmployees();
       })
-      .catch(() => {
-        detailEmployees.push({ id: empId, text: empText });
+      .catch(()=>{
+        detailEmployees.push({id:eid,text:txt});
         renderDetailEmployees();
       });
   });
-
   function renderDetailEmployees() {
-    detailsEmployeesContainer.innerHTML = "";
-    detailEmployees.forEach((e, i) => {
+    detailsEmployeesContainer.innerHTML = '';
+    detailEmployees.forEach((e,i)=>{
       const div = document.createElement("div");
       div.className = "flex items-center mb-2";
-      div.innerHTML = `
-        <span class="flex-1">${e.text}</span>
-        <button data-index="${i}" class="remove-detail-emp text-red-500">×</button>
-      `;
+      div.innerHTML = `<span class="flex-1">${e.text}</span>
+                       <button data-index="${i}" class="text-red-500">×</button>`;
       detailsEmployeesContainer.appendChild(div);
     });
-    detailsEmployeesData.value = JSON.stringify(detailEmployees.map(e => e.id));
+    detailsEmployeesData.value = JSON.stringify(detailEmployees.map(e=>e.id));
     detailsEmployeeCount.value = detailEmployees.length;
-    detailsEmployeesContainer.querySelectorAll(".remove-detail-emp").forEach(btn =>
-      btn.addEventListener("click", () => {
-        detailEmployees.splice(btn.dataset.index, 1);
+    detailsEmployeesContainer.querySelectorAll('button').forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        detailEmployees.splice(btn.dataset.index,1);
         renderDetailEmployees();
-      })
-    );
+      });
+    });
   }
 
-  // Inventory
+  // inventário
   function renderDetailInventory() {
-    detailsInventoryContainer.innerHTML = "";
+    detailsInventoryContainer.innerHTML = '';
     if (!detailInventory.length) {
       detailsInventoryContainer.textContent = '— Nenhum item alocado';
       return;
     }
-    detailInventory.forEach(i => {
+    detailInventory.forEach(i=>{
       const div = document.createElement("div");
       div.textContent = `${i.name} (qtde: ${i.quantity})`;
       detailsInventoryContainer.appendChild(div);
+    });
+  }
+
+  // transações do projeto
+  function renderProjectTransactions(trans) {
+    detailsProjTransBody.innerHTML = '';
+    if (!trans.length) {
+      detailsProjTransBody.innerHTML = `
+        <tr>
+          <td colspan="3" class="p-4 text-center text-gray-500">Sem transações relacionadas</td>
+        </tr>`;
+      return;
+    }
+    trans.forEach(tx=>{
+      const tr = document.createElement("tr");
+      tr.className = 'border-t';
+      tr.innerHTML = `
+        <td class="p-2">${new Date(tx.date).toLocaleDateString()}</td>
+        <td class="p-2">${tx.type.charAt(0).toUpperCase()+tx.type.slice(1)}</td>
+        <td class="p-2 text-right">R$ ${parseFloat(tx.amount).toFixed(2).replace('.',',')}</td>
+      `;
+      detailsProjTransBody.appendChild(tr);
     });
   }
 });

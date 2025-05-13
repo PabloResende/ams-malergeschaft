@@ -92,6 +92,9 @@ switch ($route) {
     case '/projects/delete':
         $projectController->delete();
         break;
+    case '/projects/transactions':
+        $projectController->transactions();
+        break;
 
     // FUNCIONÁRIOS
     case '/employees':

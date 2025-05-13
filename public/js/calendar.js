@@ -1,115 +1,103 @@
+// public/js/calendar.js
+
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("DOM carregado");
+  const {
+    yearLabel, addReminder, modalTitle,
+    titleLabel, dateLabel, colorLabel,
+    cancel, save, eventsOn,
+    monthNames, weekdays
+  } = window.langText;
 
-  // Variável baseUrl definida na view como variável global
-  // baseUrl já está disponível
+  // ————— Tradução de elementos estáticos —————
 
-  // Obtém os elementos necessários
+  // Label acima do seletor de ano
+  const yearLabelEl = document.querySelector('label[for="yearSelector"]');
+  if (yearLabelEl) yearLabelEl.textContent = yearLabel;
+
+  // Botão “Adicionar Lembrete”
   const addReminderBtn = document.getElementById("addReminderBtn");
+  if (addReminderBtn) addReminderBtn.textContent = addReminder;
+
+  // Modal de lembrete
   const reminderModal = document.getElementById("reminderModal");
-  const closeModal = document.getElementById("closeModal");
-  const yearSelector = document.getElementById("yearSelector");
+  if (reminderModal) {
+    // Título do modal
+    const modalTitleEl = reminderModal.querySelector("h2");
+    if (modalTitleEl) modalTitleEl.textContent = modalTitle;
 
-  // Elementos para o modal do calendário expandido
-  const expandedCalendarModal = document.getElementById(
-    "expandedCalendarModal"
-  );
-  const expandedCalendarContent = document.getElementById(
-    "expandedCalendarContent"
-  );
-  const closeExpandedCalendar = document.getElementById(
-    "closeExpandedCalendar"
-  );
+    // Labels do formulário
+    const formLabels = reminderModal.querySelectorAll("#reminderForm label");
+    if (formLabels.length >= 3) {
+      formLabels[0].textContent = titleLabel;
+      formLabels[1].textContent = dateLabel;
+      formLabels[2].textContent = colorLabel;
+    }
 
-  if (!addReminderBtn) {
-    console.error("Botão addReminderBtn não encontrado.");
-  }
-  if (!reminderModal) {
-    console.error("Modal reminderModal não encontrado.");
-  }
-  if (!closeModal) {
-    console.error("Botão closeModal não encontrado.");
-  }
-  if (!yearSelector) {
-    console.error("Seletor yearSelector não encontrado.");
-  }
-  if (!expandedCalendarModal) {
-    console.error("Modal expandedCalendarModal não encontrado.");
-  }
-  if (!closeExpandedCalendar) {
-    console.error("Botão closeExpandedCalendar não encontrado.");
+    // Botões “Cancelar” e “Salvar”
+    const cancelBtn = reminderModal.querySelector("#closeModal");
+    if (cancelBtn) cancelBtn.textContent = cancel;
+    const saveBtn = reminderModal.querySelector("button[type='submit']");
+    if (saveBtn) saveBtn.textContent = save;
   }
 
-  // Abre o modal de lembrete quando o botão é clicado
+  // ————— Fim da tradução —————
+
+  const closeModal              = document.getElementById("closeModal");
+  const yearSelector            = document.getElementById("yearSelector");
+  const expandedCalendarModal   = document.getElementById("expandedCalendarModal");
+  const expandedCalendarContent = document.getElementById("expandedCalendarContent");
+  const closeExpandedCalendar   = document.getElementById("closeExpandedCalendar");
+  const tooltip                 = document.getElementById("tooltip");
+  const serverEvents            = JSON.parse(
+    document.getElementById("serverEventsData").textContent
+  );
+
+  let reminders = [];
+
+  // Abre/fecha o modal de lembrete
   addReminderBtn.addEventListener("click", () => {
-    console.log("Botão de adicionar lembrete clicado.");
     reminderModal.classList.remove("hidden");
   });
-
-  // Fecha o modal de lembrete clicando fora do conteúdo
-  reminderModal.addEventListener("click", (e) => {
+  reminderModal.addEventListener("click", e => {
     if (e.target === reminderModal) {
       reminderModal.classList.add("hidden");
     }
   });
-
-  // Fecha o modal de lembrete quando o botão "Cancelar" é clicado
   closeModal.addEventListener("click", () => {
     reminderModal.classList.add("hidden");
   });
 
-  // Fecha o modal do calendário expandido
+  // Abre/fecha o calendário expandido
   closeExpandedCalendar.addEventListener("click", () => {
     expandedCalendarModal.classList.add("hidden");
   });
-
-  expandedCalendarModal.addEventListener("click", (e) => {
+  expandedCalendarModal.addEventListener("click", e => {
     if (e.target === expandedCalendarModal) {
       expandedCalendarModal.classList.add("hidden");
     }
   });
 
-  // Função para buscar os lembretes via AJAX do backend (rota fetch)
+  // Busca lembretes do backend
   function fetchReminders() {
     return fetch(`${baseUrl}/calendar/fetch`)
-      .then((response) => response.json())
-      .catch((err) => {
+      .then(res => res.json())
+      .catch(err => {
         console.error("Erro ao buscar lembretes:", err);
         return [];
       });
   }
 
-  let reminders = [];
-  const serverEvents = JSON.parse(
-    document.getElementById("serverEventsData").textContent
-  );
-
-  // Combina eventos do servidor e os lembretes vindos do banco de dados
+  // Combina eventos do servidor e lembretes
   function getAllEvents() {
     return serverEvents.concat(reminders);
   }
 
-  // Renderiza um calendário para um mês (modo normal)
+  // Renderiza um calendário mensal resumido
   function renderCalendar(year, month) {
-    const monthNames = [
-      "Janeiro",
-      "Fevereiro",
-      "Março",
-      "Abril",
-      "Maio",
-      "Junho",
-      "Julho",
-      "Agosto",
-      "Setembro",
-      "Outubro",
-      "Novembro",
-      "Dezembro",
-    ];
-
     const container = document.createElement("div");
     container.className = "bg-white rounded-xl shadow-lg p-4";
 
-    // Cabeçalho clicável para expandir (abre o modal expandido)
+    // Cabeçalho
     const header = document.createElement("h3");
     header.className = "text-center text-lg font-semibold mb-2 cursor-pointer";
     header.textContent = `${monthNames[month]} ${year}`;
@@ -118,17 +106,14 @@ document.addEventListener("DOMContentLoaded", () => {
         showExpandedCalendar(year, month);
       }
     });
-    
     container.appendChild(header);
 
-    // Cria a tabela do calendário
+    // Tabela
     const table = document.createElement("table");
     table.className = "w-full text-center";
-
-    const weekdays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
     const thead = document.createElement("thead");
     const trWeek = document.createElement("tr");
-    weekdays.forEach((day) => {
+    weekdays.forEach(day => {
       const th = document.createElement("th");
       th.textContent = day;
       th.className = "border p-1 text-xs bg-gray-100";
@@ -138,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
     table.appendChild(thead);
 
     const tbody = document.createElement("tbody");
-    const firstDay = new Date(year, month, 1);
+    const firstDay    = new Date(year, month, 1);
     const startingDay = firstDay.getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
@@ -153,61 +138,55 @@ document.addEventListener("DOMContentLoaded", () => {
         if ((i === 0 && j < startingDay) || date > daysInMonth) {
           td.innerHTML = "";
         } else {
-          // Exibe o número do dia
+          // Número do dia
           const dayDiv = document.createElement("div");
           dayDiv.className = "text-xs font-semibold absolute top-0 left-0 m-1";
           dayDiv.textContent = date;
           td.appendChild(dayDiv);
 
-          // Container para os eventos
+          // Eventos
           const eventsWrapper = document.createElement("div");
           eventsWrapper.className = "mt-4 overflow-hidden max-h-12";
 
-          // Define a data da célula sem horários
           const cellDate = new Date(year, month, date);
-          cellDate.setHours(0, 0, 0, 0);
+          cellDate.setHours(0,0,0,0);
 
-          // Filtra os eventos para o dia
-          const eventsForDay = getAllEvents().filter((evt) => {
-            const evtDate = new Date(evt.reminder_date);
-            evtDate.setHours(0, 0, 0, 0);
-            return evtDate.getTime() === cellDate.getTime();
+          const eventsForDay = getAllEvents().filter(evt => {
+            const d = new Date(evt.reminder_date);
+            d.setHours(0,0,0,0);
+            return d.getTime() === cellDate.getTime();
           });
 
-          // Renderiza os eventos limitando a maxVisibleEvents
-          eventsForDay.slice(0, maxVisibleEvents).forEach((evt) => {
+          // Exibe até maxVisibleEvents
+          eventsForDay.slice(0, maxVisibleEvents).forEach(evt => {
             const evtDiv = document.createElement("div");
-            evtDiv.className =
-              "mt-1 text-xs text-white rounded px-1 truncate cursor-pointer";
+            evtDiv.className = "mt-1 text-xs text-white rounded px-1 truncate cursor-pointer";
             evtDiv.style.backgroundColor = evt.color || "#3b82f6";
             evtDiv.textContent = evt.title;
-            // Aqui você pode adicionar os eventos de tooltip se necessário:
-            evtDiv.addEventListener("mouseenter", (e) => {
-              const tooltip = document.getElementById("tooltip");
+
+            // Tooltip
+            evtDiv.addEventListener("mouseenter", e => {
               tooltip.textContent = evt.title;
               tooltip.style.left = e.clientX + 10 + "px";
-              tooltip.style.top = e.clientY + 10 + "px";
+              tooltip.style.top  = e.clientY + 10 + "px";
               tooltip.style.display = "block";
             });
-            evtDiv.addEventListener("mousemove", (e) => {
-              const tooltip = document.getElementById("tooltip");
+            evtDiv.addEventListener("mousemove", e => {
               tooltip.style.left = e.clientX + 10 + "px";
-              tooltip.style.top = e.clientY + 10 + "px";
+              tooltip.style.top  = e.clientY + 10 + "px";
             });
             evtDiv.addEventListener("mouseleave", () => {
-              const tooltip = document.getElementById("tooltip");
               tooltip.style.display = "none";
             });
+
             eventsWrapper.appendChild(evtDiv);
           });
 
-          // Se houver mais eventos que o limite, mostra o indicador "+X ver mais"
+          // Indicador de “+X”
           if (eventsForDay.length > maxVisibleEvents) {
-            const extraCount = eventsForDay.length - maxVisibleEvents;
             const moreDiv = document.createElement("div");
             moreDiv.className = "mt-1 text-xs text-blue-600 cursor-pointer";
-            moreDiv.textContent = `+${extraCount}`;
-            // Opcional: ao clicar no indicador, pode chamar um modal específico para esse dia
+            moreDiv.textContent = `+${eventsForDay.length - maxVisibleEvents}`;
             moreDiv.addEventListener("click", () => {
               showDayEventsModal(cellDate, eventsForDay);
             });
@@ -222,43 +201,27 @@ document.addEventListener("DOMContentLoaded", () => {
       tbody.appendChild(tr);
       if (date > daysInMonth) break;
     }
+
     table.appendChild(tbody);
     container.appendChild(table);
     return container;
   }
-  function renderExpandedCalendar(year, month) {
-    const monthNames = [
-      "Janeiro",
-      "Fevereiro",
-      "Março",
-      "Abril",
-      "Maio",
-      "Junho",
-      "Julho",
-      "Agosto",
-      "Setembro",
-      "Outubro",
-      "Novembro",
-      "Dezembro",
-    ];
 
+  // Renderiza um calendário mensal expandido
+  function renderExpandedCalendar(year, month) {
     const container = document.createElement("div");
     container.className = "bg-white rounded-xl shadow-lg p-6";
 
-    // Cabeçalho (não precisa ser clicável, pois já está expandido)
     const header = document.createElement("h2");
     header.className = "text-center text-2xl font-bold mb-4";
     header.textContent = `${monthNames[month]} ${year}`;
     container.appendChild(header);
 
-    // Cria a tabela do calendário
     const table = document.createElement("table");
     table.className = "w-full text-center border-collapse";
-
-    const weekdays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
     const thead = document.createElement("thead");
     const trWeek = document.createElement("tr");
-    weekdays.forEach((day) => {
+    weekdays.forEach(day => {
       const th = document.createElement("th");
       th.textContent = day;
       th.className = "border p-3 text-sm bg-gray-200";
@@ -268,7 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
     table.appendChild(thead);
 
     const tbody = document.createElement("tbody");
-    const firstDay = new Date(year, month, 1);
+    const firstDay    = new Date(year, month, 1);
     const startingDay = firstDay.getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
@@ -281,52 +244,46 @@ document.addEventListener("DOMContentLoaded", () => {
         if ((i === 0 && j < startingDay) || date > daysInMonth) {
           td.innerHTML = "";
         } else {
-          // Número do dia
           const dayDiv = document.createElement("div");
           dayDiv.className = "text-lg font-semibold absolute top-0 left-0 m-1";
           dayDiv.textContent = date;
           td.appendChild(dayDiv);
 
-          // Container para os eventos do dia (SEM limite)
           const eventsWrapper = document.createElement("div");
-          eventsWrapper.className = "mt-6 overflow-hidden"; // Sem max-height fixo para mostrar todos
+          eventsWrapper.className = "mt-6 overflow-hidden";
 
-          // Data da célula
           const cellDate = new Date(year, month, date);
-          cellDate.setHours(0, 0, 0, 0);
+          cellDate.setHours(0,0,0,0);
 
-          // Seleciona todos os eventos para o dia
-          const eventsForDay = getAllEvents().filter((evt) => {
-            const evtDate = new Date(evt.reminder_date);
-            evtDate.setHours(0, 0, 0, 0);
-            return evtDate.getTime() === cellDate.getTime();
+          const eventsForDay = getAllEvents().filter(evt => {
+            const d = new Date(evt.reminder_date);
+            d.setHours(0,0,0,0);
+            return d.getTime() === cellDate.getTime();
           });
 
-          eventsForDay.forEach((evt) => {
+          eventsForDay.forEach(evt => {
             const evtDiv = document.createElement("div");
-            evtDiv.className =
-              "mt-1 text-sm text-white rounded px-2 truncate cursor-pointer";
+            evtDiv.className = "mt-1 text-sm text-white rounded px-2 truncate cursor-pointer";
             evtDiv.style.backgroundColor = evt.color || "#3b82f6";
             evtDiv.textContent = evt.title;
-            // Adiciona tooltip da mesma forma (opcional)
-            evtDiv.addEventListener("mouseenter", (e) => {
-              const tooltip = document.getElementById("tooltip");
+
+            evtDiv.addEventListener("mouseenter", e => {
               tooltip.textContent = evt.title;
               tooltip.style.left = e.clientX + 10 + "px";
-              tooltip.style.top = e.clientY + 10 + "px";
+              tooltip.style.top  = e.clientY + 10 + "px";
               tooltip.style.display = "block";
             });
-            evtDiv.addEventListener("mousemove", (e) => {
-              const tooltip = document.getElementById("tooltip");
+            evtDiv.addEventListener("mousemove", e => {
               tooltip.style.left = e.clientX + 10 + "px";
-              tooltip.style.top = e.clientY + 10 + "px";
+              tooltip.style.top  = e.clientY + 10 + "px";
             });
             evtDiv.addEventListener("mouseleave", () => {
-              const tooltip = document.getElementById("tooltip");
               tooltip.style.display = "none";
             });
+
             eventsWrapper.appendChild(evtDiv);
           });
+
           td.appendChild(eventsWrapper);
           date++;
         }
@@ -335,56 +292,41 @@ document.addEventListener("DOMContentLoaded", () => {
       tbody.appendChild(tr);
       if (date > daysInMonth) break;
     }
+
     table.appendChild(tbody);
     container.appendChild(table);
     return container;
   }
 
-  // Renderiza os calendários para os 12 meses do ano selecionado
+  // Mostra todos os calendários do ano
   function renderYearCalendars() {
-    const year = parseInt(yearSelector.value);
     const grid = document.getElementById("calendarsGrid");
     grid.innerHTML = "";
-    for (let month = 0; month < 12; month++) {
-      const calendarEl = renderCalendar(year, month);
-      grid.appendChild(calendarEl);
+    const year = parseInt(yearSelector.value, 10);
+    for (let m = 0; m < 12; m++) {
+      grid.appendChild(renderCalendar(year, m));
     }
   }
 
-  // Função para carregar e renderizar os calendários com os lembretes
+  // Carrega lembretes e redesenha
   function loadAndRenderCalendars() {
-    fetchReminders().then((fetchedReminders) => {
+    fetchReminders().then(fetchedReminders => {
       reminders = fetchedReminders;
       renderYearCalendars();
     });
   }
 
-  loadAndRenderCalendars();
-  yearSelector.addEventListener("change", loadAndRenderCalendars);
-
-  // Submissão do formulário via AJAX para salvar lembrete
+  // Submissão do formulário de lembrete
   const reminderForm = document.getElementById("reminderForm");
-  reminderForm.addEventListener("submit", (e) => {
+  reminderForm.addEventListener("submit", e => {
     e.preventDefault();
     const formData = new FormData(reminderForm);
-
-    // Debug: exibe os dados do formulário
-    for (const [key, value] of formData.entries()) {
-      console.log(`${key}: ${value}`);
-    }
-
     fetch(`${baseUrl}/calendar/store`, {
       method: "POST",
-      body: formData,
+      body: formData
     })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        console.log("Resposta:", data);
+      .then(res => res.json())
+      .then(data => {
         if (data.success) {
           alert(data.message);
           reminderModal.classList.add("hidden");
@@ -394,45 +336,47 @@ document.addEventListener("DOMContentLoaded", () => {
           alert(data.message || "Erro desconhecido");
         }
       })
-      .catch((err) => {
-        console.error("Erro:", err);
+      .catch(err => {
+        console.error("Erro ao salvar lembrete:", err);
         alert("Falha na comunicação com o servidor");
       });
   });
 
+  // Exibe calendário expandido
   function showExpandedCalendar(year, month) {
-    const expandedContent = renderExpandedCalendar(year, month);
-    const expandedCalendarContent = document.getElementById(
-      "expandedCalendarContent"
-    );
     expandedCalendarContent.innerHTML = "";
-    expandedCalendarContent.appendChild(expandedContent);
-    const expandedCalendarModal = document.getElementById(
-      "expandedCalendarModal"
-    );
+    expandedCalendarContent.appendChild(renderExpandedCalendar(year, month));
     expandedCalendarModal.classList.remove("hidden");
   }
 
+  // Exibe modal de eventos de um dia
   function showDayEventsModal(cellDate, events) {
-    // Formata a data para exibição (pode ser adaptada conforme necessário)
     const options = { year: "numeric", month: "long", day: "numeric" };
     const dateString = cellDate.toLocaleDateString("pt-BR", options);
 
-    document.getElementById(
-      "dayModalTitle"
-    ).textContent = `Eventos em ${dateString}`;
+    const modal       = document.getElementById("dayEventsModal");
+    const titleEl     = document.getElementById("dayModalTitle");
+    const contentEl   = document.getElementById("dayEventsContent");
 
-    const contentDiv = document.getElementById("dayEventsContent");
-    contentDiv.innerHTML = "";
+    titleEl.textContent = `${eventsOn} ${dateString}`;
+    contentEl.innerHTML = "";
 
-    events.forEach((evt) => {
-      const eventDiv = document.createElement("div");
-      eventDiv.className = "p-2 border rounded mb-2";
-      eventDiv.style.backgroundColor = evt.color || "#3b82f6";
-      eventDiv.textContent = evt.title;
-      contentDiv.appendChild(eventDiv);
+    events.forEach(evt => {
+      const div = document.createElement("div");
+      div.className = "p-2 border rounded mb-2";
+      div.style.backgroundColor = evt.color || "#3b82f6";
+      div.textContent = evt.title;
+      contentEl.appendChild(div);
     });
 
-    document.getElementById("dayEventsModal").classList.remove("hidden");
+    modal.classList.remove("hidden");
+
+    modal.addEventListener("click", e => {
+      if (e.target === modal) modal.classList.add("hidden");
+    });
   }
+
+  // Inicialização
+  loadAndRenderCalendars();
+  yearSelector.addEventListener("change", loadAndRenderCalendars);
 });

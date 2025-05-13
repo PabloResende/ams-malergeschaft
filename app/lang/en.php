@@ -103,11 +103,17 @@ return [
     'no_employees_available'=> 'No employees available.',
 
     // Calendar
-    'add_event'             => 'Add Event',
-    'event_name'            => 'Event Name',
-    'event_date'            => 'Event Date',
-    'event_description'     => 'Event Description',
-    'no_events'             => 'No events found.',
+    'locale'         => 'en-US',
+    'calendar_title' => 'Yearly Calendars',
+    'add_reminder'   => '+ Add Reminder',
+    'title'          => 'Title',
+    'color'          => 'Color',
+    'events_on'      => 'Events on',
+    'month_names'    => [
+        'January','February','March','April','May','June',
+        'July','August','September','October','November','December'
+    ],
+    'weekdays'       => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
 
     // Clients
     'clients_list'          => 'Clients List',

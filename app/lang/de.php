@@ -103,12 +103,18 @@ return [
     'no_employees_available'=> 'Keine Mitarbeiter verfügbar.',
 
     // Kalender
-    'add_event'             => 'Ereignis hinzufügen',
-    'event_name'            => 'Ereignisname',
-    'event_date'            => 'Ereignisdatum',
-    'event_description'     => 'Ereignisbeschreibung',
-    'no_events'             => 'Keine Ereignisse gefunden.',
-
+    'locale'         => 'de-DE',
+    'calendar_title' => 'Jahreskalender',
+    'add_reminder'   => '+ Erinnerung hinzufügen',
+    'title'          => 'Titel',
+    'color'          => 'Farbe',
+    'events_on'      => 'Ereignisse am',
+    'month_names'    => [
+        'Januar','Februar','März','April','Mai','Juni',
+        'Juli','August','September','Oktober','November','Dezember'
+    ],
+    'weekdays'       => ['So','Mo','Di','Mi','Do','Fr','Sa'],
+    
     // Kunden
     'clients_list'          => 'Kundenliste',
     'no_clients_available'  => 'Keine Kunden verfügbar.',

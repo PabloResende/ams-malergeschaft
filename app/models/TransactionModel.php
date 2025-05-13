@@ -1,5 +1,6 @@
 <?php
 // app/models/TransactionModel.php
+
 require_once __DIR__ . '/../../config/Database.php';
 
 class TransactionModel
@@ -11,6 +12,7 @@ class TransactionModel
         'compras_materiais' => 'Compras de Materiais',
         'emprestimos'       => 'Empréstimos',
         'gastos_gerais'     => 'Gastos Gerais',
+        'parcelamento'      => 'Parcelamento',
     ];
 
     public static function connect(): PDO
@@ -22,7 +24,8 @@ class TransactionModel
     {
         $sql = "
             SELECT 
-              ft.*, d.due_date, d.installments_count, d.initial_payment, d.initial_payment_amount
+              ft.*, 
+              d.due_date, d.installments_count, d.initial_payment, d.initial_payment_amount
             FROM financial_transactions ft
             LEFT JOIN debts d ON d.transaction_id = ft.id
             WHERE ft.date BETWEEN ? AND ?
@@ -54,7 +57,7 @@ class TransactionModel
         $pdo = self::connect();
         $in  = $pdo->prepare(
           "SELECT COALESCE(SUM(amount),0) FROM financial_transactions
-           WHERE type='income'  AND date BETWEEN ? AND ?"
+           WHERE type='income' AND date BETWEEN ? AND ?"
         );
         $ex  = $pdo->prepare(
           "SELECT COALESCE(SUM(amount),0) FROM financial_transactions
@@ -88,8 +91,7 @@ class TransactionModel
         $stmt = self::connect()
             ->prepare("SELECT * FROM transaction_attachments WHERE transaction_id = ?");
         $stmt->execute([$txId]);
-        $attachments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        return $attachments ?: [];
+        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
     }
 
     public static function getDebt(int $txId): array
@@ -97,8 +99,7 @@ class TransactionModel
         $stmt = self::connect()
             ->prepare("SELECT * FROM debts WHERE transaction_id = ?");
         $stmt->execute([$txId]);
-        $debt = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $debt ?: [];
+        return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
     }
 
     public static function store(
@@ -132,7 +133,7 @@ class TransactionModel
             ")->execute([$txId, $a['file_path']]);
         }
 
-        if ($debtData && $data['type']==='debt') {
+        if ($debtData) {
             $pdo->prepare("
                 INSERT INTO debts
                   (client_id,transaction_id,project_id,amount,due_date,status,installments_count,initial_payment,initial_payment_amount)
@@ -183,7 +184,45 @@ class TransactionModel
             ")->execute([$id, $a['file_path']]);
         }
 
-        // lógica de dívidas mantida igual ao store/update anterior...
+        $existDebt = self::getDebt($id);
+        if ($debtData) {
+            if ($existDebt) {
+                $pdo->prepare("
+                    UPDATE debts
+                    SET client_id=?,project_id=?,amount=?,due_date=?,status=?,installments_count=?,initial_payment=?,initial_payment_amount=?
+                    WHERE transaction_id=?
+                ")->execute([
+                    $debtData['client_id'],
+                    $debtData['project_id'],
+                    $debtData['amount'],
+                    $debtData['due_date'],
+                    $debtData['status'],
+                    $debtData['installments_count'],
+                    $debtData['initial_payment'],
+                    $debtData['initial_payment_amount'],
+                    $id
+                ]);
+            } else {
+                $pdo->prepare("
+                    INSERT INTO debts
+                      (client_id,transaction_id,project_id,amount,due_date,status,installments_count,initial_payment,initial_payment_amount)
+                    VALUES (?,?,?,?,?,?,?,?,?)
+                ")->execute([
+                    $debtData['client_id'],
+                    $id,
+                    $debtData['project_id'],
+                    $debtData['amount'],
+                    $debtData['due_date'],
+                    $debtData['status'],
+                    $debtData['installments_count'],
+                    $debtData['initial_payment'],
+                    $debtData['initial_payment_amount']
+                ]);
+            }
+        } elseif ($existDebt) {
+            $pdo->prepare("DELETE FROM debts WHERE transaction_id = ?")
+                ->execute([$id]);
+        }
     }
 
     public static function delete(int $id): void

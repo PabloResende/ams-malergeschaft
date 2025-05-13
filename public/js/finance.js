@@ -1,157 +1,177 @@
+// public/js/finance.js
 (function(){
-  const BASE = window.BASE_URL;
-  const API  = BASE + '/finance';
-  const STR  = window.FINANCE_STR;
+  const BASE         = window.BASE_URL;
+  const API          = BASE + '/finance';
+  const STR          = window.FINANCE_STR;
 
-  document.addEventListener('DOMContentLoaded', ()=>{
-    const openBtn    = document.getElementById('openTxModalBtn');
-    const modal      = document.getElementById('transactionModal');
-    const closeBtn   = document.getElementById('closeTxModalBtn');
-    const cancelBtn  = document.getElementById('txCancelBtn');
-    const deleteLink = document.getElementById('txDeleteLink');
-    const titleEl    = document.getElementById('txModalTitle');
-    const form       = document.getElementById('transactionForm');
+  document.addEventListener('DOMContentLoaded', () => {
+    // Buttons and modal
+    const openBtn      = document.getElementById('openTxModalBtn');
+    const modal        = document.getElementById('transactionModal');
+    const closeBtn     = document.getElementById('closeTxModalBtn');
+    const cancelBtn    = document.getElementById('txCancelBtn');
+    const deleteLink   = document.getElementById('txDeleteLink');
+    const titleEl      = document.getElementById('txModalTitle');
+    const form         = document.getElementById('transactionForm');
 
-    const selCat     = document.getElementById('txCategorySelect');
-    const cliCont    = document.getElementById('clientContainer');
-    const projCont   = document.getElementById('projectContainer');
-    const empCont    = document.getElementById('employeeContainer');
+    // Tabs
+    const tabGeneralBtn  = document.getElementById('tabGeneralBtn');
+    const tabDebtBtn     = document.getElementById('tabDebtBtn');
+    const panelGen       = document.getElementById('tabGeneral');
+    const panelDebt      = document.getElementById('tabDebt');
 
-    const selType    = document.getElementById('txTypeSelect');
-    const dateCont   = document.getElementById('dateContainer');
-    const dueCont    = document.getElementById('dueDateContainer');
-    const inpDate    = document.getElementById('txDateInput');
-    const inpDue     = document.getElementById('txDueDateInput');
-    const inpAmt     = document.getElementById('txAmountInput');
-    const descInput  = document.getElementById('txDescInput');
-    const attachList = document.getElementById('txAttachments');
+    // Form fields
+    const selType        = document.getElementById('txTypeSelect');
+    const selCategory    = document.getElementById('txCategorySelect');
+    const clientContainer   = document.getElementById('clientContainer');
+    const projectContainer  = document.getElementById('projectContainer');
+    const employeeContainer = document.getElementById('employeeContainer');
+    const dateContainer     = document.getElementById('dateContainer');
+    const dueDateInput      = document.getElementById('txDueDateInput');
+    const initialChk        = document.getElementById('initialPaymentChk');
+    const initialContainer  = document.getElementById('initialPaymentContainer');
+    const initialAmt        = document.getElementById('initialPaymentAmt');
+    const installmentsSel   = document.getElementById('installmentsSelect');
+    const installmentInfo   = document.getElementById('installmentInfo');
+    const amountInput       = document.getElementById('txAmountInput');
+    const attachmentsList   = document.getElementById('txAttachments');
+    const idField           = document.getElementById('txId');
 
-    const tabGenBtn  = document.getElementById('tabGeneralBtn');
-    const tabDebtBtn = document.getElementById('tabDebtBtn');
-    const panelGen   = document.getElementById('tabGeneral');
-    const panelDebt  = document.getElementById('tabDebt');
-
-    const chkInit    = document.getElementById('initialPaymentChk');
-    const initCont   = document.getElementById('initialPaymentContainer');
-    const initAmt    = document.getElementById('initialPaymentAmt');
-    const selInst    = document.getElementById('installmentsSelect');
-    const infoInst   = document.getElementById('installmentInfo');
-
-    const fldId      = document.getElementById('txId');
-
-    const show = (el,cond) => el.classList.toggle('hidden',!cond);
-
-    function updateAssociation(){
-      const assoc = selCat.selectedOptions[0].dataset.assoc;
-      show(cliCont,    assoc==='client');
-      show(projCont,   assoc==='project');
-      show(empCont,    assoc==='employee');
+    function show(el, cond) {
+      el.classList.toggle('hidden', !cond);
     }
 
-    function activateTab(tab){
-      const isGen = tab==='general';
-      show(panelGen, isGen);
-      show(panelDebt,!isGen);
-      tabGenBtn.classList.toggle('border-blue-600', isGen);
-      tabDebtBtn.classList.toggle('border-blue-600', !isGen);
+    function activateTab(tab) {
+      const general = (tab === 'general');
+      show(panelGen, general);
+      show(panelDebt, !general);
+      tabGeneralBtn.classList.toggle('border-b-2', general);
+      tabGeneralBtn.classList.toggle('text-blue-600', general);
+      tabDebtBtn .classList.toggle('border-b-2', !general);
+      tabDebtBtn .classList.toggle('text-blue-600', !general);
     }
 
-    function calculateInstallment(){
-      const total = parseFloat(inpAmt.value)||0;
-      const parts = parseInt(selInst.value)||0;
-      const init  = chkInit.checked?parseFloat(initAmt.value)||0:0;
+    function calculateInstallments() {
+      const total = parseFloat(amountInput.value) || 0;
+      const parts = parseInt(installmentsSel.value) || 0;
+      const init  = initialChk.checked ? (parseFloat(initialAmt.value) || 0) : 0;
       const base  = total - init;
-      infoInst.textContent = (parts>0&&base>0)?`${parts}× R$ ${(base/parts).toFixed(2)}`:'';
+      installmentInfo.textContent = (parts > 0 && base > 0)
+        ? `${parts}× R$ ${(base / parts).toFixed(2)}`
+        : '';
     }
 
-    function updateVisibility(){
-      const isDebt = selType.value==='debt';
-      show(dueCont, isDebt);
-      show(tabDebtBtn, isDebt);
-      activateTab(isDebt?'debt':'general');
+    function handleCategoryChange() {
+      const cat = selCategory.value;
+      // association fields
+      show(clientContainer,   cat === 'clientes');
+      show(projectContainer,  cat === 'projetos');
+      show(employeeContainer, cat === 'funcionarios');
+      // parcelamento tab
+      if (cat === 'parcelamento') {
+        show(tabDebtBtn, true);
+        activateTab('debt');
+      } else {
+        show(tabDebtBtn, false);
+        activateTab('general');
+      }
     }
 
-    function resetForm(){
+    function resetForm() {
       form.reset();
-      fldId.value    = '';
-      attachList.innerHTML = '';
+      idField.value = '';
+      attachmentsList.innerHTML = '';
       deleteLink.classList.add('hidden');
-      show(cliCont,false);
-      show(projCont,false);
-      show(empCont,false);
+      show(tabDebtBtn, false);
       activateTab('general');
+      show(clientContainer, false);
+      show(projectContainer, false);
+      show(employeeContainer, false);
+      show(initialContainer, false);
     }
 
-    function openNew(){
+    function openNew() {
       resetForm();
       titleEl.textContent = STR.newTransaction;
-      form.method = 'POST';
       form.action = API + '/store';
-      show(modal,true);
+      form.method = 'POST';
+      show(modal, true);
     }
 
-    function openEdit(id){
+    function openEdit(id) {
       fetch(`${API}/edit?id=${id}`)
-        .then(r=>r.json())
-        .then(tx=>{
+        .then(r => r.json())
+        .then(tx => {
           resetForm();
           titleEl.textContent = STR.editTransaction;
-          form.method = 'POST';
+          idField.value = tx.id;
           form.action = API + '/update';
-          fldId.value = tx.id;
+          form.method = 'POST';
 
-          selCat.value = tx.category; updateAssociation();
-          document.getElementById('txClientSelect').value   = tx.client_id    || '';
-          document.getElementById('txProjectSelect').value  = tx.project_id   || '';
-          document.getElementById('txEmployeeSelect').value = tx.employee_id  || '';
+          // tipo e categoria
+          selType.value     = tx.type;
+          selCategory.value = tx.category;
+          handleCategoryChange();
 
-          selType.value  = tx.type; updateVisibility();
-          inpDate.value  = tx.date;
-          inpDue.value   = tx.due_date   || '';
-          inpAmt.value   = tx.amount;
-          descInput.value= tx.description||'';
-          chkInit.checked= !!tx.initial_payment;
-          initAmt.value  = tx.initial_payment_amount||'';
-          selInst.value  = tx.installments_count||'';
-          calculateInstallment();
+          // associação
+          document.getElementById('txClientSelect').value    = tx.client_id    || '';
+          document.getElementById('txProjectSelect').value   = tx.project_id   || '';
+          document.getElementById('txEmployeeSelect').value  = tx.employee_id  || '';
 
-          attachList.innerHTML='';
-          (tx.attachments||[]).forEach(a=>{
-            const li=document.createElement('li');
-            const ael=document.createElement('a');
-            ael.href=`${BASE}/${a.file_path}`;
-            ael.textContent=a.file_path.split('/').pop();
-            ael.target   ='_blank';
+          // geral
+          document.getElementById('txDateInput').value       = tx.date;
+          dueDateInput.value   = tx.due_date       || '';
+          amountInput.value    = tx.amount;
+          document.getElementById('txDescInput').value       = tx.description || '';
+
+          // parcelamento
+          initialChk.checked = !!tx.initial_payment;
+          initialContainer.classList.toggle('hidden', !initialChk.checked);
+          initialAmt.value   = tx.initial_payment_amount || '';
+          installmentsSel.value = tx.installments_count || '';
+          calculateInstallments();
+
+          // anexos
+          attachmentsList.innerHTML = '';
+          (tx.attachments || []).forEach(a => {
+            const li  = document.createElement('li');
+            const ael = document.createElement('a');
+            ael.href       = `${BASE}/${a.file_path}`;
+            ael.textContent= a.file_path.split('/').pop();
+            ael.target     = '_blank';
             li.appendChild(ael);
-            attachList.appendChild(li);
+            attachmentsList.appendChild(li);
           });
 
           deleteLink.href = `${API}/delete?id=${tx.id}`;
           deleteLink.classList.remove('hidden');
-          show(modal,true);
+          show(modal, true);
         })
-        .catch(err=>alert('Erro: '+err.message));
+        .catch(e => alert('Erro: ' + e.message));
     }
 
+    // table delegation
     document.querySelector('table.w-full tbody')
-      .addEventListener('click', e=>{
+      .addEventListener('click', e => {
         const tr = e.target.closest('tr.tx-row');
-        if (!tr) return;
-        openEdit(tr.dataset.txId);
+        if (tr) openEdit(tr.dataset.txId);
       });
 
-    openBtn.addEventListener('click',openNew);
-    closeBtn.addEventListener('click',()=>show(modal,false));
-    cancelBtn.addEventListener('click',()=>show(modal,false));
-    modal.addEventListener('click',e=>{ if(e.target===modal) show(modal,false); });
+    // event listeners
+    openBtn .addEventListener('click', openNew);
+    closeBtn.addEventListener('click', () => show(modal, false));
+    cancelBtn.addEventListener('click', () => show(modal, false));
+    modal  .addEventListener('click', e => e.target === modal && show(modal, false));
 
-    selCat.addEventListener('change',updateAssociation);
-    selType.addEventListener('change',updateVisibility);
-    chkInit.addEventListener('change',updateVisibility);
-    selInst.addEventListener('change',calculateInstallment);
-    initAmt.addEventListener('input',calculateInstallment);
-    inpAmt.addEventListener('input',calculateInstallment);
-    tabGenBtn.addEventListener('click',()=>activateTab('general'));
-    tabDebtBtn.addEventListener('click',()=>activateTab('debt'));
+    selCategory   .addEventListener('change', handleCategoryChange);
+    tabGeneralBtn .addEventListener('click', () => activateTab('general'));
+    tabDebtBtn    .addEventListener('click', () => activateTab('debt'));
+
+    initialChk     .addEventListener('change', () => {
+      show(initialContainer, initialChk.checked);
+      calculateInstallments();
+    });
+    installmentsSel.addEventListener('change', calculateInstallments);
+    amountInput    .addEventListener('input', calculateInstallments);
   });
 })();

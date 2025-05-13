@@ -10,6 +10,9 @@ class TransactionModel
         return Database::connect();
     }
 
+    /**
+     * Busca transações, aplicando filtro de data apenas se start/end não forem nulos
+     */
     public static function getAll(array $f = []): array
     {
         $sql = "
@@ -22,15 +25,27 @@ class TransactionModel
             FROM financial_transactions ft
             LEFT JOIN debts d
               ON d.transaction_id = ft.id
-            WHERE ft.date BETWEEN ? AND ?
         ";
-        $params = [$f['start'], $f['end']];
+        $params     = [];
+        $conditions = [];
 
+        // só filtra data se o usuário enviou ambos start e end
+        if (!empty($f['start']) && !empty($f['end'])) {
+            $conditions[] = "ft.date BETWEEN ? AND ?";
+            $params[]     = $f['start'];
+            $params[]     = $f['end'];
+        }
+
+        // filtros de tipo, categoria e associações
         foreach (['type','category','client_id','project_id','employee_id'] as $field) {
             if (!empty($f[$field])) {
-                $sql      .= " AND ft.{$field} = ?";
-                $params[]  = $f[$field];
+                $conditions[] = "ft.{$field} = ?";
+                $params[]     = $f[$field];
             }
+        }
+
+        if (count($conditions) > 0) {
+            $sql .= " WHERE " . implode(" AND ", $conditions);
         }
 
         $sql .= " ORDER BY ft.date DESC";
@@ -40,23 +55,47 @@ class TransactionModel
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public static function getSummary(string $start, string $end): array
+    /**
+     * Gera resumo de receita, despesa e saldo.
+     * Se start/end forem nulos, totaliza tudo; senão, por intervalo.
+     */
+    public static function getSummary(?string $start = null, ?string $end = null): array
     {
         $pdo = self::connect();
-        $in  = $pdo->prepare("
-            SELECT COALESCE(SUM(amount),0)
-            FROM financial_transactions
-            WHERE type='income'  AND date BETWEEN ? AND ?
-        ");
-        $ex  = $pdo->prepare("
-            SELECT COALESCE(SUM(amount),0)
-            FROM financial_transactions
-            WHERE type='expense' AND date BETWEEN ? AND ?
-        ");
-        $in->execute([$start, $end]);
-        $ex->execute([$start, $end]);
-        $totIn = (float)$in->fetchColumn();
-        $totEx = (float)$ex->fetchColumn();
+
+        if (!empty($start) && !empty($end)) {
+            $stmtIn = $pdo->prepare("
+                SELECT COALESCE(SUM(amount),0)
+                FROM financial_transactions
+                WHERE type='income' AND date BETWEEN ? AND ?
+            ");
+            $stmtIn->execute([$start, $end]);
+
+            $stmtEx = $pdo->prepare("
+                SELECT COALESCE(SUM(amount),0)
+                FROM financial_transactions
+                WHERE type='expense' AND date BETWEEN ? AND ?
+            ");
+            $stmtEx->execute([$start, $end]);
+        } else {
+            $stmtIn = $pdo->prepare("
+                SELECT COALESCE(SUM(amount),0)
+                FROM financial_transactions
+                WHERE type='income'
+            ");
+            $stmtIn->execute([]);
+
+            $stmtEx = $pdo->prepare("
+                SELECT COALESCE(SUM(amount),0)
+                FROM financial_transactions
+                WHERE type='expense'
+            ");
+            $stmtEx->execute([]);
+        }
+
+        $totIn = (float)$stmtIn->fetchColumn();
+        $totEx = (float)$stmtEx->fetchColumn();
+
         return [
             'income'  => $totIn,
             'expense' => $totEx,

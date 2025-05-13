@@ -38,23 +38,27 @@ class FinancialController
         // Extrai as traduções para a view
         $langText = $this->langText;
 
-        $start    = $_GET['start']    ?? date('Y-m-01');
-        $end      = $_GET['end']      ?? date('Y-m-d');
+        // 1) Se o usuário não enviou start/end, valores ficam nulos
+        $start    = $_GET['start']    ?? null;
+        $end      = $_GET['end']      ?? null;
         $type     = $_GET['type']     ?? '';
         $category = $_GET['category'] ?? '';
 
+        // 2) Busca transações: sem filtro de data se start/end forem nulos
         $transactions = TransactionModel::getAll([
             'start'    => $start,
             'end'      => $end,
             'type'     => $type,
             'category' => $category,
         ]);
+
+        // 3) Resumo também ajustado: totaliza tudo ou por intervalo
         $summary   = TransactionModel::getSummary($start, $end);
         $projects  = ProjectModel::getAll();
         $employees = Employee::all();
         $clients   = Client::all();
 
-        // Dropdown de categorias com nomes traduzidos
+        // Dropdown de categorias (mantive igual)
         $categories = [
             ['value'=>'funcionarios',      'name'=>$langText['category_funcionarios'],      'assoc'=>'employee'],
             ['value'=>'clientes',          'name'=>$langText['category_clientes'],          'assoc'=>'client'],

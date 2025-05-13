@@ -1,7 +1,10 @@
 <?php
 // app/views/projects/index.php
 
+// 1) Header (já carrega sessão e $langText)
 require_once __DIR__ . '/../layout/header.php';
+// 2) Conexão com o banco (necessário para Database::connect())
+require_once __DIR__ . '/../../../config/Database.php';
 
 $pdo = Database::connect();
 
@@ -75,18 +78,24 @@ $baseUrl = '/ams-malergeschaft/public';
         // classe e texto de etiqueta
         switch ($project['status']) {
           case 'in_progress':
-            $tagClass = 'bg-blue-500';  $tagText = $langText['active']    ?? 'Active';    break;
+            $tagClass = 'bg-blue-500';
+            $tagText  = $langText['active']    ?? 'Active';
+            break;
           case 'pending':
-            $tagClass = 'bg-yellow-500';$tagText = $langText['pending']   ?? 'Pending';   break;
+            $tagClass = 'bg-yellow-500';
+            $tagText  = $langText['pending']   ?? 'Pending';
+            break;
           default:
-            $tagClass = 'bg-green-500'; $tagText = $langText['completed'] ?? 'Completed'; break;
+            $tagClass = 'bg-green-500';
+            $tagText  = $langText['completed'] ?? 'Completed';
+            break;
         }
         // progresso
         $tstmt = $pdo->prepare("SELECT completed FROM tasks WHERE project_id = ?");
         $tstmt->execute([$project['id']]);
-        $tdata   = $tstmt->fetchAll(PDO::FETCH_ASSOC);
-        $done    = array_reduce($tdata, fn($c,$t)=>$c+(int)$t['completed'], 0);
-        $pct     = count($tdata) ? round($done/count($tdata)*100) : 0;
+        $tdata = $tstmt->fetchAll(PDO::FETCH_ASSOC);
+        $done  = array_reduce($tdata, fn($c,$t)=>$c+(int)$t['completed'], 0);
+        $pct   = count($tdata) ? round($done/count($tdata)*100) : 0;
     ?>
       <div class="project-item cursor-pointer bg-white p-6 rounded-xl shadow hover:shadow-md transition-all"
            data-project-id="<?= htmlspecialchars($project['id'], ENT_QUOTES) ?>">
@@ -120,7 +129,8 @@ $baseUrl = '/ams-malergeschaft/public';
 
   <!-- botão criar -->
   <button id="addProjectBtn"
-          class="fixed bottom-8 right-8 bg-green-500 text-white rounded-full p-4 shadow-lg hover:bg-green-600">
+          class="fixed bottom-8 right-8 bg-green-500 text-white rounded-full p-4 shadow-lg hover:bg-green-600"
+          aria-label="<?= htmlspecialchars($langText['add_project'] ?? 'Add Project', ENT_QUOTES) ?>">
     <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2">
       <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
     </svg>
@@ -130,7 +140,10 @@ $baseUrl = '/ams-malergeschaft/public';
   <div id="projectModal"
        class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
     <div class="bg-white rounded-md p-8 w-90 max-h-[90vh] overflow-y-auto relative">
-      <button id="closeModal" class="absolute top-4 right-4 text-gray-700 text-2xl">&times;</button>
+      <button id="closeModal" class="absolute top-4 right-4 text-gray-700 text-2xl"
+              aria-label="<?= htmlspecialchars($langText['cancel'] ?? 'Cancel', ENT_QUOTES) ?>">
+        &times;
+      </button>
       <h3 class="text-xl font-bold mb-4"><?= htmlspecialchars($langText['add_project'] ?? 'Add Project', ENT_QUOTES) ?></h3>
       <form id="projectForm" action="<?= $baseUrl ?>/projects/store" method="POST">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -172,7 +185,7 @@ $baseUrl = '/ams-malergeschaft/public';
           <div class="flex mt-2">
             <input id="createNewTaskInput" type="text"
                    class="w-full p-2 border rounded"
-                   placeholder="<?= htmlspecialchars($langText['task_placeholder']??'Task description',ENT_QUOTES) ?>">
+                   placeholder="<?= htmlspecialchars($langText['task_placeholder'] ?? 'Task description', ENT_QUOTES) ?>">
             <button id="createAddTaskBtn" type="button"
                     class="ml-2 bg-blue-500 text-white px-3 py-2 rounded">
               <?= htmlspecialchars($langText['add'] ?? 'Add', ENT_QUOTES) ?>
@@ -188,7 +201,9 @@ $baseUrl = '/ams-malergeschaft/public';
             <select id="createEmployeeSelect" class="w-full p-2 border rounded">
               <option value=""><?= htmlspecialchars($langText['select_employee'] ?? 'Select an employee', ENT_QUOTES) ?></option>
               <?php foreach($activeEmployees as $emp): ?>
-                <option value="<?= $emp['id'] ?>"><?= htmlspecialchars($emp['name'].' '.$emp['last_name'],ENT_QUOTES) ?></option>
+                <option value="<?= $emp['id'] ?>">
+                  <?= htmlspecialchars($emp['name'].' '.$emp['last_name'], ENT_QUOTES) ?>
+                </option>
               <?php endforeach; ?>
             </select>
             <button id="createAddEmployeeBtn" type="button"
@@ -219,8 +234,13 @@ $baseUrl = '/ams-malergeschaft/public';
   <div id="projectDetailsModal"
        class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
     <div class="bg-white rounded-md p-8 w-90 max-h-[90vh] overflow-y-auto relative">
-      <button id="closeProjectDetailsModal" class="absolute top-2 right-2 text-gray-700 text-2xl">&times;</button>
-      <h3 class="text-xl font-bold mb-4"><?= htmlspecialchars($langText['project_details'] ?? 'Project Details', ENT_QUOTES) ?></h3>
+      <button id="closeProjectDetailsModal" class="absolute top-2 right-2 text-gray-700 text-2xl"
+              aria-label="<?= htmlspecialchars($langText['cancel'] ?? 'Cancel', ENT_QUOTES) ?>">
+        &times;
+      </button>
+      <h3 class="text-xl font-bold mb-4">
+        <?= htmlspecialchars($langText['project_details'] ?? 'Project Details', ENT_QUOTES) ?>
+      </h3>
 
       <form id="projectDetailsForm" action="<?= $baseUrl ?>/projects/update" method="POST">
         <input name="id" type="hidden" id="detailsProjectId">
@@ -228,31 +248,41 @@ $baseUrl = '/ams-malergeschaft/public';
 
         <nav class="mb-6">
           <ul class="flex space-x-6 border-b">
-            <li><button type="button"
-                        class="tab-btn pb-3 font-medium text-blue-600 border-b-2 border-blue-600"
-                        data-tab="geral">
-                  <?= htmlspecialchars($langText['general'] ?? 'Geral', ENT_QUOTES) ?>
-                </button></li>
-            <li><button type="button"
-                        class="tab-btn pb-3 font-medium text-gray-600 hover:text-gray-800"
-                        data-tab="tarefas">
-                  <?= htmlspecialchars($langText['tasks'] ?? 'Tarefas', ENT_QUOTES) ?>
-                </button></li>
-            <li><button type="button"
-                        class="tab-btn pb-3 font-medium text-gray-600 hover:text-gray-800"
-                        data-tab="funcionarios">
-                  <?= htmlspecialchars($langText['employees'] ?? 'Funcionários', ENT_QUOTES) ?>
-                </button></li>
-            <li><button type="button"
-                        class="tab-btn pb-3 font-medium text-gray-600 hover:text-gray-800"
-                        data-tab="inventario">
-                  <?= htmlspecialchars($langText['inventory'] ?? 'Inventário', ENT_QUOTES) ?>
-                </button></li>
-            <li><button type="button"
-                        class="tab-btn pb-3 font-medium text-gray-600 hover:text-gray-800"
-                        data-tab="transacoes">
-                  <?= htmlspecialchars($langText['transactions'] ?? 'Transações', ENT_QUOTES) ?>
-                </button></li>
+            <li>
+              <button type="button"
+                      class="tab-btn pb-3 font-medium text-blue-600 border-b-2 border-blue-600"
+                      data-tab="geral">
+                <?= htmlspecialchars($langText['general'] ?? 'Geral', ENT_QUOTES) ?>
+              </button>
+            </li>
+            <li>
+              <button type="button"
+                      class="tab-btn pb-3 font-medium text-gray-600 hover:text-gray-800"
+                      data-tab="tarefas">
+                <?= htmlspecialchars($langText['tasks'] ?? 'Tarefas', ENT_QUOTES) ?>
+              </button>
+            </li>
+            <li>
+              <button type="button"
+                      class="tab-btn pb-3 font-medium text-gray-600 hover:text-gray-800"
+                      data-tab="funcionarios">
+                <?= htmlspecialchars($langText['employees'] ?? 'Funcionários', ENT_QUOTES) ?>
+              </button>
+            </li>
+            <li>
+              <button type="button"
+                      class="tab-btn pb-3 font-medium text-gray-600 hover:text-gray-800"
+                      data-tab="inventario">
+                <?= htmlspecialchars($langText['inventory'] ?? 'Inventário', ENT_QUOTES) ?>
+              </button>
+            </li>
+            <li>
+              <button type="button"
+                      class="tab-btn pb-3 font-medium text-gray-600 hover:text-gray-800"
+                      data-tab="transacoes">
+                <?= htmlspecialchars($langText['transactions'] ?? 'Transações', ENT_QUOTES) ?>
+              </button>
+            </li>
           </ul>
         </nav>
 
@@ -260,24 +290,34 @@ $baseUrl = '/ams-malergeschaft/public';
           <!-- Geral -->
           <div id="tab-geral" class="tab-panel">
             <div class="mb-4">
-              <span class="block text-gray-700 font-semibold"><?= htmlspecialchars($langText['client'] ?? 'Client', ENT_QUOTES) ?>:</span>
+              <span class="block text-gray-700 font-semibold">
+                <?= htmlspecialchars($langText['client'] ?? 'Client', ENT_QUOTES) ?>:
+              </span>
               <p id="detailsProjectClientName" class="text-gray-800">—</p>
             </div>
             <div class="mb-4">
-              <label class="block text-gray-700 font-semibold"><?= htmlspecialchars($langText['name'] ?? 'Name', ENT_QUOTES) ?></label>
+              <label class="block text-gray-700 font-semibold">
+                <?= htmlspecialchars($langText['name'] ?? 'Name', ENT_QUOTES) ?>
+              </label>
               <input name="name" type="text" id="detailsProjectName" class="w-full p-2 border rounded" required>
             </div>
             <div class="mb-4">
-              <label class="block text-gray-700 font-semibold"><?= htmlspecialchars($langText['description'] ?? 'Description', ENT_QUOTES) ?></label>
+              <label class="block text-gray-700 font-semibold">
+                <?= htmlspecialchars($langText['description'] ?? 'Description', ENT_QUOTES) ?>
+              </label>
               <textarea name="description" id="detailsProjectDescription" class="w-full p-2 border rounded"></textarea>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label class="block text-gray-700 font-semibold"><?= htmlspecialchars($langText['start_date'] ?? 'Start Date', ENT_QUOTES) ?></label>
+                <label class="block text-gray-700 font-semibold">
+                  <?= htmlspecialchars($langText['start_date'] ?? 'Start Date', ENT_QUOTES) ?>
+                </label>
                 <input name="start_date" type="date" id="detailsProjectStartDate" class="w-full p-2 border rounded" required>
               </div>
               <div>
-                <label class="block text-gray-700 font-semibold"><?= htmlspecialchars($langText['end_date'] ?? 'End Date', ENT_QUOTES) ?></label>
+                <label class="block text-gray-700 font-semibold">
+                  <?= htmlspecialchars($langText['end_date'] ?? 'End Date', ENT_QUOTES) ?>
+                </label>
                 <input name="end_date" type="date" id="detailsProjectEndDate" class="w-full p-2 border rounded" required>
               </div>
             </div>
@@ -286,44 +326,63 @@ $baseUrl = '/ams-malergeschaft/public';
           <!-- Tarefas -->
           <div id="tab-tarefas" class="tab-panel hidden">
             <div class="mb-4">
-              <label class="block text-gray-700 font-semibold"><?= htmlspecialchars($langText['progress'] ?? 'Progress', ENT_QUOTES) ?></label>
+              <label class="block text-gray-700 font-semibold">
+                <?= htmlspecialchars($langText['progress'] ?? 'Progress', ENT_QUOTES) ?>
+              </label>
               <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
                 <div id="detailsProgressBar" class="h-2 rounded-full bg-blue-500" style="width:0%"></div>
               </div>
               <span id="detailsProgressText" class="text-sm text-gray-600">0%</span>
             </div>
-            <label class="block text-gray-700 font-semibold"><?= htmlspecialchars($langText['tasks'] ?? 'Tasks', ENT_QUOTES) ?></label>
+            <label class="block text-gray-700 font-semibold">
+              <?= htmlspecialchars($langText['tasks'] ?? 'Tasks', ENT_QUOTES) ?>
+            </label>
             <div id="detailsTasksContainer" class="mb-2"></div>
             <div class="flex m-4">
-              <input id="detailsNewTaskInput" type="text" class="w-full p-2 border rounded" placeholder="<?= htmlspecialchars($langText['task_placeholder']??'Task description',ENT_QUOTES) ?>">
-              <button id="detailsAddTaskBtn" type="button" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded"><?= htmlspecialchars($langText['add']??'Add',ENT_QUOTES) ?></button>
+              <input id="detailsNewTaskInput" type="text" class="w-full p-2 border rounded"
+                     placeholder="<?= htmlspecialchars($langText['task_placeholder'] ?? 'Task description', ENT_QUOTES) ?>">
+              <button id="detailsAddTaskBtn" type="button" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded">
+                <?= htmlspecialchars($langText['add'] ?? 'Add', ENT_QUOTES) ?>
+              </button>
             </div>
           </div>
 
           <!-- Funcionários -->
           <div id="tab-funcionarios" class="tab-panel hidden">
-            <label class="block text-gray-700 font-semibold"><?= htmlspecialchars($langText['employees'] ?? 'Employees', ENT_QUOTES) ?></label>
+            <label class="block text-gray-700 font-semibold">
+              <?= htmlspecialchars($langText['employees'] ?? 'Employees', ENT_QUOTES) ?>
+            </label>
             <div id="detailsEmployeesContainer" class="mb-2"></div>
             <div class="flex m-4">
               <select id="detailsEmployeeSelect" class="w-full p-2 border rounded">
-                <option value=""><?= htmlspecialchars($langText['select_employee']??'Select an employee',ENT_QUOTES) ?></option>
+                <option value=""><?= htmlspecialchars($langText['select_employee'] ?? 'Select an employee', ENT_QUOTES) ?></option>
                 <?php foreach($activeEmployees as $emp): ?>
-                  <option value="<?= $emp['id'] ?>"><?= htmlspecialchars($emp['name'].' '.$emp['last_name'],ENT_QUOTES) ?></option>
+                  <option value="<?= $emp['id'] ?>">
+                    <?= htmlspecialchars($emp['name'].' '.$emp['last_name'], ENT_QUOTES) ?>
+                  </option>
                 <?php endforeach; ?>
               </select>
-              <button id="detailsAddEmployeeBtn" type="button" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded"><?= htmlspecialchars($langText['add']??'Add',ENT_QUOTES) ?></button>
+              <button id="detailsAddEmployeeBtn" type="button" class="ml-2 bg-blue-500 text-white px-3 py-2 rounded">
+                <?= htmlspecialchars($langText['add'] ?? 'Add', ENT_QUOTES) ?>
+              </button>
             </div>
           </div>
 
           <!-- Inventário -->
           <div id="tab-inventario" class="tab-panel hidden mb-4">
-            <label class="block text-gray-700 font-semibold"><?= htmlspecialchars($langText['inventory'] ?? 'Inventory', ENT_QUOTES) ?></label>
-            <div id="detailsInventoryContainer" class="text-gray-800 text-sm">— Nenhum item alocado</div>
+            <label class="block text-gray-700 font-semibold">
+              <?= htmlspecialchars($langText['inventory'] ?? 'Inventory', ENT_QUOTES) ?>
+            </label>
+            <div id="detailsInventoryContainer" class="text-gray-800 text-sm">
+              <?= htmlspecialchars($langText['no_inventory_allocated'] ?? '— Nenhum item alocado', ENT_QUOTES) ?>
+            </div>
           </div>
 
           <!-- Transações -->
           <div id="tab-transacoes" class="tab-panel hidden">
-            <h3 class="text-lg font-semibold mb-2"><?= htmlspecialchars($langText['project_transactions'] ?? 'Transações do Projeto', ENT_QUOTES) ?></h3>
+            <h3 class="text-lg font-semibold mb-2">
+              <?= htmlspecialchars($langText['project_transactions'] ?? 'Transações do Projeto', ENT_QUOTES) ?>
+            </h3>
             <div class="overflow-x-auto">
               <table class="w-full bg-white rounded shadow">
                 <thead class="bg-gray-100">
@@ -335,7 +394,9 @@ $baseUrl = '/ams-malergeschaft/public';
                 </thead>
                 <tbody id="detailsProjTransBody">
                   <tr>
-                    <td colspan="3" class="p-4 text-center text-gray-500"><?= htmlspecialchars($langText['no_transactions']??'Sem transações',ENT_QUOTES) ?></td>
+                    <td colspan="3" class="p-4 text-center text-gray-500">
+                      <?= htmlspecialchars($langText['no_transactions'] ?? 'Sem transações', ENT_QUOTES) ?>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -348,13 +409,24 @@ $baseUrl = '/ams-malergeschaft/public';
         <input name="employee_count" type="hidden" id="detailsEmployeeCountData">
 
         <div class="flex justify-end space-x-2">
-          <button id="cancelDetailsBtn" type="button" class="px-4 py-2 border rounded"><?= htmlspecialchars($langText['cancel'] ?? 'Cancel', ENT_QUOTES) ?></button>
-          <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded"><?= htmlspecialchars($langText['save_changes'] ?? 'Save Changes', ENT_QUOTES) ?></button>
-          <button id="deleteDetailsBtn" type="button" class="bg-red-500 text-white px-4 py-2 rounded"><?= htmlspecialchars($langText['delete'] ?? 'Delete', ENT_QUOTES) ?></button>
+          <button id="cancelDetailsBtn" type="button" class="px-4 py-2 border rounded">
+            <?= htmlspecialchars($langText['cancel'] ?? 'Cancel', ENT_QUOTES) ?>
+          </button>
+          <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded">
+            <?= htmlspecialchars($langText['save_changes'] ?? 'Save Changes', ENT_QUOTES) ?>
+          </button>
+          <button id="deleteDetailsBtn" type="button" class="bg-red-500 text-white px-4 py-2 rounded">
+            <?= htmlspecialchars($langText['delete'] ?? 'Delete', ENT_QUOTES) ?>
+          </button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
+<script>
+// injeta traduções e baseUrl para o JS externo
+window.langText = <?= json_encode($langText, JSON_UNESCAPED_UNICODE) ?>;
+window.baseUrl  = '<?= $baseUrl ?>';
+</script>
 <script defer src="<?= $baseUrl ?>/js/projects.js"></script>

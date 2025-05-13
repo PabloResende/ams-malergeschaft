@@ -1,4 +1,8 @@
-const baseUrl = window.location.origin + '/ams-malergeschaft/public';
+// public/js/projects.js
+
+// captura traduções e URL base (injetadas pela view)
+const translations = window.langText || {};
+const baseUrl      = window.baseUrl  || '';
 
 document.addEventListener("DOMContentLoaded", () => {
   //
@@ -74,13 +78,16 @@ document.addEventListener("DOMContentLoaded", () => {
       .then(res => res.ok ? res.json() : Promise.reject())
       .then(json => {
         if (json.count > 0) {
-          alert(`Este funcionário já está alocado em ${json.count} projeto(s) em andamento.`);
+          const msgTemplate = translations['employee_already_assigned_message']
+            || 'Este funcionário já está alocado em {count} projeto(s) em andamento.';
+          alert(msgTemplate.replace('{count}', json.count));
         }
         createEmployees.push({ id: empId, text: empText });
         renderCreateEmployees();
         syncCreateData();
       })
       .catch(() => {
+        // fallback mesmo sem servidor
         createEmployees.push({ id: empId, text: empText });
         renderCreateEmployees();
         syncCreateData();
@@ -156,7 +163,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target === detailsModal) closeDetails();
   });
   deleteDetailsBtn.addEventListener("click", () => {
-    if (!confirm("Tem certeza que deseja excluir este projeto?")) return;
+    const confirmMsg = translations['confirm_delete_project']
+      || 'Tem certeza que deseja excluir este projeto?';
+    if (!confirm(confirmMsg)) return;
     const id = detailsProjectId.value;
     window.location.href = `${baseUrl}/projects/delete?id=${id}`;
   });
@@ -181,7 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
         detailsDescription.value = data.description || '';
 
         // tarefas
-        detailTasks = (data.tasks || []).map(t=>({
+        detailTasks = (data.tasks || []).map(t => ({
           id: t.id,
           description: t.description,
           completed: !!t.completed
@@ -189,9 +198,9 @@ document.addEventListener("DOMContentLoaded", () => {
         renderDetailTasks();
 
         // funcionários
-        detailEmployees = (data.employees || []).map(e=>({
+        detailEmployees = (data.employees || []).map(e => ({
           id: e.id,
-          text: e.name+' '+e.last_name
+          text: `${e.name} ${e.last_name}`
         }));
         renderDetailEmployees();
 
@@ -200,15 +209,21 @@ document.addEventListener("DOMContentLoaded", () => {
         renderDetailInventory();
 
         // transações
-        fetch(`${baseUrl}/projects/transactions?id=${data.id}`,{ credentials:'same-origin'})
-          .then(r=>r.ok?r.json():Promise.reject())
+        fetch(`${baseUrl}/projects/transactions?id=${data.id}`, { credentials:'same-origin' })
+          .then(r => r.ok ? r.json() : Promise.reject())
           .then(renderProjectTransactions)
-          .catch(()=>console.warn('Não foi possível carregar transações.'));
+          .catch(() => console.warn(
+            translations['error_loading_transactions']
+            || 'Não foi possível carregar transações.'
+          ));
 
         activateDetailTab('geral');
         detailsModal.classList.remove("hidden");
       })
-      .catch(() => alert("Não foi possível carregar detalhes do projeto."));
+      .catch(() => alert(
+        translations['error_loading_project_details']
+        || 'Não foi possível carregar detalhes do projeto.'
+      ));
   }
 
   // Tabs
@@ -240,18 +255,18 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   function renderDetailTasks() {
     detailsTasksContainer.innerHTML = '';
-    detailTasks.forEach((t,i) => {
+    detailTasks.forEach((t, i) => {
       const div = document.createElement("div");
       div.className = "flex items-center mb-2";
       div.innerHTML = `
-        <input type="checkbox" data-index="${i}" ${t.completed?'checked':''} class="mr-2">
+        <input type="checkbox" data-index="${i}" ${t.completed ? 'checked' : ''} class="mr-2">
         <span class="flex-1">${t.description}</span>
       `;
       detailsTasksContainer.appendChild(div);
     });
     detailsTasksData.value = JSON.stringify(detailTasks);
-    detailsTasksContainer.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
-      cb.addEventListener("change", e=>{
+    detailsTasksContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+      cb.addEventListener("change", e => {
         detailTasks[e.target.dataset.index].completed = e.target.checked;
         detailsTasksData.value = JSON.stringify(detailTasks);
         updateDetailProgress();
@@ -260,45 +275,53 @@ document.addEventListener("DOMContentLoaded", () => {
     updateDetailProgress();
   }
   function updateDetailProgress() {
-    const tot = detailTasks.length;
-    const done= detailTasks.filter(t=>t.completed).length;
-    const pct = tot?Math.round(done/tot*100):0;
-    detailsProgressBar.style.width = pct+'%';
-    detailsProgressText.textContent = pct+'%';
-    detailsProjectStatusHidden.value = tot===0?'pending':(done===tot?'completed':'in_progress');
+    const tot  = detailTasks.length;
+    const done = detailTasks.filter(t => t.completed).length;
+    const pct  = tot ? Math.round(done / tot * 100) : 0;
+    detailsProgressBar.style.width = pct + '%';
+    detailsProgressText.textContent = pct + '%';
+    detailsProjectStatusHidden.value = tot === 0
+      ? 'pending'
+      : (done === tot ? 'completed' : 'in_progress');
   }
 
   // funcionários
-  detailsAddEmployeeBtn.addEventListener("click", ()=>{
+  detailsAddEmployeeBtn.addEventListener("click", () => {
     const eid = detailsEmployeeSelect.value;
     const txt = detailsEmployeeSelect.options[detailsEmployeeSelect.selectedIndex].text;
-    if (!eid||detailEmployees.some(e=>e.id==eid)) return;
+    if (!eid || detailEmployees.some(e => e.id == eid)) return;
     fetch(`${baseUrl}/projects/checkEmployee?id=${eid}`)
-      .then(r=>r.ok?r.json():Promise.reject())
-      .then(js=>{
-        if(js.count>0) alert(`Este funcionário já está em ${js.count} projeto(s) em andamento.`);
-        detailEmployees.push({id:eid,text:txt});
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(js => {
+        if (js.count > 0) {
+          const msgTpl = translations['employee_already_assigned_message']
+            || 'Este funcionário já está alocado em {count} projeto(s) em andamento.';
+          alert(msgTpl.replace('{count}', js.count));
+        }
+        detailEmployees.push({ id: eid, text: txt });
         renderDetailEmployees();
       })
-      .catch(()=>{
-        detailEmployees.push({id:eid,text:txt});
+      .catch(() => {
+        detailEmployees.push({ id: eid, text: txt });
         renderDetailEmployees();
       });
   });
   function renderDetailEmployees() {
     detailsEmployeesContainer.innerHTML = '';
-    detailEmployees.forEach((e,i)=>{
+    detailEmployees.forEach((e, i) => {
       const div = document.createElement("div");
       div.className = "flex items-center mb-2";
-      div.innerHTML = `<span class="flex-1">${e.text}</span>
-                       <button data-index="${i}" class="text-red-500">×</button>`;
+      div.innerHTML = `
+        <span class="flex-1">${e.text}</span>
+        <button data-index="${i}" class="text-red-500">×</button>
+      `;
       detailsEmployeesContainer.appendChild(div);
     });
-    detailsEmployeesData.value = JSON.stringify(detailEmployees.map(e=>e.id));
+    detailsEmployeesData.value = JSON.stringify(detailEmployees.map(e => e.id));
     detailsEmployeeCount.value = detailEmployees.length;
-    detailsEmployeesContainer.querySelectorAll('button').forEach(btn=>{
-      btn.addEventListener("click",()=>{
-        detailEmployees.splice(btn.dataset.index,1);
+    detailsEmployeesContainer.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener("click", () => {
+        detailEmployees.splice(btn.dataset.index, 1);
         renderDetailEmployees();
       });
     });
@@ -308,10 +331,11 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderDetailInventory() {
     detailsInventoryContainer.innerHTML = '';
     if (!detailInventory.length) {
-      detailsInventoryContainer.textContent = '— Nenhum item alocado';
+      detailsInventoryContainer.textContent = translations['no_inventory_allocated']
+        || '— Nenhum item alocado';
       return;
     }
-    detailInventory.forEach(i=>{
+    detailInventory.forEach(i => {
       const div = document.createElement("div");
       div.textContent = `${i.name} (qtde: ${i.quantity})`;
       detailsInventoryContainer.appendChild(div);
@@ -324,17 +348,26 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!trans.length) {
       detailsProjTransBody.innerHTML = `
         <tr>
-          <td colspan="3" class="p-4 text-center text-gray-500">Sem transações relacionadas</td>
+          <td colspan="3" class="p-4 text-center text-gray-500">
+            ${translations['no_project_transactions'] || 'Sem transações relacionadas'}
+          </td>
         </tr>`;
       return;
     }
-    trans.forEach(tx=>{
+    trans.forEach(tx => {
       const tr = document.createElement("tr");
       tr.className = 'border-t';
       tr.innerHTML = `
-        <td class="p-2">${new Date(tx.date).toLocaleDateString()}</td>
-        <td class="p-2">${tx.type.charAt(0).toUpperCase()+tx.type.slice(1)}</td>
-        <td class="p-2 text-right">R$ ${parseFloat(tx.amount).toFixed(2).replace('.',',')}</td>
+        <td class="p-2">
+          ${new Date(tx.date).toLocaleDateString(
+            translations['locale'] || undefined)}
+        </td>
+        <td class="p-2">
+          ${tx.type.charAt(0).toUpperCase() + tx.type.slice(1)}
+        </td>
+        <td class="p-2 text-right">
+          R$ ${parseFloat(tx.amount).toFixed(2).replace('.', ',')}
+        </td>
       `;
       detailsProjTransBody.appendChild(tr);
     });

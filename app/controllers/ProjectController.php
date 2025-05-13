@@ -2,8 +2,8 @@
 // app/controllers/ProjectController.php
 
 require_once __DIR__ . '/../../config/Database.php';
-require_once __DIR__ . '/../models/Project.php';
-require_once __DIR__ . '/../models/Clients.php';
+// carrega a lógica de idioma (define $langText)
+require_once __DIR__ . '/../lang/lang.php';
 
 class ProjectController
 {
@@ -47,7 +47,7 @@ class ProjectController
             header("Location: /ams-malergeschaft/public/projects");
             exit;
         } else {
-            echo "Erro ao salvar o projeto.";
+            echo $langText['error_saving_project'] ?? 'Erro ao salvar o projeto.';
         }
     }
 
@@ -60,13 +60,13 @@ class ProjectController
 
         $id = $_POST['id'] ?? null;
         if (!$id) {
-            echo "ID do projeto não fornecido.";
+            echo $langText['error_project_id_missing'] ?? 'ID do projeto não fornecido.';
             exit;
         }
 
         $existing = ProjectModel::find($id);
         if (!$existing) {
-            echo "Projeto não encontrado.";
+            echo $langText['error_project_not_found'] ?? 'Projeto não encontrado.';
             exit;
         }
 
@@ -97,7 +97,7 @@ class ProjectController
             header("Location: /ams-malergeschaft/public/projects");
             exit;
         } else {
-            echo "Erro ao atualizar o projeto.";
+            echo $langText['error_updating_project'] ?? 'Erro ao atualizar o projeto.';
         }
     }
 
@@ -106,13 +106,13 @@ class ProjectController
         header('Content-Type: application/json; charset=UTF-8');
         $id = (int)($_GET['id'] ?? 0);
         if (!$id) {
-            echo json_encode(['error' => 'ID não fornecido']);
+            echo json_encode(['error' => $langText['error_project_id_missing'] ?? 'ID não fornecido']);
             exit;
         }
 
         $project = ProjectModel::find($id);
         if (!$project) {
-            echo json_encode(['error' => 'Projeto não encontrado']);
+            echo json_encode(['error' => $langText['error_project_not_found'] ?? 'Projeto não encontrado']);
             exit;
         }
 
@@ -142,7 +142,7 @@ class ProjectController
         header('Content-Type: application/json; charset=UTF-8');
         $empId = (int)($_GET['id'] ?? 0);
         if (!$empId) {
-            echo json_encode(['error'=>'ID não fornecido']);
+            echo json_encode(['error' => $langText['error_employee_id_missing'] ?? 'ID não fornecido']);
             exit;
         }
         $pdo = Database::connect();
@@ -159,6 +159,7 @@ class ProjectController
         echo json_encode(['count' => (int)$row['cnt']]);
         exit;
     }
+
     public function transactions()
     {
         header('Content-Type: application/json; charset=UTF-8');

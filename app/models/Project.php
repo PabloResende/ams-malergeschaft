@@ -168,15 +168,16 @@ class ProjectModel
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public static function getActiveProjects() {
+    public static function getActiveProjects(): array
+    {
         $pdo = Database::connect();
         $stmt = $pdo->query("
-                    SELECT id, name
-                    FROM projects
-                    WHERE status = 'in_progress'
-                    ORDER BY name
-                ");
-                return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            SELECT id, name
+            FROM projects
+            WHERE status = 'in_progress'
+            ORDER BY name
+        ");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public static function getEmployees(int $projectId): array
@@ -198,12 +199,11 @@ class ProjectModel
     {
         $pdo = Database::connect();
         return (bool)$pdo->prepare("DELETE FROM projects WHERE id = ?")
-                                ->execute([$id]);
+                            ->execute([$id]);
     }
 
     public static function restoreInventory(int $projectId): void
     {
-        // opcional: se estiver usando project_resources com inventory
         $pdo = Database::connect();
         $stmt = $pdo->prepare("
             SELECT resource_id, quantity

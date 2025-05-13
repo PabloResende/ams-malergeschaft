@@ -31,8 +31,25 @@ class ClientsController {
     public function show() {
         header('Content-Type: application/json; charset=UTF-8');
         $id = (int)($_GET['id'] ?? 0);
-        $client = Client::find($id) ?: [];
+
+        $client = Client::find($id);
+        if (!$client) {
+            echo json_encode(['error' => 'Cliente não encontrado']);
+            exit;
+        }
+
+        // total de projetos já existente
         $client['project_count'] = Client::countProjects($id);
+
+        // traz todas transações onde client_id = $id
+        $client['transactions'] = TransactionModel::getAll([
+            'start'     => '1970-01-01',
+            'end'       => date('Y-m-d'),
+            'category'  => '',          // todas as categorias
+            'client_id' => $id,
+            'type'      => ''           // todos os tipos
+        ]);
+
         echo json_encode($client);
         exit;
     }

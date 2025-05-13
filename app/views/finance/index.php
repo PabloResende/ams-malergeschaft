@@ -80,7 +80,7 @@ require __DIR__ . '/../layout/header.php';
       <tbody>
         <?php if (empty($transactions)): ?>
           <tr>
-            <td colspan="5" class="p-4 text-center"><?= htmlspecialchars($langText['no_transactions'] ?? 'Nenhuma transação encontrada') ?></td>
+            <td colspan="5" class="p-4 text-center"><?= htmlspecialchars($langText['no_transactions'] ?? 'Nenhuma transação') ?></td>
           </tr>
         <?php else: foreach($transactions as $t): ?>
           <tr class="border-t tx-row cursor-pointer" data-tx-id="<?= htmlspecialchars($t['id'],ENT_QUOTES) ?>">
@@ -89,9 +89,9 @@ require __DIR__ . '/../layout/header.php';
             <td class="p-2"><?= htmlspecialchars($t['category_name']) ?></td>
             <td class="p-2">
               <?php
-                if ($t['client_id'])    echo htmlspecialchars($clients[array_search($t['client_id'], array_column($clients,'id'))]['name'] ?? '');
+                if ($t['client_id'])     echo htmlspecialchars($clients[array_search($t['client_id'], array_column($clients,'id'))]['name']    ?? '');
                 elseif ($t['project_id']) echo htmlspecialchars($projects[array_search($t['project_id'], array_column($projects,'id'))]['name'] ?? '');
-                elseif ($t['employee_id']) echo htmlspecialchars($employees[array_search($t['employee_id'], array_column($employees,'id'))]['name'] ?? '');
+                elseif ($t['employee_id'])echo htmlspecialchars($employees[array_search($t['employee_id'],array_column($employees,'id'))]['name'] ?? '');
               ?>
             </td>
             <td class="p-2 text-right"><?= number_format((float)$t['amount'],2,',','.') ?></td>
@@ -135,7 +135,7 @@ require __DIR__ . '/../layout/header.php';
           </select>
         </div>
 
-        <!-- Associações -->
+        <!-- Contêineres de associação -->
         <div id="clientContainer" class="hidden">
           <label class="block mb-1 font-medium">Cliente</label>
           <select name="client_id" id="txClientSelect" class="w-full border rounded p-2">
@@ -177,27 +177,22 @@ require __DIR__ . '/../layout/header.php';
               <option value="debt"><?= htmlspecialchars($langText['debt'] ?? 'Dívida') ?></option>
             </select>
           </div>
-
           <div id="dateContainer">
             <label class="block mb-1 font-medium"><?= htmlspecialchars($langText['transaction_date'] ?? 'Data') ?></label>
             <input type="date" name="date" id="txDateInput" class="w-full border rounded p-2"/>
           </div>
-
           <div id="dueDateContainer" class="hidden">
             <label class="block mb-1 font-medium"><?= htmlspecialchars($langText['due_date'] ?? 'Data de Vencimento') ?></label>
             <input type="date" name="due_date" id="txDueDateInput" class="w-full border rounded p-2"/>
           </div>
-
           <div>
             <label class="block mb-1 font-medium"><?= htmlspecialchars($langText['amount'] ?? 'Valor') ?></label>
             <input type="number" step="0.01" name="amount" id="txAmountInput" required class="w-full border rounded p-2"/>
           </div>
-
           <div>
             <label class="block mb-1 font-medium"><?= htmlspecialchars($langText['description'] ?? 'Descrição') ?></label>
             <textarea name="description" id="txDescInput" rows="3" class="w-full border rounded p-2"></textarea>
           </div>
-
           <div>
             <label class="block mb-1 font-medium"><?= htmlspecialchars($langText['attachments'] ?? 'Anexos') ?></label>
             <ul id="txAttachments" class="list-disc ml-5 text-sm text-blue-600"></ul>
@@ -232,7 +227,6 @@ require __DIR__ . '/../layout/header.php';
           <button type="submit" id="txSaveBtn" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"><?= htmlspecialchars($langText['save'] ?? 'Salvar') ?></button>
         </div>
       </form>
-
       <a id="txDeleteLink" href="#" class="absolute bottom-4 left-6 text-red-600 hover:underline hidden"><?= htmlspecialchars($langText['confirm_delete'] ?? 'Excluir') ?></a>
     </div>
   </div>

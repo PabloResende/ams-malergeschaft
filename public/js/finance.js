@@ -16,10 +16,6 @@
     const cliCont    = document.getElementById('clientContainer');
     const projCont   = document.getElementById('projectContainer');
     const empCont    = document.getElementById('employeeContainer');
-    const selClient  = document.getElementById('txClientSelect');
-    const selProject = document.getElementById('txProjectSelect');
-    const selEmployee= document.getElementById('txEmployeeSelect');
-
     const selType    = document.getElementById('txTypeSelect');
     const dateCont   = document.getElementById('dateContainer');
     const dueCont    = document.getElementById('dueDateContainer');
@@ -102,19 +98,25 @@
           form.method = 'POST';
           form.action = API + '/update';
           fldId.value = tx.id;
-          selCat.value = tx.category; updateAssociation();
-          selClient.value  = tx.client_id||'';
-          selProject.value = tx.project_id||'';
-          selEmployee.value= tx.employee_id||'';
-          selType.value    = tx.type; updateVisibility();
-          inpDate.value    = tx.date;
-          inpDue.value     = tx.due_date||'';
-          inpAmt.value     = tx.amount;
-          descInput.value  = tx.description||'';
-          chkInit.checked  = !!tx.initial_payment;
-          initAmt.value    = tx.initial_payment_amount||'';
-          selInst.value    = tx.installments_count||'';
+
+          selCat.value = tx.category;
+          updateAssociation();
+
+          document.getElementById('txClientSelect').value   = tx.client_id    || '';
+          document.getElementById('txProjectSelect').value  = tx.project_id   || '';
+          document.getElementById('txEmployeeSelect').value = tx.employee_id  || '';
+
+          selType.value  = tx.type; updateVisibility();
+
+          inpDate.value  = tx.date;
+          inpDue.value   = tx.due_date   || '';
+          inpAmt.value   = tx.amount;
+          descInput.value= tx.description || '';
+          chkInit.checked= !!tx.initial_payment;
+          initAmt.value  = tx.initial_payment_amount || '';
+          selInst.value  = tx.installments_count || '';
           calculateInstallment();
+
           attachList.innerHTML='';
           (tx.attachments||[]).forEach(a=>{
             const li=document.createElement('li');
@@ -125,20 +127,28 @@
             li.appendChild(ael);
             attachList.appendChild(li);
           });
+
           deleteLink.href = `${API}/delete?id=${tx.id}`;
           deleteLink.classList.remove('hidden');
+
           show(modal,true);
+        })
+        .catch(err=>{
+          alert('Erro: '+err.message);
         });
     }
+
+    // Delegação de clique na tabela
+    document.querySelector('table.w-full tbody').addEventListener('click', e=>{
+      const tr = e.target.closest('tr.tx-row');
+      if (!tr) return;
+      openEdit(tr.dataset.txId);
+    });
 
     openBtn.addEventListener('click',openNew);
     closeBtn.addEventListener('click',()=>show(modal,false));
     cancelBtn.addEventListener('click',()=>show(modal,false));
-    modal.addEventListener('click',e=>{if(e.target===modal)show(modal,false);});
-
-    document.querySelectorAll('.tx-row').forEach(r=>
-      r.addEventListener('click',()=>openEdit(r.dataset.txId))
-    );
+    modal.addEventListener('click',e=>{ if(e.target===modal) show(modal,false); });
 
     selCat.addEventListener('change',updateAssociation);
     selType.addEventListener('change',updateVisibility);

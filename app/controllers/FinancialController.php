@@ -26,7 +26,7 @@ class FinancialController
         $employees = Employee::all();
         $clients   = Client::all();
 
-        // categorias fixas para select
+        // Categorias fixas
         $categories = [
             ['value'=>'funcionarios',      'name'=>'Funcionários',        'assoc'=>'employee'],
             ['value'=>'clientes',          'name'=>'Clientes',            'assoc'=>'client'],
@@ -51,9 +51,9 @@ class FinancialController
         }
         $tx['attachments'] = TransactionModel::getAttachments($id);
         $debt = TransactionModel::getDebt($id);
-        $tx['due_date']            = $debt['due_date']           ?? null;
-        $tx['installments_count']  = $debt['installments_count'] ?? null;
-        $tx['initial_payment']     = $debt['initial_payment']    ?? 0;
+        $tx['due_date']               = $debt['due_date']           ?? null;
+        $tx['installments_count']     = $debt['installments_count'] ?? null;
+        $tx['initial_payment']        = $debt['initial_payment']    ?? 0;
         $tx['initial_payment_amount'] = $debt['initial_payment_amount'] ?? null;
 
         header('Content-Type: application/json; charset=utf-8');
@@ -63,66 +63,86 @@ class FinancialController
 
     public function store()
     {
-        if (session_status()!==PHP_SESSION_ACTIVE) session_start();
-        $userId   = $_SESSION['user']['id'] ?? null;
+        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+        $userId = $_SESSION['user']['id'] ?? null;
+
         $data = [
             'user_id'     => $userId,
-            'category'    => $_POST['category']   ?? null,
-            'type'        => $_POST['type']       ?? null,
-            'client_id'   => $_POST['client_id']  ?? null,
-            'project_id'  => $_POST['project_id'] ?? null,
-            'employee_id' => $_POST['employee_id']?? null,
-            'amount'      => $_POST['amount']     ?? null,
-            'date'        => $_POST['date']       ?? null,
-            'description' => $_POST['description']?? '',
+            'category'    => $_POST['category']     ?? null,
+            'type'        => $_POST['type']         ?? null,
+            'client_id'   => $_POST['client_id']    ?? null,
+            'project_id'  => $_POST['project_id']   ?? null,
+            'employee_id' => $_POST['employee_id']  ?? null,
+            'amount'      => $_POST['amount']       ?? null,
+            'date'        => $_POST['date']         ?? null,
+            'description' => $_POST['description']  ?? '',
         ];
-        // validação...
+
+        // validação simples
+        foreach (['category','type','amount','date'] as $f) {
+            if (empty($data[$f])) {
+                die("Campo obrigatório faltando: $f");
+            }
+        }
+
         $attachments = $this->processAttachments($_FILES['attachments'] ?? null);
+
         $debtData = null;
         if ($data['type']==='debt') {
             $debtData = [
-                'client_id'              => $_POST['client_id']           ?? null,
+                'client_id'              => $_POST['client_id']             ?? null,
                 'amount'                 => $data['amount'],
-                'due_date'               => $_POST['due_date']            ?? null,
+                'due_date'               => $_POST['due_date']              ?? null,
                 'status'                 => 'open',
-                'project_id'             => $_POST['project_id']          ?? null,
-                'installments_count'     => $_POST['installments_count']  ?? null,
+                'project_id'             => $_POST['project_id']            ?? null,
+                'installments_count'     => $_POST['installments_count']    ?? null,
                 'initial_payment'        => isset($_POST['initial_payment'])?1:0,
-                'initial_payment_amount' => $_POST['initial_payment_amount']?? null,
+                'initial_payment_amount' => $_POST['initial_payment_amount'] ?? null,
             ];
         }
+
         TransactionModel::store($data, $attachments, $debtData);
         header('Location: '.$_SERVER['HTTP_REFERER']);
     }
 
     public function update()
     {
-        if (session_status()!==PHP_SESSION_ACTIVE) session_start();
-        $id   = (int)($_POST['id'] ?? 0);
+        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+        $id = (int)($_POST['id'] ?? 0);
+
         $data = [
-            'category'    => $_POST['category']   ?? null,
-            'type'        => $_POST['type']       ?? null,
-            'client_id'   => $_POST['client_id']  ?? null,
-            'project_id'  => $_POST['project_id'] ?? null,
-            'employee_id' => $_POST['employee_id']?? null,
-            'amount'      => $_POST['amount']     ?? null,
-            'date'        => $_POST['date']       ?? null,
-            'description' => $_POST['description']?? '',
+            'category'    => $_POST['category']     ?? null,
+            'type'        => $_POST['type']         ?? null,
+            'client_id'   => $_POST['client_id']    ?? null,
+            'project_id'  => $_POST['project_id']   ?? null,
+            'employee_id' => $_POST['employee_id']  ?? null,
+            'amount'      => $_POST['amount']       ?? null,
+            'date'        => $_POST['date']         ?? null,
+            'description' => $_POST['description']  ?? '',
         ];
+
+        foreach (['category','type','amount','date'] as $f) {
+            if (empty($data[$f])) {
+                die("Campo obrigatório faltando: $f");
+            }
+        }
+
         $attachments = $this->processAttachments($_FILES['attachments'] ?? null);
+
         $debtData = null;
         if ($data['type']==='debt') {
             $debtData = [
-                'client_id'              => $_POST['client_id']           ?? null,
+                'client_id'              => $_POST['client_id']             ?? null,
                 'amount'                 => $data['amount'],
-                'due_date'               => $_POST['due_date']            ?? null,
-                'status'                 => $_POST['status']              ?? 'open',
-                'project_id'             => $_POST['project_id']          ?? null,
-                'installments_count'     => $_POST['installments_count']  ?? null,
+                'due_date'               => $_POST['due_date']              ?? null,
+                'status'                 => $_POST['status']                ?? 'open',
+                'project_id'             => $_POST['project_id']            ?? null,
+                'installments_count'     => $_POST['installments_count']    ?? null,
                 'initial_payment'        => isset($_POST['initial_payment'])?1:0,
-                'initial_payment_amount' => $_POST['initial_payment_amount']?? null,
+                'initial_payment_amount' => $_POST['initial_payment_amount'] ?? null,
             ];
         }
+
         TransactionModel::update($id, $data, $attachments, $debtData);
         header('Location: '.$_SERVER['HTTP_REFERER']);
     }
@@ -139,14 +159,14 @@ class FinancialController
     {
         $res = [];
         if (!$files || !isset($files['tmp_name'])) return $res;
-        $dir = __DIR__.'/../../public/uploads/finance/';
-        if (!is_dir($dir)) mkdir($dir,0755,true);
-        foreach ($files['tmp_name'] as $i=>$tmp) {
-            if ($files['error'][$i]!==UPLOAD_ERR_OK) continue;
-            $ext  = pathinfo($files['name'][$i],PATHINFO_EXTENSION);
-            $name = time().'_'.uniqid().'.'.$ext;
-            move_uploaded_file($tmp, $dir.$name);
-            $res[] = ['file_path'=>'uploads/finance/'.$name];
+        $dir = __DIR__ . '/../../public/uploads/finance/';
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+        foreach ($files['tmp_name'] as $i => $tmp) {
+            if ($files['error'][$i] !== UPLOAD_ERR_OK) continue;
+            $ext  = pathinfo($files['name'][$i], PATHINFO_EXTENSION);
+            $name = time() . '_' . uniqid() . '.' . $ext;
+            move_uploaded_file($tmp, $dir . $name);
+            $res[] = ['file_path' => 'uploads/finance/' . $name];
         }
         return $res;
     }

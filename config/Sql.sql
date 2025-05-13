@@ -194,7 +194,7 @@ CREATE TABLE IF NOT EXISTS finance_categories (
 CREATE TABLE IF NOT EXISTS financial_transactions (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
-  category_id INT NOT NULL,
+  category_id INT,
   type ENUM('income','expense','debt') NOT NULL,
   amount DECIMAL(12,2) NOT NULL,
   date DATE NOT NULL,

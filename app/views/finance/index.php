@@ -10,16 +10,16 @@ $cat            = $_GET['category_id'] ?? '';
 $projectCatName = $langText['project_expense'] ?? 'Gastos com Projeto';
 
 // Recebido do controller:
- // $transactions, $allCategories, $summary, $projects
+//   $transactions, $allCategories, $summary, $projects
 
 require __DIR__ . '/../layout/header.php';
 ?>
 <script>
   window.BASE_URL       = '<?= $baseUrl ?>';
   window.FINANCE_PREFIX = window.BASE_URL + '/finance';
-  window.FINANCE_STR = {
+  window.FINANCE_STR    = {
     newTransaction:  <?= json_encode($langText['new_transaction']) ?>,
-    editTransaction: <?= json_encode($langText['edit_transaction']  ?? 'Editar Transação') ?>,
+    editTransaction: <?= json_encode($langText['edit_transaction'] ?? 'Editar Transação') ?>,
     save:            <?= json_encode($langText['save']) ?>,
     saveChanges:     <?= json_encode($langText['save_changes'] ?? 'Salvar') ?>,
     confirmDelete:   <?= json_encode($langText['confirm_delete']) ?>
@@ -59,8 +59,7 @@ require __DIR__ . '/../layout/header.php';
       <select name="category_id" class="border rounded p-1">
         <option value=""><?= htmlspecialchars($langText['all_categories']) ?></option>
         <?php foreach($allCategories as $c): ?>
-          <option value="<?= htmlspecialchars($c['id'],ENT_QUOTES) ?>"
-                  <?= $cat==$c['id']?'selected':''?>>
+          <option value="<?= htmlspecialchars($c['id'],ENT_QUOTES) ?>" <?= $cat==$c['id']?'selected':''?>>
             <?= htmlspecialchars($c['name']) ?>
           </option>
         <?php endforeach; ?>
@@ -71,7 +70,7 @@ require __DIR__ . '/../layout/header.php';
     </form>
   </div>
 
-  <!-- Tabela -->
+  <!-- Tabela de transações -->
   <div class="overflow-x-auto mb-6">
     <table class="w-full bg-white rounded shadow">
       <thead class="bg-gray-100">
@@ -88,8 +87,7 @@ require __DIR__ . '/../layout/header.php';
             <td colspan="4" class="p-4 text-center"><?= htmlspecialchars($langText['no_transactions']) ?></td>
           </tr>
         <?php else: foreach($transactions as $t): ?>
-          <tr class="border-t tx-row cursor-pointer"
-              data-tx-id="<?= htmlspecialchars($t['id'],ENT_QUOTES) ?>">
+          <tr class="border-t tx-row cursor-pointer" data-tx-id="<?= htmlspecialchars($t['id'],ENT_QUOTES) ?>">
             <td class="p-2"><?= date('d/m/Y',strtotime($t['date'])) ?></td>
             <td class="p-2"><?= htmlspecialchars($langText[$t['type']] ?? '') ?></td>
             <td class="p-2"><?= htmlspecialchars($t['category_name']) ?></td>
@@ -101,16 +99,14 @@ require __DIR__ . '/../layout/header.php';
   </div>
 
   <!-- Botão Nova Transação -->
-  <button id="openTxModalBtn"
-          class="fixed bottom-8 right-8 bg-green-500 text-white rounded-full p-4 shadow-lg hover:bg-green-600">
+  <button id="openTxModalBtn" class="fixed bottom-8 right-8 bg-green-500 text-white rounded-full p-4 shadow-lg hover:bg-green-600">
     <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2">
       <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
     </svg>
   </button>
 
-  <!-- Modal -->
-  <div id="transactionModal"
-       class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50">
+  <!-- Modal de Transação -->
+  <div id="transactionModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden z-50">
     <div class="bg-white rounded-lg shadow-lg w-full max-w-lg mx-4 overflow-hidden">
       <!-- Cabeçalho -->
       <div class="flex justify-between items-center px-6 py-4 border-b">
@@ -119,31 +115,28 @@ require __DIR__ . '/../layout/header.php';
       </div>
       <!-- Abas -->
       <div class="flex border-b">
-        <button id="tabGeneralBtn"
-                class="flex-1 text-center px-4 py-2 border-b-2 border-blue-600 font-medium">
+        <button id="tabGeneralBtn" class="flex-1 text-center px-4 py-2 border-b-2 border-blue-600 font-medium">
           Geral
         </button>
-        <button id="tabDebtBtn" class="flex-1 text-center px-4 py-2 text-gray-500 hover:text-gray-700">
+        <button id="tabDebtBtn" class="flex-1 text-center px-4 py-2 text-gray-500 hover:text-gray-700 hidden">
           Parcelamento
         </button>
       </div>
       <!-- Formulário -->
-      <form id="transactionForm" class="px-6 py-4 space-y-6" enctype="multipart/form-data">
+      <form id="transactionForm" method="POST" enctype="multipart/form-data" class="px-6 py-4 space-y-6">
         <input type="hidden" name="id" id="txId"/>
 
         <!-- Aba Geral -->
         <div id="tabGeneral" class="space-y-4">
-          <!-- Tipo -->
           <div>
             <label class="block mb-1 font-medium">Tipo</label>
             <select name="type" id="txTypeSelect" required class="w-full border rounded p-2">
               <option value="" disabled selected>Selecione</option>
-              <option value="income">Entrada</option>
-              <option value="expense">Saída</option>
-              <option value="debt">Dívida</option>
+              <option value="income"><?= htmlspecialchars($langText['income']) ?></option>
+              <option value="expense"><?= htmlspecialchars($langText['expense']) ?></option>
+              <option value="debt"><?= htmlspecialchars($langText['debt']) ?></option>
             </select>
           </div>
-          <!-- Data Transação ou Vencimento -->
           <div id="dateContainer">
             <label class="block mb-1 font-medium">Data da Transação</label>
             <input type="date" name="date" id="txDateInput" class="w-full border rounded p-2"/>
@@ -152,12 +145,10 @@ require __DIR__ . '/../layout/header.php';
             <label class="block mb-1 font-medium">Data de Vencimento</label>
             <input type="date" name="due_date" id="txDueDateInput" class="w-full border rounded p-2"/>
           </div>
-          <!-- Valor -->
           <div>
             <label class="block mb-1 font-medium">Valor</label>
             <input type="number" step="0.01" name="amount" id="txAmountInput" required class="w-full border rounded p-2"/>
           </div>
-          <!-- Categoria & Projeto -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block mb-1 font-medium">Categoria</label>
@@ -165,7 +156,7 @@ require __DIR__ . '/../layout/header.php';
                 <option value="" disabled selected>Selecione categoria</option>
                 <?php foreach($allCategories as $c): ?>
                   <option value="<?= htmlspecialchars($c['id'],ENT_QUOTES) ?>"
-                          data-project="<?= $c['name']===$projectCatName?'1':'0' ?>">
+                          data-project="<?= $c['name'] === $projectCatName ? '1' : '0' ?>">
                     <?= htmlspecialchars($c['name']) ?>
                   </option>
                 <?php endforeach; ?>
@@ -181,12 +172,10 @@ require __DIR__ . '/../layout/header.php';
               </select>
             </div>
           </div>
-          <!-- Descrição -->
           <div>
             <label class="block mb-1 font-medium">Descrição</label>
             <textarea name="description" id="txDescInput" rows="3" class="w-full border rounded p-2"></textarea>
           </div>
-          <!-- Anexos -->
           <div>
             <label class="block mb-1 font-medium">Anexos</label>
             <ul id="txAttachments" class="list-disc ml-5 text-sm text-blue-600"></ul>
@@ -208,7 +197,7 @@ require __DIR__ . '/../layout/header.php';
             <label class="block mb-1 font-medium">Número de parcelas</label>
             <select id="installmentsSelect" name="installments_count" class="w-full border rounded p-2">
               <option value="" disabled selected>Selecione</option>
-              <?php for($i=1;$i<=12;$i++): ?>
+              <?php for($i = 1; $i <= 12; $i++): ?>
                 <option value="<?= $i ?>"><?= $i ?>×</option>
               <?php endfor; ?>
             </select>
@@ -216,20 +205,18 @@ require __DIR__ . '/../layout/header.php';
           <div id="installmentInfo" class="text-sm text-gray-600"></div>
         </div>
 
-        <!-- Ações -->
         <div class="flex justify-end gap-2 pt-4 border-t">
           <button type="button" id="txCancelBtn" class="px-4 py-2 border rounded hover:bg-gray-100">
-            Cancelar
+            <?= htmlspecialchars($langText['cancel']) ?>
           </button>
           <button type="submit" id="txSaveBtn" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-            Salvar
+            <?= htmlspecialchars($langText['save']) ?>
           </button>
         </div>
       </form>
 
-      <!-- Excluir -->
       <button id="txDeleteLink" class="absolute bottom-4 left-6 text-red-600 hover:underline hidden">
-        Excluir
+        <?= htmlspecialchars($langText['confirm_delete']) ?>
       </button>
     </div>
   </div>

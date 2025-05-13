@@ -182,7 +182,7 @@ require __DIR__ . '/../layout/header.php';
           <!-- data -->
           <div id="dateContainer">
             <label class="block mb-1 font-medium"><?= htmlspecialchars($langText['transaction_date'], ENT_QUOTES) ?></label>
-            <input type="date" name="date" id="txDateInput" class="w-full border rounded p-2"/>
+            <input type="date" name="date" id="txDateInput" required class="w-full border rounded p-2"/>
           </div>
 
           <!-- valor -->

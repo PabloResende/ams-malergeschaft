@@ -1,15 +1,19 @@
 <?php
-// public/index.php — Front controller
+// public/index.php — Front controller do sistema
 
-// Inicia sessão
+// 1) Inicia sessão
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// Carrega config de DB, constantes e timezone
-require_once __DIR__ . '/../app/config/database.php';
+// 2) Carrega config de DB, uploads, timezone
+require_once __DIR__ . '/../config/database.php';
 
-// Carrega controllers e traduções
+// 3) (Opcional) Carrega variáveis de ambiente
+// Se não tiver env.php, pode omitir esta linha
+$env = require __DIR__ . '/../config/env.php';
+
+// 4) Carrega controllers e traduções
 require_once __DIR__ . '/../app/controllers/UserController.php';
 require_once __DIR__ . '/../app/controllers/ProjectController.php';
 require_once __DIR__ . '/../app/controllers/InventoryController.php';
@@ -20,7 +24,7 @@ require_once __DIR__ . '/../app/controllers/AnalyticsController.php';
 require_once __DIR__ . '/../app/controllers/FinancialController.php';
 require_once __DIR__ . '/../app/lang/lang.php';
 
-// Helpers de URL e asset
+// 5) Helpers de URL e assets
 function url(string $path = ''): string {
     return BASE_URL . '/' . ltrim($path, '/');
 }
@@ -28,7 +32,7 @@ function asset(string $path = ''): string {
     return BASE_URL . '/public/' . ltrim($path, '/');
 }
 
-// Monta a rota atual (remove /system do início)
+// 6) Monta a rota atual (remove /system do início)
 $uri   = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $route = preg_replace('#^/system#', '', $uri);
 $route = rtrim($route, '/');
@@ -36,7 +40,7 @@ if ($route === '') {
     $route = '/';
 }
 
-// Troca de idioma
+// 7) Troca de idioma
 if (isset($_GET['lang'])) {
     $_SESSION['lang'] = $_GET['lang'];
     if (! headers_sent()) {
@@ -44,14 +48,14 @@ if (isset($_GET['lang'])) {
     }
 }
 
-// Rotas públicas
+// 8) Verifica acesso (público vs. privado)
 $publicRoutes = ['/', '/login', '/auth', '/register', '/store'];
 if (! in_array($route, $publicRoutes, true) && ! isset($_SESSION['user'])) {
     header("Location: " . url('login'));
     exit;
 }
 
-// Instancia controllers
+// 9) Instancia controllers
 $userController      = new UserController();
 $projectController   = new ProjectController();
 $inventoryController = new InventoryController();

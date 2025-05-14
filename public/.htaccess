@@ -2,12 +2,12 @@
     RewriteEngine On
     RewriteBase /system/public/
 
-    # Se for arquivo ou pasta real, serve direto
+    # Arquivos e pastas reais
     RewriteCond %{REQUEST_FILENAME} -f [OR]
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
-    # Caso contrário, todas as requisições vão para index.php
+    # Todo o resto vai para index.php
     RewriteRule ^(.*)$ index.php [QSA,L]
 </IfModule>
 
@@ -21,10 +21,10 @@
 
 <IfModule mod_expires.c>
     ExpiresActive On
-    ExpiresByType image/*                       "access plus 1 year"
-    ExpiresByType text/css                      "access plus 1 month"
-    ExpiresByType application/javascript        "access plus 1 month"
-    ExpiresDefault                              "access plus 2 days"
+    ExpiresByType image/*       "access plus 1 year"
+    ExpiresByType text/css      "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresDefault              "access plus 2 days"
 </IfModule>
 
 <IfModule mod_deflate.c>

@@ -1,5 +1,5 @@
 <?php
-// database.php — configuração de produção na Hostinger
+// database.php — Configurações de produção na Hostinger
 
 // Dados de conexão
 $host = 'auth-db1525.hstgr.io';
@@ -23,25 +23,25 @@ try {
     die("Não foi possível conectar ao banco de dados.");
 }
 
-// Ambiente de produção: esconda erros na tela
+// Ambiente de produção: esconder erros na tela
 ini_set('display_errors', 0);
 ini_set('display_startup_errors', 0);
 error_reporting(E_ALL);
 
-// Fuso horário
+// Fuso horário do sistema
 date_default_timezone_set('Europe/Zurich');
 
 // Diretórios de upload
-define('UPLOAD_DIR',         __DIR__ . '/../../uploads/');
+define('UPLOAD_DIR',          __DIR__ . '/../uploads/');
 define('EMPLOYEE_UPLOAD_DIR', UPLOAD_DIR . 'employees/');
 define('FINANCE_UPLOAD_DIR',  UPLOAD_DIR . 'finance/');
 
-// Cria pastas de upload caso não existam
-foreach ([UPLOAD_DIR, EMPLOYEE_UPLOAD_DIR, FINANCE_UPLOAD_DIR] as $d) {
-    if (! file_exists($d)) {
-        mkdir($d, 0755, true);
+// Cria as pastas de upload se não existirem
+foreach ([UPLOAD_DIR, EMPLOYEE_UPLOAD_DIR, FINANCE_UPLOAD_DIR] as $dir) {
+    if (! file_exists($dir)) {
+        mkdir($dir, 0755, true);
     }
 }
 
-// URL base do sistema (subpasta /system/)
+// URL base do sistema (subpasta /system)
 define('BASE_URL', 'https://ams.swiss/system');

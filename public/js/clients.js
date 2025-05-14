@@ -86,18 +86,19 @@ document.addEventListener('DOMContentLoaded', () => {
             return alert(data.error);
           }
 
-          // preencher detalhes
           document.getElementById('detailId').value       = data.id;
           document.getElementById('detailName').value     = data.name;
           document.getElementById('detailAddress').value  = data.address  || '';
           document.getElementById('detailPhone').value    = data.phone    || '';
-          document.getElementById('detailLoyalty').textContent  = data.loyalty_points;
+
+          /* 
+          // document.getElementById('detailLoyalty').textContent  = data.loyalty_points;
+          */
+
           document.getElementById('detailProjects').textContent = data.project_count;
 
-          // preencher somente as transações deste client
           fillTransactions(data.transactions, data.id);
 
-          // mostrar aba de detalhes por padrão
           showPane('info');
           detailsModal.classList.remove('hidden');
         })

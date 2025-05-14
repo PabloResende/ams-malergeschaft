@@ -1,4 +1,6 @@
 <?php
+// app/controllers/ClientsController.php
+
 require_once __DIR__ . '/../models/Clients.php';
 require_once __DIR__ . '/../../config/Database.php';
 
@@ -20,6 +22,7 @@ class ClientsController {
             'address'        => trim($_POST['address'] ?? ''),
             'phone'          => trim($_POST['phone'] ?? ''),
             'active'         => 1,
+            // fidelidade inicial é sempre 0, mas funcionalidade comentada
             'loyalty_points' => 0
         ];
 
@@ -38,16 +41,17 @@ class ClientsController {
             exit;
         }
 
-        // total de projetos já existente
+        // comentado: não enviar pontos ao front
+        // unset($client['loyalty_points']);
+
         $client['project_count'] = Client::countProjects($id);
 
-        // traz todas transações onde client_id = $id
         $client['transactions'] = TransactionModel::getAll([
             'start'     => '1970-01-01',
             'end'       => date('Y-m-d'),
-            'category'  => '',          // todas as categorias
+            'category'  => '',
             'client_id' => $id,
-            'type'      => ''           // todos os tipos
+            'type'      => ''
         ]);
 
         echo json_encode($client);
@@ -62,13 +66,21 @@ class ClientsController {
         $id = (int)($_POST['id'] ?? 0);
 
         $data = [
-            'name'           => trim($_POST['name'] ?? ''),
-            'address'        => trim($_POST['address'] ?? ''),
-            'phone'          => trim($_POST['phone'] ?? ''),
-            'active'         => 1
+            'name'    => trim($_POST['name'] ?? ''),
+            'address' => trim($_POST['address'] ?? ''),
+            'phone'   => trim($_POST['phone'] ?? ''),
+            'active'  => 1
         ];
 
         Client::update($id, $data);
+
+        // comentado: desativado ajuste manual de pontos
+        /*
+        if (isset($_POST['loyalty_points'])) {
+            Client::setPoints($id, (int)$_POST['loyalty_points']);
+        }
+        */
+
         header('Location: /ams-malergeschaft/public/clients');
         exit;
     }

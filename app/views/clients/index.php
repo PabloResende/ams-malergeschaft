@@ -35,10 +35,14 @@ $baseUrl = '/ams-malergeschaft/public';
           <?= $langText['phone'] ?? 'Telefone' ?>:
           <span class="font-medium"><?= htmlspecialchars($c['phone'], ENT_QUOTES) ?></span>
         </p>
+
+        <?php /* 
+        <!-- coração do sistema de fidelidade comentado -->
         <p class="text-sm text-gray-600 mt-2">
           <?= $langText['loyalty_points'] ?? 'Pontos de Fidelidade' ?>:
           <span class="font-medium"><?= (int)$c['loyalty_points'] ?></span>
         </p>
+        */ ?>
       </div>
     <?php endforeach; endif; ?>
   </div>
@@ -55,7 +59,7 @@ $baseUrl = '/ams-malergeschaft/public';
   </button>
 </div>
 
-<!-- Modal de Criação (inalterado) -->
+<!-- Modal de Criação -->
 <div id="createModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
   <div id="createModalContent" class="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
     <button type="button" id="closeCreateModal"
@@ -117,8 +121,10 @@ $baseUrl = '/ams-malergeschaft/public';
           <input name="phone" id="detailPhone" type="text" class="w-full border rounded px-3 py-2"/>
         </div>
         <div class="text-sm text-gray-600">
+          <?php /*
           <?= $langText['loyalty_points'] ?? 'Pontos de Fidelidade' ?>:
           <span id="detailLoyalty">0</span><br>
+          */ ?>
           <?= $langText['projects_done'] ?? 'Projetos Concluídos' ?>:
           <span id="detailProjects">0</span>
         </div>
@@ -142,7 +148,6 @@ $baseUrl = '/ams-malergeschaft/public';
             </tr>
           </thead>
           <tbody id="transTableBody">
-            <!-- preenchido via JS -->
           </tbody>
         </table>
       </div>

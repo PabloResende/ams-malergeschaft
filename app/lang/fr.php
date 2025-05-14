@@ -127,6 +127,7 @@ return [
     'transactions'          => 'Transactions',
     'client_transactions'   => 'Transactions du client',
     'confirm_delete'        => 'Êtes-vous sûr de vouloir supprimer cet enregistrement ?',
+    'projects_done'         => 'Projets terminés',
 
     // Inventaire
     'manage_inventory'      => 'Gérez vos articles en stock',

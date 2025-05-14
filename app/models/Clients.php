@@ -51,6 +51,7 @@ class Client
             $data['address']        ?? null,
             $data['phone']          ?? null,
             $data['active']         ?? 1,
+            // inicializa sempre 0, mas fidelidade desativada em view/js
             $data['loyalty_points'] ?? 0
         ]);
     }
@@ -112,11 +113,9 @@ class Client
 
     /**
      * Atualiza os pontos de fidelidade do cliente.
-     *
-     * @param int $id
-     * @param int $points
-     * @return bool
+     * ATENÇÃO: método comentado para desativar fidelidade temporariamente.
      */
+    /*
     public static function setPoints($id, $points)
     {
         $pdo = Database::connect();
@@ -127,4 +126,5 @@ class Client
         ");
         return $stmt->execute([$points, $id]);
     }
+    */
 }

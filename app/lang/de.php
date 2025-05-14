@@ -127,6 +127,9 @@ return [
     'transactions'          => 'Transaktionen',
     'client_transactions'   => 'Kundentransaktionen',
     'confirm_delete'        => 'Möchten Sie diesen Eintrag wirklich löschen?',
+    'project_done'          => 'Projekt abgeschlossen',
+    'projects_done'         => 'Abgeschlossene Projekte',
+    
 
     // Bestand
     'manage_inventory'      => 'Verwalten Sie Ihre Lagerartikel',

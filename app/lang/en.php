@@ -127,6 +127,7 @@ return [
     'transactions'          => 'Transactions',
     'client_transactions'   => 'Client Transactions',
     'confirm_delete'        => 'Are you sure you want to delete this record?',
+    'projects_done'         => 'Projects Done',
 
     // Inventory
     'manage_inventory'      => 'Manage your inventory items',

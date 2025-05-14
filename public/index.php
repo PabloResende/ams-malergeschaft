@@ -2,7 +2,7 @@
 ob_start();
 session_start();
 
-$basePath = '/ams-malergeschaft/public';
+ $basePath = ''
 
 require_once __DIR__ . '/../app/controllers/UserController.php';
 require_once __DIR__ . '/../app/controllers/ProjectController.php';

@@ -135,39 +135,28 @@ class ProjectController
         exit;
     }
 
-    public function checkEmployee()
+  public function checkEmployee()
     {
         header('Content-Type: application/json; charset=UTF-8');
+
         $empId = max(0, (int)($_GET['id'] ?? 0));
         if (!$empId) {
             echo json_encode(['count' => 0]);
             exit;
         }
-        $excludeProj = isset($_GET['project_id']) ? max(0, (int)$_GET['project_id']) : null;
 
-        $pdo = Database::connect();
-        $sql = "
-            SELECT COUNT(DISTINCT pr.project_id) AS cnt
-            FROM project_resources pr
-            JOIN projects p ON pr.project_id = p.id
-            WHERE pr.resource_type = 'employee'
-              AND pr.resource_id = ?
-              AND p.status <> 'completed'
-        ";
-        if ($excludeProj) {
-            $sql .= " AND pr.project_id <> ?";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([$empId, $excludeProj]);
-        } else {
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([$empId]);
-        }
+        // Se veio project_id (na edição), exclui-o do cálculo:
+        $excludeProj = isset($_GET['project_id'])
+            ? max(0, (int)$_GET['project_id'])
+            : null;
 
-        $count = (int)$stmt->fetchColumn();
+        // Usa a nova assinatura que já exclui completed
+        $count = ProjectModel::countProjectsByEmployee($empId, $excludeProj);
+
         echo json_encode(['count' => $count]);
         exit;
     }
-
+    
     public function transactions()
     {
         header('Content-Type: application/json; charset=UTF-8');

@@ -233,19 +233,29 @@ class ProjectModel
 
     /**
      * Conta em quantos projetos (pendentes ou em andamento) este funcionário já está atribuído.
-     */
-    public static function countProjectsByEmployee(int $empId): int
+     */ public static function countProjectsByEmployee(int $empId, int $excludeProjectId = null): int
     {
         $pdo = Database::connect();
-        $stmt = $pdo->prepare("
+        $sql = "
             SELECT COUNT(DISTINCT pr.project_id) AS cnt
             FROM project_resources pr
-            JOIN projects p ON pr.project_id = p.id
+            JOIN projects p
+              ON pr.project_id = p.id
             WHERE pr.resource_type = 'employee'
               AND pr.resource_id = ?
               AND p.status <> 'completed'
-        ");
-        $stmt->execute([$empId]);
-        return (int)$stmt->fetchColumn();
+        ";
+
+        if ($excludeProjectId !== null) {
+            $sql .= " AND pr.project_id <> ?";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$empId, $excludeProjectId]);
+        } else {
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$empId]);
+        }
+
+        return (int) $stmt->fetchColumn();
     }
+
 }

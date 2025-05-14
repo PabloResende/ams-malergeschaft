@@ -1,16 +1,15 @@
 <?php
-// public/index.php - Front controller do sistema
-// Este arquivo é o ponto de entrada de todas as requisições
+// public/index.php — Front controller do sistema
 
-// Definindo o path base para o ambiente de produção na Hostinger
-$basePath = '/system';  // Ajustado para o subdomínio ams.swiss/system/
-
-// Iniciando a sessão
+// Inicia sessão
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// Incluindo as dependências necessárias
+// Carrega configuração de DB, constantes e timezone
+require_once __DIR__ . '/../app/config/database.php';
+
+// Controllers
 require_once __DIR__ . '/../app/controllers/UserController.php';
 require_once __DIR__ . '/../app/controllers/ProjectController.php';
 require_once __DIR__ . '/../app/controllers/InventoryController.php';
@@ -21,10 +20,17 @@ require_once __DIR__ . '/../app/controllers/AnalyticsController.php';
 require_once __DIR__ . '/../app/controllers/FinancialController.php';
 require_once __DIR__ . '/../app/lang/lang.php';
 
-// Obtendo a URI da requisição
-$uri = $_SERVER['REQUEST_URI'];
-$route = str_replace($basePath, '', parse_url($uri, PHP_URL_PATH));
-$route = rtrim($route, '/');
+// Helpers de URL e assets
+function url(string $path = ''): string {
+    return BASE_URL . '/' . ltrim($path, '/');
+}
+function asset(string $path = ''): string {
+    return BASE_URL . '/public/' . ltrim($path, '/');
+}
+
+// Montagem da rota
+$uri   = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$route = rtrim(str_replace(parse_url(BASE_URL, PHP_URL_PATH), '', $uri), '/');
 if ($route === '') {
     $route = '/';
 }
@@ -32,15 +38,15 @@ if ($route === '') {
 // Troca de idioma
 if (isset($_GET['lang'])) {
     $_SESSION['lang'] = $_GET['lang'];
-    if (!headers_sent()) {
+    if (! headers_sent()) {
         setcookie('lang', $_GET['lang'], time() + 86400 * 30, "/");
     }
 }
 
-// Rotas públicas
+// Verifica acesso público vs privado
 $publicRoutes = ['/', '/login', '/auth', '/register', '/store'];
-if (!in_array($route, $publicRoutes) && !isset($_SESSION['user'])) {
-    header("Location: $basePath/login");
+if (! in_array($route, $publicRoutes, true) && ! isset($_SESSION['user'])) {
+    header("Location: " . url('login'));
     exit;
 }
 
@@ -54,19 +60,7 @@ $calendarController  = new CalendarController();
 $analyticsController = new AnalyticsController();
 $financialController = new FinancialController();
 
-// Função helper para URLs
-function url($path = '') {
-    global $basePath;
-    return $basePath . '/' . ltrim($path, '/');
-}
-
-// Função helper para assets
-function asset($path = '') {
-    global $basePath;
-    return $basePath . '/public/' . ltrim($path, '/');
-}
-
-// Sistema de roteamento - Dispatcher
+// Dispatcher de rotas
 switch ($route) {
     // USUÁRIO
     case '/':

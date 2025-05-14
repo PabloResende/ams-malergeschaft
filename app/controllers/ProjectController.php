@@ -100,14 +100,13 @@ class ProjectController
             $employees = [];
         }
 
-        // if (ProjectModel::update($id, $data, $tasks, $employees)) {
-        //     if ($clientId) {
-        //         $count = Client::countProjects($clientId);
-        //         Client::setPoints($clientId, $count);
-        //     }
-        //     header("Location: /ams-malergeschaft/public/projects");
-        //     exit;
-        // }
+        if (ProjectModel::update($id, $data, $tasks, $employees)) {
+            if ($clientId) {
+                $count = Client::countProjects($clientId);
+            }
+            header("Location: /ams-malergeschaft/public/projects");
+            exit;
+        }
 
         echo $langText['error_updating_project'] ?? 'Erro ao atualizar o projeto.';
     }

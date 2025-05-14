@@ -1,5 +1,4 @@
 <?php
-// public/index.php
 ob_start();
 session_start();
 
@@ -95,6 +94,9 @@ switch ($route) {
     case '/projects/transactions':
         $projectController->transactions();
         break;
+    case '/projects/checkEmployee':
+        $projectController->checkEmployee();
+        break;
 
     // FUNCIONÁRIOS
     case '/employees':
@@ -115,10 +117,6 @@ switch ($route) {
     case '/employees/get':
         $employeeController->get();
         break;
-    case '/employees/document':
-        case '/employees/serveDocument':
-            $ctrl->serveDocument();
-            break;
 
     // CLIENTES
     case '/clients':

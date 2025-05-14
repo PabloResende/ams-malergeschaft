@@ -88,6 +88,7 @@ return [
     'project_details'       => 'Project Details',
     'project_transactions'  => 'Project Transactions',
     'no_inventory_allocated'=> '— No inventory allocated',
+    'employee_already_assigned_message' => '{name} is currently assigned to {count} active projects',
 
     // Employees
     'employees_list'        => 'Employees List',

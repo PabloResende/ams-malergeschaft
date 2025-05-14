@@ -1,6 +1,4 @@
 <?php
-// app/models/ProjectModel.php
-
 require_once __DIR__ . '/../../config/Database.php';
 
 class ProjectModel
@@ -62,7 +60,9 @@ class ProjectModel
                 VALUES (?, ?, ?, NOW())
             ");
             foreach ($tasks as $t) {
-                if (trim($t['description']) === '') continue;
+                if (trim($t['description']) === '') {
+                    continue;
+                }
                 $ts->execute([
                     $projectId,
                     $t['description'],
@@ -91,22 +91,13 @@ class ProjectModel
         $pdo = Database::connect();
         $pdo->beginTransaction();
 
-        // restaura inventário antigo se usado
         self::restoreInventory($id);
 
         $stmt = $pdo->prepare("
             UPDATE projects SET
-              name            = ?,
-              client_id       = ?,
-              location        = ?,
-              description     = ?,
-              start_date      = ?,
-              end_date        = ?,
-              total_hours     = ?,
-              budget          = ?,
-              employee_count  = ?,
-              status          = ?,
-              progress        = ?
+              name = ?, client_id = ?, location = ?, description = ?,
+              start_date = ?, end_date = ?, total_hours = ?, budget = ?,
+              employee_count = ?, status = ?, progress = ?
             WHERE id = ?
         ");
         $stmt->execute([
@@ -124,19 +115,23 @@ class ProjectModel
             $id
         ]);
 
-        // remove antigas tarefas e recursos
         $pdo->prepare("DELETE FROM tasks WHERE project_id = ?")->execute([$id]);
         $pdo->prepare("DELETE FROM project_resources WHERE project_id = ?")->execute([$id]);
 
-        // re-insera
         if (!empty($tasks)) {
             $ts = $pdo->prepare("
                 INSERT INTO tasks (project_id, description, completed, created_at)
                 VALUES (?, ?, ?, NOW())
             ");
             foreach ($tasks as $t) {
-                if (trim($t['description']) === '') continue;
-                $ts->execute([$id, $t['description'], !empty($t['completed']) ? 1 : 0]);
+                if (trim($t['description']) === '') {
+                    continue;
+                }
+                $ts->execute([
+                    $id,
+                    $t['description'],
+                    !empty($t['completed']) ? 1 : 0
+                ]);
             }
         }
 
@@ -155,6 +150,12 @@ class ProjectModel
         return true;
     }
 
+    public static function delete(int $id): bool
+    {
+        $pdo = Database::connect();
+        return (bool)$pdo->prepare("DELETE FROM projects WHERE id = ?")->execute([$id]);
+    }
+
     public static function getTasks(int $projectId): array
     {
         $pdo = Database::connect();
@@ -165,18 +166,6 @@ class ProjectModel
             ORDER BY created_at ASC
         ");
         $stmt->execute([$projectId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public static function getActiveProjects(): array
-    {
-        $pdo = Database::connect();
-        $stmt = $pdo->query("
-            SELECT id, name
-            FROM projects
-            WHERE status = 'in_progress'
-            ORDER BY name
-        ");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -195,11 +184,36 @@ class ProjectModel
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public static function delete(int $id): bool
+    public static function getInventory(int $projectId): array
     {
         $pdo = Database::connect();
-        return (bool)$pdo->prepare("DELETE FROM projects WHERE id = ?")
-                            ->execute([$id]);
+        $stmt = $pdo->prepare("
+            SELECT pr.quantity, i.name
+            FROM project_resources pr
+            JOIN inventory i ON pr.resource_id = i.id
+            WHERE pr.project_id = ?
+              AND pr.resource_type = 'inventory'
+        ");
+        $stmt->execute([$projectId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function getTransactions(int $projectId): array
+    {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare("
+            SELECT ft.date, ft.type, ft.amount, ft.category
+            FROM financial_transactions ft
+            WHERE (ft.category = 'projetos' AND ft.project_id = ?)
+               OR EXISTS (
+                   SELECT 1 FROM debts d
+                   WHERE d.transaction_id = ft.id
+                     AND d.project_id = ?
+               )
+            ORDER BY ft.date DESC
+        ");
+        $stmt->execute([$projectId, $projectId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public static function restoreInventory(int $projectId): void
@@ -215,5 +229,23 @@ class ProjectModel
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $it) {
             $upd->execute([(int)$it['quantity'], $it['resource_id']]);
         }
+    }
+
+    /**
+     * Conta em quantos projetos (pendentes ou em andamento) este funcionário já está atribuído.
+     */
+    public static function countProjectsByEmployee(int $empId): int
+    {
+        $pdo = Database::connect();
+        $stmt = $pdo->prepare("
+            SELECT COUNT(DISTINCT pr.project_id) AS cnt
+            FROM project_resources pr
+            JOIN projects p ON pr.project_id = p.id
+            WHERE pr.resource_type = 'employee'
+              AND pr.resource_id = ?
+              AND p.status <> 'completed'
+        ");
+        $stmt->execute([$empId]);
+        return (int)$stmt->fetchColumn();
     }
 }

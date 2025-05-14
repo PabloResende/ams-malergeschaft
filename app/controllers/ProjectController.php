@@ -1,6 +1,4 @@
 <?php
-// app/controllers/ProjectController.php
-
 require_once __DIR__ . '/../../config/Database.php';
 require_once __DIR__ . '/../models/Project.php';
 require_once __DIR__ . '/../models/Clients.php';
@@ -22,14 +20,10 @@ class ProjectController
             exit;
         }
 
-        // 1) Processamento seguro de client_id
-        $clientId = null;
-        if (isset($_POST['client_id']) && $_POST['client_id'] !== '') {
-            $tmp = (int) $_POST['client_id'];
-            $clientId = $tmp > 0 ? $tmp : null;
-        }
+        $clientId = isset($_POST['client_id']) && $_POST['client_id'] !== ''
+            ? max(0, (int)$_POST['client_id'])
+            : null;
 
-        // 2) Monta os dados do projeto
         $data = [
             'name'           => trim($_POST['name']           ?? ''),
             'client_id'      => $clientId,
@@ -47,9 +41,7 @@ class ProjectController
         $tasks     = json_decode($_POST['tasks']     ?? '[]', true);
         $employees = json_decode($_POST['employees'] ?? '[]', true);
 
-        // 3) Cria projeto
         if (ProjectModel::create($data, $tasks, $employees)) {
-            // 4) Atualiza pontos do cliente (se houver)
             if ($clientId) {
                 $count = Client::countProjects($clientId);
                 Client::setPoints($clientId, $count);
@@ -80,22 +72,17 @@ class ProjectController
             exit;
         }
 
-        // 1) Processamento seguro de client_id
-        if (isset($_POST['client_id']) && $_POST['client_id'] !== '') {
-            $tmp = (int) $_POST['client_id'];
-            $clientId = $tmp > 0 ? $tmp : null;
-        } else {
-            $clientId = $existing['client_id'];
-        }
+        $clientId = isset($_POST['client_id']) && $_POST['client_id'] !== ''
+            ? max(0, (int)$_POST['client_id'])
+            : $existing['client_id'];
 
-        // 2) Monta dados para atualização
         $data = [
-            'name'           => trim($_POST['name']           ?? $existing['name']),
+            'name'           => trim($_POST['name']        ?? $existing['name']),
             'client_id'      => $clientId,
-            'location'       => trim($_POST['location']       ?? $existing['location']),
-            'description'    => trim($_POST['description']    ?? $existing['description']),
-            'start_date'     => $_POST['start_date']          ?? $existing['start_date'],
-            'end_date'       => $_POST['end_date']            ?? $existing['end_date'],
+            'location'       => trim($_POST['location']    ?? $existing['location']),
+            'description'    => trim($_POST['description'] ?? $existing['description']),
+            'start_date'     => $_POST['start_date']       ?? $existing['start_date'],
+            'end_date'       => $_POST['end_date']         ?? $existing['end_date'],
             'total_hours'    => (int)($_POST['total_hours']    ?? $existing['total_hours']),
             'budget'         => (float)($_POST['budget']       ?? $existing['budget']),
             'employee_count' => (int)($_POST['employee_count'] ?? $existing['employee_count']),
@@ -103,12 +90,17 @@ class ProjectController
             'progress'       => (int)($_POST['progress']       ?? $existing['progress']),
         ];
 
-        $tasks     = json_decode($_POST['tasks']     ?? '[]', true);
-        $employees = json_decode($_POST['employees'] ?? '[]', true);
+        $tasks = json_decode($_POST['tasks'] ?? '[]', true);
+        if (!is_array($tasks)) {
+            $tasks = [];
+        }
 
-        // 3) Atualiza no banco
+        $employees = json_decode($_POST['employees'] ?? '[]', true);
+        if (!is_array($employees)) {
+            $employees = [];
+        }
+
         if (ProjectModel::update($id, $data, $tasks, $employees)) {
-            // 4) Atualiza pontos do cliente (se houver)
             if ($clientId) {
                 $count = Client::countProjects($clientId);
                 Client::setPoints($clientId, $count);
@@ -123,34 +115,21 @@ class ProjectController
     public function show()
     {
         header('Content-Type: application/json; charset=UTF-8');
-        $id = (int)($_GET['id'] ?? 0);
+        $id = max(0, (int)($_GET['id'] ?? 0));
         if (!$id) {
-            echo json_encode(['error' => $langText['error_project_id_missing'] ?? 'ID não fornecido']);
+            echo json_encode(['error' => $langText['error_project_id_missing']]);
             exit;
         }
 
         $project = ProjectModel::find($id);
         if (!$project) {
-            echo json_encode(['error' => $langText['error_project_not_found'] ?? 'Projeto não encontrado']);
+            echo json_encode(['error' => $langText['error_project_not_found']]);
             exit;
         }
 
-        // traz tarefas, funcionários e inventário
-        $tasks     = ProjectModel::getTasks($id);
-        $employees = ProjectModel::getEmployees($id);
-        $pdo       = Database::connect();
-        $stmtInv   = $pdo->prepare("
-            SELECT pr.quantity, i.name
-            FROM project_resources pr
-            JOIN inventory i ON pr.resource_id = i.id
-            WHERE pr.project_id = ? AND pr.resource_type = 'inventory'
-        ");
-        $stmtInv->execute([$id]);
-        $inventory = $stmtInv->fetchAll(PDO::FETCH_ASSOC);
-
-        $project['tasks']     = $tasks;
-        $project['employees'] = $employees;
-        $project['inventory'] = $inventory;
+        $project['tasks']     = ProjectModel::getTasks($id);
+        $project['employees'] = ProjectModel::getEmployees($id);
+        $project['inventory'] = ProjectModel::getInventory($id);
 
         echo json_encode($project);
         exit;
@@ -159,57 +138,53 @@ class ProjectController
     public function checkEmployee()
     {
         header('Content-Type: application/json; charset=UTF-8');
-        $empId = (int)($_GET['id'] ?? 0);
+        $empId = max(0, (int)($_GET['id'] ?? 0));
         if (!$empId) {
-            echo json_encode(['error' => $langText['error_employee_id_missing'] ?? 'ID não fornecido']);
+            echo json_encode(['count' => 0]);
             exit;
         }
+        $excludeProj = isset($_GET['project_id']) ? max(0, (int)$_GET['project_id']) : null;
+
         $pdo = Database::connect();
-        $stmt = $pdo->prepare("
+        $sql = "
             SELECT COUNT(DISTINCT pr.project_id) AS cnt
             FROM project_resources pr
             JOIN projects p ON pr.project_id = p.id
-            WHERE pr.resource_type='employee'
-              AND pr.resource_id=?
-              AND p.status='in_progress'
-        ");
-        $stmt->execute([$empId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        echo json_encode(['count' => (int)$row['cnt']]);
+            WHERE pr.resource_type = 'employee'
+              AND pr.resource_id = ?
+              AND p.status <> 'completed'
+        ";
+        if ($excludeProj) {
+            $sql .= " AND pr.project_id <> ?";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$empId, $excludeProj]);
+        } else {
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$empId]);
+        }
+
+        $count = (int)$stmt->fetchColumn();
+        echo json_encode(['count' => $count]);
         exit;
     }
 
     public function transactions()
     {
         header('Content-Type: application/json; charset=UTF-8');
-        $id = (int)($_GET['id'] ?? 0);
+        $id = max(0, (int)($_GET['id'] ?? 0));
         if (!$id) {
             echo json_encode([]);
             exit;
         }
 
-        $pdo = Database::connect();
-        $stmt = $pdo->prepare("
-            SELECT ft.date, ft.type, ft.amount, ft.category
-            FROM financial_transactions ft
-            WHERE 
-                (ft.category = 'projetos' AND ft.project_id = ?)
-                OR EXISTS (
-                    SELECT 1
-                    FROM debts d
-                    WHERE d.transaction_id = ft.id
-                      AND d.project_id = ?
-                )
-            ORDER BY ft.date DESC
-        ");
-        $stmt->execute([$id, $id]);
-        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        $transactions = ProjectModel::getTransactions($id);
+        echo json_encode($transactions);
         exit;
     }
 
     public function delete()
     {
-        $id = (int)($_GET['id'] ?? 0);
+        $id = max(0, (int)($_GET['id'] ?? 0));
         if ($id) {
             ProjectModel::delete($id);
         }

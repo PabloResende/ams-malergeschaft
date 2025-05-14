@@ -1,5 +1,5 @@
 <?php
-$host = 'localhost';
+$host = 'auth-db1525.hstgr.io';
 $db   = 'u161269623_saas';
 $user = 'u161269623_saas';
 $pass = '$xOOtHax24çÇ@@YU';

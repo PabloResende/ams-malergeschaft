@@ -2,7 +2,7 @@
 ob_start();
 session_start();
 
- $basePath = ''
+$basePath = '/system';
 
 require_once __DIR__ . '/../app/controllers/UserController.php';
 require_once __DIR__ . '/../app/controllers/ProjectController.php';

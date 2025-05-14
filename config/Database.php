@@ -5,7 +5,7 @@ class Database {
 
     public static function connect() {
         if (self::$pdo === null) {
-            require __DIR__ . '/config.php'; // Certifique-se de que este arquivo contém as credenciais do banco
+            require __DIR__ . '/config.php';
             
             try {
                 self::$pdo = new PDO("mysql:host=$host;dbname=$db", $user, $pass);

@@ -1,9 +1,16 @@
 <?php
-ob_start();
-session_start();
+// public/index.php - Front controller do sistema
+// Este arquivo é o ponto de entrada de todas as requisições
 
-$basePath = '/system';
+// Definindo o path base para o ambiente de produção
+$basePath = '';  // String vazia para raiz do domínio, ou '/system' se estiver em subdiretório
 
+// Iniciando a sessão
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+// Incluindo as dependências necessárias
 require_once __DIR__ . '/../app/controllers/UserController.php';
 require_once __DIR__ . '/../app/controllers/ProjectController.php';
 require_once __DIR__ . '/../app/controllers/InventoryController.php';
@@ -14,7 +21,8 @@ require_once __DIR__ . '/../app/controllers/AnalyticsController.php';
 require_once __DIR__ . '/../app/controllers/FinancialController.php';
 require_once __DIR__ . '/../app/lang/lang.php';
 
-$uri   = $_SERVER['REQUEST_URI'];
+// Obtendo a URI da requisição
+$uri = $_SERVER['REQUEST_URI'];
 $route = str_replace($basePath, '', parse_url($uri, PHP_URL_PATH));
 $route = rtrim($route, '/');
 if ($route === '') {
@@ -46,7 +54,19 @@ $calendarController  = new CalendarController();
 $analyticsController = new AnalyticsController();
 $financialController = new FinancialController();
 
-// Dispatcher
+// Função helper para URLs
+function url($path = '') {
+    global $basePath;
+    return $basePath . '/' . ltrim($path, '/');
+}
+
+// Função helper para assets
+function asset($path = '') {
+    global $basePath;
+    return $basePath . '/public/' . ltrim($path, '/');
+}
+
+// Sistema de roteamento - Dispatcher
 switch ($route) {
     // USUÁRIO
     case '/':
@@ -226,8 +246,6 @@ switch ($route) {
 
     default:
         http_response_code(404);
-        echo "404 - Page not found.";
+        echo "404 - Página não encontrada.";
         break;
 }
-
-ob_end_flush();

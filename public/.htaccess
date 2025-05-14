@@ -1,12 +1,54 @@
+# Arquivo .htaccess para a pasta public (system/public/)
 <IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteBase /system/public/
+    # Ativa o módulo de reescrita de URL
+    RewriteEngine On
+    
+    # Define o diretório base para as regras
+    RewriteBase /system/public/
+    
+    # Se for arquivo ou diretório real, serve diretamente
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+    
+    # Redireciona todas as solicitações para index.php
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
 
-  # Se for arquivo ou pasta real, serve direto
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
-  RewriteRule ^ - [L]
+# Proteção de diretórios - impede listagem de arquivos
+<IfModule mod_autoindex.c>
+    Options -Indexes
+</IfModule>
 
-  # Senão, joga no front-controller
-  RewriteRule ^(.*)$ index.php [QSA,L]
+# Define o PHP como handler para arquivos .php
+<IfModule mime_module>
+    AddHandler application/x-httpd-ea-php81___lsphp .php .php8 .phtml
+</IfModule>
+
+# Configurações de cache para arquivos estáticos
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType font/otf "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+    
+    ExpiresDefault "access plus 2 days"
+</IfModule>
+
+# Comprimir arquivos para melhorar o desempenho
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript application/javascript application/x-javascript application/json application/xml
 </IfModule>

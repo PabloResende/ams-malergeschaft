@@ -1,17 +1,55 @@
+# Arquivo .htaccess para a raiz do sistema (system/)
 <IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteBase /system/
+    # Ativa o módulo de reescrita de URL
+    RewriteEngine On
+    
+    # Define o diretório base para as regras
+    RewriteBase /system/
+    
+    # Se o arquivo ou diretório não existir, redireciona para public/index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/index.php [QSA,L]
 
-  # Se for arquivo ou pasta real, serve direto
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
-  RewriteRule ^ - [L]
-
-  # Senão, joga no front-controller dentro de public/
-  RewriteRule ^(.*)$ public/index.php [QSA,L]
+    # Se o endereço acessado for na pasta public/ não faz nada
+    RewriteRule ^public/ - [L]
+    
+    # Redireciona para a pasta public/ se não for arquivo ou diretório existente
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
 
-# Proteção de diretórios
+# Proteção de diretórios - impede listagem de arquivos
 <IfModule mod_autoindex.c>
-  Options -Indexes
+    Options -Indexes
 </IfModule>
+
+# Define o PHP como handler para arquivos .php
+<IfModule mime_module>
+    AddHandler application/x-httpd-php .php
+</IfModule>
+
+# Adiciona mais segurança ao site
+<IfModule mod_headers.c>
+    # Protege contra ataques de clickjacking
+    Header set X-Frame-Options "SAMEORIGIN"
+    
+    # Habilita a proteção XSS embutida na maioria dos navegadores
+    Header set X-XSS-Protection "1; mode=block"
+    
+    # Impede que os navegadores interpretem arquivos como MIME type diferente
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>
+
+# Redireciona para o HTTPS se estiver acessando por HTTP
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTPS} off
+    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# Configuração para arquivos de erro personalizados
+ErrorDocument 403 /system/public/index.php
+ErrorDocument 404 /system/public/index.php
+ErrorDocument 500 /system/public/index.php

@@ -3,7 +3,7 @@ name: Deploy via FTP
 on:
   push:
     branches:
-      - main       # ou a branch que você usa em produção
+      - main       # ou sua branch de produção
 
 jobs:
   ftp-deploy:
@@ -16,10 +16,9 @@ jobs:
       - name: Deploy via FTP
         uses: SamKirkland/FTP-Deploy-Action@4.1.0
         with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftp             # ou 'sftp' se você tiver SFTP
-          local-dir: ./             # raiz do repositório
-          server-dir: ${{ secrets.FTP_SERVER_DIR }}
-          git-ftp-args: --insecure  # só se certificado for self-signed
+          server:     ${{ secrets.FTP_HOST }}
+          username:   ${{ secrets.FTP_USERNAME }}
+          password:   ${{ secrets.FTP_PASSWORD }}
+          protocol:   ftp            # ou 'sftp' se suportar
+          local-dir:  ./             # raiz do repositório
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}/  # observe a barra no final

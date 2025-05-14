@@ -2,15 +2,12 @@
     RewriteEngine On
     RewriteBase /system/
 
-    # Se arquivo ou pasta real, não redireciona
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d
-    RewriteRule ^ - [L]
-
-    # Se já estiver em public/, deixa passar
+    # Se já estiver na pasta public, serve direto
     RewriteRule ^public/ - [L]
 
-    # Redireciona tudo pra public/
+    # Se não for arquivo ou diretório real, redireciona pra public/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
 
@@ -23,18 +20,17 @@
 </IfModule>
 
 <IfModule mod_headers.c>
-    Header set X-Frame-Options       "SAMEORIGIN"
-    Header set X-XSS-Protection      "1; mode=block"
+    Header set X-Frame-Options        "SAMEORIGIN"
+    Header set X-XSS-Protection       "1; mode=block"
     Header set X-Content-Type-Options "nosniff"
 </IfModule>
 
+# Forçar HTTPS
 <IfModule mod_rewrite.c>
-    # Força HTTPS
-    RewriteEngine On
     RewriteCond %{HTTPS} off
-    RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 </IfModule>
 
-ErrorDocument 403 /public/index.php
-ErrorDocument 404 /public/index.php
-ErrorDocument 500 /public/index.php
+ErrorDocument 403 /system/public/index.php
+ErrorDocument 404 /system/public/index.php
+ErrorDocument 500 /system/public/index.php

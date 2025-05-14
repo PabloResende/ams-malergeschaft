@@ -1,15 +1,15 @@
 <?php
-// public/index.php — Front controller do sistema
+// public/index.php — Front controller
 
 // Inicia sessão
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// Carrega configuração de DB, constantes e timezone
+// Carrega config de DB, constantes e timezone
 require_once __DIR__ . '/../app/config/database.php';
 
-// Controllers
+// Carrega controllers e traduções
 require_once __DIR__ . '/../app/controllers/UserController.php';
 require_once __DIR__ . '/../app/controllers/ProjectController.php';
 require_once __DIR__ . '/../app/controllers/InventoryController.php';
@@ -20,7 +20,7 @@ require_once __DIR__ . '/../app/controllers/AnalyticsController.php';
 require_once __DIR__ . '/../app/controllers/FinancialController.php';
 require_once __DIR__ . '/../app/lang/lang.php';
 
-// Helpers de URL e assets
+// Helpers de URL e asset
 function url(string $path = ''): string {
     return BASE_URL . '/' . ltrim($path, '/');
 }
@@ -28,9 +28,10 @@ function asset(string $path = ''): string {
     return BASE_URL . '/public/' . ltrim($path, '/');
 }
 
-// Montagem da rota
+// Monta a rota atual (remove /system do início)
 $uri   = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-$route = rtrim(str_replace(parse_url(BASE_URL, PHP_URL_PATH), '', $uri), '/');
+$route = preg_replace('#^/system#', '', $uri);
+$route = rtrim($route, '/');
 if ($route === '') {
     $route = '/';
 }
@@ -39,11 +40,11 @@ if ($route === '') {
 if (isset($_GET['lang'])) {
     $_SESSION['lang'] = $_GET['lang'];
     if (! headers_sent()) {
-        setcookie('lang', $_GET['lang'], time() + 86400 * 30, "/");
+        setcookie('lang', $_GET['lang'], time() + 86400 * 30, "/system/");
     }
 }
 
-// Verifica acesso público vs privado
+// Rotas públicas
 $publicRoutes = ['/', '/login', '/auth', '/register', '/store'];
 if (! in_array($route, $publicRoutes, true) && ! isset($_SESSION['user'])) {
     header("Location: " . url('login'));

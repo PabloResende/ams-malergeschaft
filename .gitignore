@@ -1,0 +1,7 @@
+cat > .gitignore << 'EOF'
+/config/env.php
+/uploads/
+/.idea/
+/.vscode/
+deploy.zip
+EOF

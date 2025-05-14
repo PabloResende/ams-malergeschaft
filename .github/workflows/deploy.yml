@@ -1,0 +1,25 @@
+name: Deploy via FTP
+
+on:
+  push:
+    branches:
+      - main       # ou a branch que você usa em produção
+
+jobs:
+  ftp-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v3
+
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@4.1.0
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp             # ou 'sftp' se você tiver SFTP
+          local-dir: ./             # raiz do repositório
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          git-ftp-args: --insecure  # só se certificado for self-signed

@@ -8,8 +8,8 @@ $clients = $pdo->query("SELECT * FROM client ORDER BY name ASC")->fetchAll(PDO::
 $baseUrl = '/ams-malergeschaft/public';
 ?>
 <script>
-  window.baseUrl         = '<?= $baseUrl ?>';
-  window.confirmDeleteMsg = '<?= addslashes($langText['confirm_delete'] ?? 'Tem certeza que deseja excluir este cliente?') ?>';
+  window.baseUrl  = '<?= $baseUrl ?>';
+  window.langText = <?= json_encode($langText, JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_QUOT|JSON_HEX_APOS) ?>;
 </script>
 
 <div class="ml-56 pt-20 p-4">

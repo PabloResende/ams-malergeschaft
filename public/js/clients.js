@@ -1,7 +1,9 @@
 // public/js/clients.js
 
 document.addEventListener('DOMContentLoaded', () => {
-  const baseUrl        = window.baseUrl || '';
+  const baseUrl   = window.baseUrl || '';
+  const langText  = window.langText || {};
+  const noTxText  = langText['no_transactions'] || 'Sem transações';
 
   // — CREATE MODAL —
   const createModal     = document.getElementById('createModal');
@@ -12,8 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function showCreateModal() { createModal.classList.remove('hidden'); }
   function hideCreateModal() { createModal.classList.add('hidden'); }
 
-  openCreateBtn  .addEventListener('click', showCreateModal);
-  closeCreateBtn .addEventListener('click', hideCreateModal);
+  openCreateBtn.addEventListener('click', showCreateModal);
+  closeCreateBtn.addEventListener('click', hideCreateModal);
   cancelCreateBtn.addEventListener('click', hideCreateModal);
   createModal.addEventListener('click', e => {
     if (e.target === createModal) hideCreateModal();
@@ -30,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const transBody    = document.getElementById('transTableBody');
 
   function hideDetailsModal() { detailsModal.classList.add('hidden'); }
-  closeDetails .addEventListener('click', hideDetailsModal);
+  closeDetails.addEventListener('click', hideDetailsModal);
   cancelDetails.addEventListener('click', hideDetailsModal);
   detailsModal.addEventListener('click', e => {
     if (e.target === detailsModal) hideDetailsModal();
@@ -43,25 +45,29 @@ document.addEventListener('DOMContentLoaded', () => {
     tabInfoBtn.classList.toggle('border-blue-600', isInfo);
     tabTransBtn.classList.toggle('border-blue-600', !isInfo);
   }
-  tabInfoBtn .addEventListener('click', () => showPane('info'));
+  tabInfoBtn.addEventListener('click', () => showPane('info'));
   tabTransBtn.addEventListener('click', () => showPane('trans'));
 
+  // Formata valor para moeda BRL
   function formatCurrency(val) {
     return 'R$ ' + parseFloat(val).toFixed(2).replace('.', ',');
   }
 
+  // Preenche a tabela de transações do cliente
   function fillTransactions(transactions, clientId) {
     const onlyThis = transactions.filter(tx => String(tx.client_id) === String(clientId));
     transBody.innerHTML = '';
+
     if (!onlyThis.length) {
       transBody.innerHTML = `
         <tr>
           <td colspan="3" class="p-4 text-center text-gray-500">
-            Sem transações
+            ${noTxText}
           </td>
         </tr>`;
       return;
     }
+
     onlyThis.forEach(tx => {
       const tr = document.createElement('tr');
       tr.className = 'border-t';
@@ -74,6 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Abre o modal de detalhes ao clicar num cliente
   document.querySelectorAll('.client-item').forEach(item => {
     item.addEventListener('click', () => {
       const id = item.dataset.id;
@@ -86,19 +93,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return alert(data.error);
           }
 
-          document.getElementById('detailId').value       = data.id;
-          document.getElementById('detailName').value     = data.name;
-          document.getElementById('detailAddress').value  = data.address  || '';
-          document.getElementById('detailPhone').value    = data.phone    || '';
+          document.getElementById('detailId').value      = data.id;
+          document.getElementById('detailName').value    = data.name;
+          document.getElementById('detailAddress').value = data.address || '';
+          document.getElementById('detailPhone').value   = data.phone   || '';
 
-          /* 
-          // document.getElementById('detailLoyalty').textContent  = data.loyalty_points;
-          */
+          // pontos de fidelidade comentados
+          // document.getElementById('detailLoyalty').textContent = data.loyalty_points;
 
           document.getElementById('detailProjects').textContent = data.project_count;
 
           fillTransactions(data.transactions, data.id);
-
           showPane('info');
           detailsModal.classList.remove('hidden');
         })

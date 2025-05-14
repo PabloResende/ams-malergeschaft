@@ -89,6 +89,7 @@ return [
     'project_transactions'  => 'Transactions du projet',
     'no_inventory_allocated'=> '— Aucun article alloué',
     'employee_already_assigned_message' => '{name} est actuellement affecté à {count} projets actifs',
+    'no_transactions' => 'Aucune transaction.',
 
     // Employés
     'employees_list'        => 'Liste des employés',

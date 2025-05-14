@@ -4,11 +4,12 @@
 require_once __DIR__ . '/../layout/header.php';
 // O controller deve fornecer:
 //   $langText  = array de traduções
-//   $baseUrl   = '/ams-malergeschaft/public'
 //   $employees = lista de funcionários (array)
 ?>
 <script>
-  window.baseUrl = '<?= $baseUrl ?>';
+  window.baseUrl         = '<?= $baseUrl ?>';
+  window.confirmDeleteMsg = '<?= addslashes($langText['confirm_delete'] ?? 'Tem certeza que deseja excluir este cliente?') ?>';
+  window.langText = <?= json_encode($langText, JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_QUOT|JSON_HEX_APOS) ?>;
 </script>
 
 <div class="ml-56 pt-20 p-4">

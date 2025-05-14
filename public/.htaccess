@@ -1,0 +1,12 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /system/public/
+
+  # Se for arquivo ou pasta real, serve direto
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Senão, joga no front-controller
+  RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>

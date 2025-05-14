@@ -2,7 +2,7 @@
 // app/views/finance/index.php
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 
-$baseUrl   = '/ams-malergeschaft/public';
+$baseUrl   = '$basePath';
 $type      = $_GET['type']     ?? '';
 $start     = $_GET['start']    ?? date('Y-m-01');
 $end       = $_GET['end']      ?? date('Y-m-d');

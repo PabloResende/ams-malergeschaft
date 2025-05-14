@@ -1,4 +1,4 @@
-# Arquivo .htaccess para a raiz do sistema (system/)
+# Arquivo .htaccess para a raiz do sistema (public_html/system/)
 <IfModule mod_rewrite.c>
     # Ativa o módulo de reescrita de URL
     RewriteEngine On

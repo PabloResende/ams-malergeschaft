@@ -1,6 +1,6 @@
 <?php
-// Configurações do banco de dados para produção
-$host = 'auth-db1525.hstgr.io'; // Host específico para sua hospedagem 
+// Configurações do banco de dados para produção - Hostinger
+$host = 'auth-db1525.hstgr.io'; // Host específico da Hostinger
 $db   = 'u161269623_saas';
 $user = 'u161269623_saas';
 $pass = '$xOOtHax24çÇ@@YU';
@@ -24,11 +24,11 @@ error_reporting(E_ALL);
 // Defina o fuso horário para o projeto
 date_default_timezone_set('Europe/Zurich');
 
-// Definir caminho base para o sistema
-$basePath = '';  // String vazia para raiz do domínio, ou '/system' se estiver em subdiretório
+// Defina o caminho base para o sistema - ajustado para o subdomínio
+$basePath = '/system';
 
-// Defina constantes para o ambiente
-define('BASE_URL', 'https://system.ams.swiss');
+// Define constantes para o ambiente
+define('BASE_URL', 'https://ams.swiss/system');
 define('UPLOAD_DIR', __DIR__ . '/../uploads/');
 define('EMPLOYEE_UPLOAD_DIR', UPLOAD_DIR . 'employees/');
 define('FINANCE_UPLOAD_DIR', UPLOAD_DIR . 'finance/');

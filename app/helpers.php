@@ -8,7 +8,7 @@
  * @return string URL completa
  */
 function url($path = '') {
-    $baseUrl = 'https://system.ams.swiss';
+    $baseUrl = 'https://ams.swiss/system';  // Ajustado para o subdomínio
     $path = ltrim($path, '/');
     return $baseUrl . '/' . $path;
 }
@@ -143,4 +143,29 @@ function removeSpecialChars($string) {
  */
 function getFileExtension($filename) {
     return strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+}
+
+/**
+ * Formata uma data do banco de dados para um formato amigável
+ * 
+ * @param string $date Data no formato YYYY-MM-DD
+ * @param string $format Formato desejado (default: d/m/Y)
+ * @return string Data formatada
+ */
+function formatDate($date, $format = 'd/m/Y') {
+    if (empty($date)) {
+        return '';
+    }
+    
+    $timestamp = strtotime($date);
+    return date($format, $timestamp);
+}
+
+/**
+ * Obtém o caminho raiz da aplicação
+ * 
+ * @return string Caminho absoluto da raiz da aplicação
+ */
+function getRootPath() {
+    return realpath(__DIR__ . '/..');
 }

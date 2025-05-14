@@ -3,7 +3,7 @@ require_once __DIR__ . '/../layout/header.php';
 require_once __DIR__ . '/../../../config/Database.php';
 
 $pdo = Database::connect();
-$baseUrl = '/ams-malergeschaft/public';
+$baseUrl = '$basePath';
 
 // === Mensagem de boas-vindas ===
 $userName = $_SESSION['user']['name'] ?? '';

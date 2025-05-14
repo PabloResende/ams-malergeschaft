@@ -43,7 +43,7 @@
                 <div class="text-red-500 mb-4"><?= htmlspecialchars($error) ?></div>
             <?php endif; ?>
 
-            <form action="/ams-malergeschaft/public/auth" method="POST">
+            <form action="$basePath/auth" method="POST">
                 <div class="mb-4">
                     <label>Email</label>
                     <input type="email" name="email" class="border p-2 w-full" required>
@@ -54,7 +54,7 @@
                 </div>
                 <button type="submit" class="bg-blue-600 text-white p-2 w-full"><?= $langText['login'] ?></button>
                 <div class="mt-2 text-center">
-                    <a class="text-blue-600 text-sm" href="/ams-malergeschaft/public/register">
+                    <a class="text-blue-600 text-sm" href="$basePath/register">
                         <?= $langText['dont_register'] ?? 'Não tem conta? Cadastre-se' ?>
                     </a>
                 </div>

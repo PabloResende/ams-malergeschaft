@@ -40,7 +40,7 @@
             <div class="text-red-500 mb-4"><?php echo htmlspecialchars($_SESSION['error']); unset($_SESSION['error']); ?></div>
         <?php endif; ?>
 
-        <form action="/ams-malergeschaft/public/store" method="POST" enctype="multipart/form-data">  
+        <form action="$basePath/store" method="POST" enctype="multipart/form-data">  
             <div class="mb-4">  
                 <label>Name</label>  
                 <input type="text" name="name" class="border p-2 w-full" required>  
@@ -63,7 +63,7 @@
         </form>
 
         <div class="mt-2 text-center">
-            <a class="text-blue-600 text-sm" href="/ams-malergeschaft/public/login">← Voltar para o login</a>
+            <a class="text-blue-600 text-sm" href="$basePath/login">← Voltar para o login</a>
         </div>
     </div>  
 </div>

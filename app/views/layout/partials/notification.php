@@ -5,7 +5,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 require_once __DIR__ . '/../../../../config/Database.php';
 $pdo = Database::connect();
-$baseUrl = '/ams-malergeschaft/public';
+$baseUrl = '$basePath';
 
 if (!function_exists('addNotif')) {
     function addNotif(array &$arr, string $key, string $text, string $url): void {

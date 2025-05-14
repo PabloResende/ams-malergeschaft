@@ -1,4 +1,4 @@
-# Arquivo .htaccess para a pasta public (system/public/)
+# Arquivo .htaccess para a pasta public (public_html/system/public/)
 <IfModule mod_rewrite.c>
     # Ativa o módulo de reescrita de URL
     RewriteEngine On
@@ -22,7 +22,7 @@
 
 # Define o PHP como handler para arquivos .php
 <IfModule mime_module>
-    AddHandler application/x-httpd-ea-php81___lsphp .php .php8 .phtml
+    AddHandler application/x-httpd-php .php
 </IfModule>
 
 # Configurações de cache para arquivos estáticos

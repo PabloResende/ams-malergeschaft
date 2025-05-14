@@ -2,8 +2,8 @@
 // public/index.php - Front controller do sistema
 // Este arquivo é o ponto de entrada de todas as requisições
 
-// Definindo o path base para o ambiente de produção
-$basePath = '';  // String vazia para raiz do domínio, ou '/system' se estiver em subdiretório
+// Definindo o path base para o ambiente de produção na Hostinger
+$basePath = '/system';  // Ajustado para o subdomínio ams.swiss/system/
 
 // Iniciando a sessão
 if (session_status() !== PHP_SESSION_ACTIVE) {

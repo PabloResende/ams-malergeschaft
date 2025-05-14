@@ -18,7 +18,7 @@ $inventoryItems  = $filter === 'all'
 $allItems        = (new InventoryModel())->getAll('all');
 $activeProjects  = ProjectModel::getActiveProjects();
 $movements       = (new InventoryHistoryModel())->getAllMovements();
-$baseUrl         = '/ams-malergeschaft/public';
+$baseUrl         = '$basePath';
 ?>
 
 <div class="ml-56 pt-20 p-8">

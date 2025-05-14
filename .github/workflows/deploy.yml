@@ -3,7 +3,7 @@ name: Deploy via FTP
 on:
   push:
     branches:
-      - main       # ou sua branch de produção
+      - main 
 
 jobs:
   ftp-deploy:
@@ -19,6 +19,6 @@ jobs:
           server:     ${{ secrets.FTP_HOST }}
           username:   ${{ secrets.FTP_USERNAME }}
           password:   ${{ secrets.FTP_PASSWORD }}
-          protocol:   ftp            # ou 'sftp' se suportar
-          local-dir:  ./             # raiz do repositório
-          server-dir: ${{ secrets.FTP_SERVER_DIR }}/  # observe a barra no final
+          protocol:   ftp          
+          local-dir:  ./            
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}/ 

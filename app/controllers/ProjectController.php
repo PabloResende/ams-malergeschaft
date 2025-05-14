@@ -41,14 +41,14 @@ class ProjectController
         $tasks     = json_decode($_POST['tasks']     ?? '[]', true);
         $employees = json_decode($_POST['employees'] ?? '[]', true);
 
-        if (ProjectModel::create($data, $tasks, $employees)) {
-            if ($clientId) {
-                $count = Client::countProjects($clientId);
-                Client::setPoints($clientId, $count);
-            }
-            header("Location: /ams-malergeschaft/public/projects");
-            exit;
-        }
+        // if (ProjectModel::create($data, $tasks, $employees)) {
+        //     if ($clientId) {
+        //         $count = Client::countProjects($clientId);
+        //         Client::setPoints($clientId, $count);
+        //     }
+        //     header("Location: /ams-malergeschaft/public/projects");
+        //     exit;
+        // }
 
         echo $langText['error_saving_project'] ?? 'Erro ao salvar o projeto.';
     }
@@ -100,14 +100,14 @@ class ProjectController
             $employees = [];
         }
 
-        if (ProjectModel::update($id, $data, $tasks, $employees)) {
-            if ($clientId) {
-                $count = Client::countProjects($clientId);
-                Client::setPoints($clientId, $count);
-            }
-            header("Location: /ams-malergeschaft/public/projects");
-            exit;
-        }
+        // if (ProjectModel::update($id, $data, $tasks, $employees)) {
+        //     if ($clientId) {
+        //         $count = Client::countProjects($clientId);
+        //         Client::setPoints($clientId, $count);
+        //     }
+        //     header("Location: /ams-malergeschaft/public/projects");
+        //     exit;
+        // }
 
         echo $langText['error_updating_project'] ?? 'Erro ao atualizar o projeto.';
     }
@@ -156,7 +156,7 @@ class ProjectController
         echo json_encode(['count' => $count]);
         exit;
     }
-    
+
     public function transactions()
     {
         header('Content-Type: application/json; charset=UTF-8');

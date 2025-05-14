@@ -82,6 +82,7 @@ for ($i = 0; $i <= 10; $i++) {
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0"></script>
 <script>
-  window.apiBase = '<?= $baseUrl ?>/analytics';
+  window.apiBase  = '<?= $baseUrl ?>/analytics';
+  window.langText = <?= json_encode($langText, JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_QUOT|JSON_HEX_APOS) ?>;
 </script>
 <script src="<?= $baseUrl ?>/js/analytics.js"></script>

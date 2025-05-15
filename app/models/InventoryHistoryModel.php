@@ -6,7 +6,8 @@ class InventoryHistoryModel {
     private $pdo;
 
     public function __construct() {
-        $this->pdo = Database::connect();
+        global $pdo;
+        $this->pdo = $pdo;
     }
 
     /**

@@ -6,9 +6,9 @@ class InventoryModel {
     private $pdo;
 
     public function __construct() {
-        $this->pdo = Database::connect();
+        global $pdo;
+        $this->pdo = $pdo;
     }
-
     public function getAll($filter = 'all') {
         if ($filter !== 'all') {
             $stmt = $this->pdo->prepare("SELECT * FROM inventory WHERE type = ? ORDER BY created_at DESC");

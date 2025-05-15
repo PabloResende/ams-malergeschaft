@@ -4,7 +4,9 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 
 require_once __DIR__ . '/../../../../config/database.php';
-$pdo = Database::connect();
+
+global $pdo;
+
 $baseUrl = '$basePath';
 
 if (!function_exists('addNotif')) {

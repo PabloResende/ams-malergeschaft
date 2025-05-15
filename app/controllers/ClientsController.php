@@ -13,7 +13,7 @@ class ClientsController {
 
     public function store() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: $basePath/clients');
+            header('Location: <?= BASE_URL ?>/clients');
             exit;
         }
 
@@ -27,7 +27,7 @@ class ClientsController {
         ];
 
         Client::create($data);
-        header('Location: $basePath/clients');
+        header('Location: <?= BASE_URL ?>/clients');
         exit;
     }
 
@@ -60,7 +60,7 @@ class ClientsController {
 
     public function update() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: $basePath/clients');
+            header('Location: <?= BASE_URL ?>/clients');
             exit;
         }
         $id = (int)($_POST['id'] ?? 0);
@@ -81,7 +81,7 @@ class ClientsController {
         }
         */
 
-        header('Location: $basePath/clients');
+        header('Location: <?= BASE_URL ?>/clients');
         exit;
     }
 
@@ -90,7 +90,7 @@ class ClientsController {
             $id = (int)($_POST['id'] ?? 0);
             Client::delete($id);
         }
-        header('Location: $basePath/clients');
+        header('Location: <?= BASE_URL ?>/clients');
         exit;
     }
 }

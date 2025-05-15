@@ -98,8 +98,7 @@ class UserController
 
     private function redirect(string $path)
     {
-        $basePath = '/ams-malergeschaft/public';
-        header("Location: {$basePath}{$path}");
+        header('Location: ' . BASE_URL . $path);
         exit;
     }
 }

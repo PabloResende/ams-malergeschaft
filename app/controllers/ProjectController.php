@@ -16,7 +16,7 @@ class ProjectController
     public function store()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header("Location: $basePath/projects");
+            header("Location: <?= BASE_URL ?>/projects");
             exit;
         }
 
@@ -46,7 +46,7 @@ class ProjectController
         //         $count = Client::countProjects($clientId);
         //         Client::setPoints($clientId, $count);
         //     }
-        //     header("Location: $basePath/projects");
+        //     header("Location: <?= BASE_URL ?>/projects");
         //     exit;
         // }
 
@@ -56,7 +56,7 @@ class ProjectController
     public function update()
     {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header("Location: $basePath/projects");
+            header("Location: <?= BASE_URL ?>/projects");
             exit;
         }
 
@@ -104,7 +104,7 @@ class ProjectController
             if ($clientId) {
                 $count = Client::countProjects($clientId);
             }
-            header("Location: $basePath/projects");
+            header("Location: <?= BASE_URL ?>/projects");
             exit;
         }
 
@@ -176,7 +176,7 @@ class ProjectController
         if ($id) {
             ProjectModel::delete($id);
         }
-        header("Location: $basePath/projects");
+        header("Location: <?= BASE_URL ?>/projects");
         exit;
     }
 }

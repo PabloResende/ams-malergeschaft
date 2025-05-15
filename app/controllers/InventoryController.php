@@ -56,7 +56,7 @@ class InventoryController {
         }
 
         $this->inventoryModel->insert($type, $name, $quantity);
-        header("Location: $basePath");
+        header("Location: <?= BASE_URL ?>");
         exit;
     }
 
@@ -85,7 +85,7 @@ class InventoryController {
      */
     public function update(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header("Location: $basePath");
+            header("Location: <?= BASE_URL ?>");
             exit;
         }
 
@@ -100,7 +100,7 @@ class InventoryController {
         }
 
         $this->inventoryModel->update($id, $type, $name, $quantity);
-        header("Location: $basePath");
+        header("Location: <?= BASE_URL ?>");
         exit;
     }
 
@@ -115,7 +115,7 @@ class InventoryController {
         }
 
         $this->inventoryModel->delete((int)$_GET['id']);
-        header("Location: $basePath");
+        header("Location: <?= BASE_URL ?>");
         exit;
     }
 
@@ -125,7 +125,7 @@ class InventoryController {
      */
     public function storeControl(): void {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header("Location: $basePath");
+            header("Location: <?= BASE_URL ?>");
             exit;
         }
 
@@ -259,7 +259,7 @@ class InventoryController {
             return;
         }
 
-        header("Location: $basePath");
+        header("Location: <?= BASE_URL ?>");
         exit;
     }
 

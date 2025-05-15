@@ -41,15 +41,6 @@ class ProjectController
         $tasks     = json_decode($_POST['tasks']     ?? '[]', true);
         $employees = json_decode($_POST['employees'] ?? '[]', true);
 
-        // if (ProjectModel::create($data, $tasks, $employees)) {
-        //     if ($clientId) {
-        //         $count = Client::countProjects($clientId);
-        //         Client::setPoints($clientId, $count);
-        //     }
-        //     header("Location: <?= BASE_URL ?>/projects");
-        //     exit;
-        // }
-
         echo $langText['error_saving_project'] ?? 'Erro ao salvar o projeto.';
     }
 

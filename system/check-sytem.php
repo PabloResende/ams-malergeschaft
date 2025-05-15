@@ -108,7 +108,7 @@ function checkFiles() {
         'public/.htaccess' => './public/',
         'public/index.php' => './public/',
         'config/config.php' => './config/',
-        'config/Database.php' => './config/',
+        'config/database.php' => './config/',
         'app/helpers.php' => './app/'
     ];
     

@@ -1,7 +1,7 @@
 <?php
 // app/controllers/FinancialController.php
 
-require_once __DIR__ . '/../../config/Database.php';
+require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../models/TransactionModel.php';
 require_once __DIR__ . '/../models/Project.php';
 require_once __DIR__ . '/../models/Employees.php';

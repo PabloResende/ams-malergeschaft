@@ -2,7 +2,7 @@
 // app/controllers/ClientsController.php
 
 require_once __DIR__ . '/../models/Clients.php';
-require_once __DIR__ . '/../../config/Database.php';
+require_once __DIR__ . '/../../config/database.php';
 
 class ClientsController {
 

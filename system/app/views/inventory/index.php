@@ -1,7 +1,7 @@
 <?php
 // app/views/inventory/index.php
 require_once __DIR__ . '/../layout/header.php';
-require_once __DIR__ . '/../../../config/Database.php';
+require_once __DIR__ . '/../../../config/database.php';
 require_once __DIR__ . '/../../models/Inventory.php';
 require_once __DIR__ . '/../../models/InventoryHistoryModel.php';
 require_once __DIR__ . '/../../models/Project.php';

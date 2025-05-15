@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../layout/header.php';
-require_once __DIR__ . '/../../../config/Database.php';
+require_once __DIR__ . '/../../../config/database.php';
 
 $pdo = Database::connect();
 $baseUrl = '$basePath';

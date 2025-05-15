@@ -1,6 +1,6 @@
 <?php
 // app/models/Analytics.php
-require_once __DIR__ . '/../../config/Database.php';
+require_once __DIR__ . '/../../config/database.php';
 
 class Analytics {
     public static function getStats(int $year, string $quarter = '', string $semester = ''): array {

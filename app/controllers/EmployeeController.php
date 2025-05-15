@@ -7,7 +7,7 @@ require_once __DIR__ . '/../models/TransactionModel.php';
 class EmployeeController
 {
     private array $langText;
-    private string $baseUrl = '$basePath';
+    private string $baseUrl = '<?= BASE_URL ?>';
 
     public function __construct()
     {

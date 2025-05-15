@@ -2,7 +2,7 @@
 // app/views/finance/index.php
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 
-$baseUrl   = '$basePath';
+$baseUrl   = '<?= BASE_URL ?>';
 $type      = $_GET['type']     ?? '';
 $start     = $_GET['start']    ?? date('Y-m-01');
 $end       = $_GET['end']      ?? date('Y-m-d');

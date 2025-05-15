@@ -9,7 +9,7 @@ $notifications       = include __DIR__ . '/partials/notification.php';
 $notificationCount   = count($notifications);
 
 
-$baseUrl = '$basePath';
+$baseUrl = '<?= BASE_URL ?>';
 require __DIR__ . '/../../lang/lang.php';
 
 $lang = $_GET['lang'] ?? $_SESSION['lang'] ?? 'pt';

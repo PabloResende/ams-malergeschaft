@@ -3,7 +3,7 @@ require_once __DIR__ . '/../layout/header.php';
 require_once __DIR__ . '/../../../config/database.php';
 
 $pdo = Database::connect();
-$baseUrl = '$basePath';
+$baseUrl = '<?= BASE_URL ?>';
 
 // === Mensagem de boas-vindas ===
 $userName = $_SESSION['user']['name'] ?? '';

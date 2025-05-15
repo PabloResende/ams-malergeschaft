@@ -5,7 +5,7 @@ require_once __DIR__ . '/../layout/header.php';
 
 $pdo     = Database::connect();
 $clients = $pdo->query("SELECT * FROM client ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
-$baseUrl = '$basePath';
+$baseUrl = '<?= BASE_URL ?>';
 ?>
 <script>
   window.baseUrl  = '<?= $baseUrl ?>';

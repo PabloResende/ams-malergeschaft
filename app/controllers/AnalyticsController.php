@@ -10,7 +10,7 @@ class AnalyticsController
     public function index() {
         if (session_status() !== PHP_SESSION_ACTIVE) session_start();
         if (!isset($_SESSION['user'])) {
-            header("Location: $basePath/login");
+            header("Location: <?= BASE_URL ?>/login");
             exit;
         }
         include __DIR__ . '/../views/analytics/index.php';

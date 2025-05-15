@@ -7,7 +7,7 @@ require_once __DIR__ . '/../../../../config/database.php';
 
 global $pdo;
 
-$baseUrl = '$basePath';
+$baseUrl = '<?= BASE_URL ?>';
 
 if (!function_exists('addNotif')) {
     function addNotif(array &$arr, string $key, string $text, string $url): void {

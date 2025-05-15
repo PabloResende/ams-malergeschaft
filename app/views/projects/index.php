@@ -35,7 +35,7 @@ $clients = $pdo
     ->query("SELECT id, name FROM client ORDER BY name ASC")
     ->fetchAll(PDO::FETCH_ASSOC);
 
-$baseUrl = '$basePath';
+$baseUrl = '<?= BASE_URL ?>';
 ?>
 <div class="ml-56 pt-20 p-8 relative">
   <h1 class="text-2xl font-bold mb-4">

@@ -10,18 +10,36 @@ class AnalyticsController
     public function index() {
         if (session_status() !== PHP_SESSION_ACTIVE) session_start();
         if (!isset($_SESSION['user'])) {
-            header("Location: <?= BASE_URL ?>/login");
+            header("Location: " . BASE_URL . "/login");
             exit;
         }
         include __DIR__ . '/../views/analytics/index.php';
     }
+    
+  public function stats(): void
+    {
+        // 1) cabeçalho JSON
+        header('Content-Type: application/json; charset=utf-8');
 
-    public function stats() {
-        header('Content-Type: application/json');
-        $y = (int)($_GET['year'] ?? date('Y'));
-        $q = $_GET['quarter']  ?? '';
-        $s = $_GET['semester'] ?? '';
-        echo json_encode(Analytics::getStats($y, $q, $s));
+        // 2) parâmetros antes de tudo
+        $year     = (int)($_GET['year']     ?? date('Y'));
+        $quarter  = $_GET['quarter']  ?? '';
+        $semester = $_GET['semester'] ?? '';
+
+        // 3) use a conexão que o database.php já definiu
+        global $pdo;
+
+        // 4) gere as estatísticas
+        try {
+            $stats = (new Analytics($pdo))->getStats($year, $quarter, $semester);
+            echo json_encode($stats);
+        } catch (\Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'error' => 'Falha ao gerar estatísticas',
+                'detail' => $e->getMessage()
+            ]);
+        }
         exit;
     }
 }

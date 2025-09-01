@@ -1,143 +1,146 @@
 <?php
-// app/models/TransactionModel.php
+// system/app/models/TransactionModel.php
 
 require_once __DIR__ . '/../../config/database.php';
 
 class TransactionModel
 {
-    public static function connect(): PDO
+    /** @var \PDO */
+    private $pdo;
+
+    public function __construct()
     {
-        return Database::connect();
+        global $pdo;
+        $this->pdo = $pdo;
     }
 
     /**
-     * Busca transações, aplicando filtro de data apenas se start/end não forem nulos
+     * Retorna todas as transações.
+     *
+     * @return array
      */
-    public static function getAll(array $f = []): array
+    public function getAll(): array
     {
-        $sql = "
-            SELECT
-              ft.*,
-              d.due_date,
-              d.installments_count,
-              d.initial_payment,
-              d.initial_payment_amount
-            FROM financial_transactions ft
-            LEFT JOIN debts d
-              ON d.transaction_id = ft.id
-        ";
-        $params     = [];
-        $conditions = [];
+        $stmt = $this->pdo->query("SELECT * FROM financial_transactions ORDER BY date DESC");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
-        // só filtra data se o usuário enviou ambos start e end
-        if (!empty($f['start']) && !empty($f['end'])) {
-            $conditions[] = "ft.date BETWEEN ? AND ?";
-            $params[]     = $f['start'];
-            $params[]     = $f['end'];
+    /**
+     * Retorna transações filtradas por tipo, data e categoria.
+     *
+     * @param string $type
+     * @param string $start  YYYY-MM-DD
+     * @param string $end    YYYY-MM-DD
+     * @param string $category
+     * @return array
+     */
+    public function getFiltered(string $type, string $start, string $end, string $category): array
+    {
+        $sql    = "SELECT * FROM financial_transactions WHERE date BETWEEN :start AND :end";
+        $params = ['start' => $start, 'end' => $end];
+
+        if ($type !== '') {
+            $sql           .= " AND type = :type";
+            $params['type'] = $type;
         }
-
-        // filtros de tipo, categoria e associações
-        foreach (['type','category','client_id','project_id','employee_id'] as $field) {
-            if (!empty($f[$field])) {
-                $conditions[] = "ft.{$field} = ?";
-                $params[]     = $f[$field];
-            }
+        if ($category !== '') {
+            $sql               .= " AND category = :category";
+            $params['category'] = $category;
         }
+        $sql .= " ORDER BY date DESC";
 
-        if (count($conditions) > 0) {
-            $sql .= " WHERE " . implode(" AND ", $conditions);
-        }
-
-        $sql .= " ORDER BY ft.date DESC";
-
-        $stmt = self::connect()->prepare($sql);
+        $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
-     * Gera resumo de receita, despesa e saldo.
-     * Se start/end forem nulos, totaliza tudo; senão, por intervalo.
+     * Retorna resumo (income, expense, net) no período.
+     *
+     * @param string $start
+     * @param string $end
+     * @return array
      */
-    public static function getSummary(?string $start = null, ?string $end = null): array
+    public function getSummary(string $start, string $end): array
     {
-        $pdo = self::connect();
+        $stmt = $this->pdo->prepare("
+            SELECT
+              SUM(CASE WHEN type='income' THEN amount ELSE 0 END)  AS income,
+              SUM(CASE WHEN type='expense' THEN amount ELSE 0 END) AS expense
+            FROM financial_transactions
+            WHERE date BETWEEN :start AND :end
+        ");
+        $stmt->execute(['start' => $start, 'end' => $end]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!empty($start) && !empty($end)) {
-            $stmtIn = $pdo->prepare("
-                SELECT COALESCE(SUM(amount),0)
-                FROM financial_transactions
-                WHERE type='income' AND date BETWEEN ? AND ?
-            ");
-            $stmtIn->execute([$start, $end]);
-
-            $stmtEx = $pdo->prepare("
-                SELECT COALESCE(SUM(amount),0)
-                FROM financial_transactions
-                WHERE type='expense' AND date BETWEEN ? AND ?
-            ");
-            $stmtEx->execute([$start, $end]);
-        } else {
-            $stmtIn = $pdo->prepare("
-                SELECT COALESCE(SUM(amount),0)
-                FROM financial_transactions
-                WHERE type='income'
-            ");
-            $stmtIn->execute([]);
-
-            $stmtEx = $pdo->prepare("
-                SELECT COALESCE(SUM(amount),0)
-                FROM financial_transactions
-                WHERE type='expense'
-            ");
-            $stmtEx->execute([]);
-        }
-
-        $totIn = (float)$stmtIn->fetchColumn();
-        $totEx = (float)$stmtEx->fetchColumn();
-
+        $income  = (float)($row['income']  ?? 0);
+        $expense = (float)($row['expense'] ?? 0);
         return [
-            'income'  => $totIn,
-            'expense' => $totEx,
-            'net'     => $totIn - $totEx,
+            'income'  => $income,
+            'expense' => $expense,
+            'net'     => $income - $expense,
         ];
     }
 
+    /**
+     * Encontra uma transação pelo ID.
+     *
+     * @param int $id
+     * @return array|null
+     */
     public static function find(int $id): ?array
     {
-        $stmt = self::connect()
-            ->prepare("SELECT * FROM financial_transactions WHERE id = ?");
+        global $pdo;
+        $stmt = $pdo->prepare("SELECT * FROM financial_transactions WHERE id = ?");
         $stmt->execute([$id]);
         $tx = $stmt->fetch(PDO::FETCH_ASSOC);
         return $tx ?: null;
     }
 
+    /**
+     * Busca anexos de uma transação.
+     *
+     * @param int $txId
+     * @return array
+     */
     public static function getAttachments(int $txId): array
     {
-        $stmt = self::connect()
-            ->prepare("SELECT * FROM transaction_attachments WHERE transaction_id = ?");
+        global $pdo;
+        $stmt = $pdo->prepare("SELECT * FROM transaction_attachments WHERE transaction_id = ?");
         $stmt->execute([$txId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Busca dados de dívida de uma transação.
+     *
+     * @param int $txId
+     * @return array
+     */
     public static function getDebt(int $txId): array
     {
-        $stmt = self::connect()
-            ->prepare("SELECT * FROM debts WHERE transaction_id = ?");
+        global $pdo;
+        $stmt = $pdo->prepare("SELECT * FROM debts WHERE transaction_id = ?");
         $stmt->execute([$txId]);
-        return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $debt = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $debt ?: [];
     }
 
-    public static function store(
-        array $data,
-        array $attachments = [],
-        array $debtData = null
-    ): int {
-        $pdo = self::connect();
+    /**
+     * Insere nova transação (e anexos/debt se houver).
+     *
+     * @param array      $data
+     * @param array      $attachments
+     * @param array|null $debtData
+     * @return int ID da nova transação
+     */
+    public static function store(array $data, array $attachments = [], array $debtData = null): int
+    {
+        global $pdo;
         $stmt = $pdo->prepare("
             INSERT INTO financial_transactions
-              (user_id,category,type,client_id,project_id,employee_id,amount,date,description)
-            VALUES (?,?,?,?,?,?,?,?,?)
+              (user_id, category, type, client_id, project_id, employee_id, amount, date, description)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt->execute([
             $data['user_id'],
@@ -152,18 +155,20 @@ class TransactionModel
         ]);
         $txId = (int)$pdo->lastInsertId();
 
-        foreach ($attachments as $a) {
+        // Anexos
+        foreach ($attachments as $file) {
             $pdo->prepare("
-                INSERT INTO transaction_attachments
-                  (transaction_id,file_path) VALUES (?,?)
-            ")->execute([$txId, $a['file_path']]);
+                INSERT INTO transaction_attachments (transaction_id, file_path)
+                VALUES (?, ?)
+            ")->execute([$txId, $file['file_path']]);
         }
 
+        // Dívida
         if ($debtData) {
             $pdo->prepare("
                 INSERT INTO debts
-                  (client_id,transaction_id,project_id,amount,due_date,status,installments_count,initial_payment,initial_payment_amount)
-                VALUES (?,?,?,?,?,?,?,?,?)
+                  (client_id, transaction_id, project_id, amount, due_date, status, installments_count, initial_payment, initial_payment_amount)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ")->execute([
                 $debtData['client_id'],
                 $txId,
@@ -180,16 +185,21 @@ class TransactionModel
         return $txId;
     }
 
-    public static function update(
-        int $id,
-        array $data,
-        array $attachments = [],
-        array $debtData = null
-    ): void {
-        $pdo = self::connect();
+    /**
+     * Atualiza transação (e anexos/debt).
+     *
+     * @param int        $id
+     * @param array      $data
+     * @param array      $attachments
+     * @param array|null $debtData
+     */
+    public static function update(int $id, array $data, array $attachments = [], array $debtData = null): void
+    {
+        global $pdo;
+        // Atualiza registro principal
         $pdo->prepare("
             UPDATE financial_transactions
-            SET category=?,type=?,client_id=?,project_id=?,employee_id=?,amount=?,date=?,description=?
+            SET category=?, type=?, client_id=?, project_id=?, employee_id=?, amount=?, date=?, description=?
             WHERE id=?
         ")->execute([
             $data['category'],
@@ -203,23 +213,26 @@ class TransactionModel
             $id,
         ]);
 
-        foreach ($attachments as $a) {
+        // Insere novos anexos
+        foreach ($attachments as $file) {
             $pdo->prepare("
-                INSERT INTO transaction_attachments
-                  (transaction_id,file_path) VALUES (?,?)
-            ")->execute([$id, $a['file_path']]);
+                INSERT INTO transaction_attachments (transaction_id, file_path)
+                VALUES (?, ?)
+            ")->execute([$id, $file['file_path']]);
         }
 
+        // Dívida existente?
         $existDebt = self::getDebt($id);
         if ($debtData) {
             if ($existDebt) {
+                // Atualiza dívida
                 $pdo->prepare("
                     UPDATE debts
-                    SET client_id=?,project_id=?,amount=?,due_date=?,status=?,installments_count=?,initial_payment=?,initial_payment_amount=?
+                    SET client_id=?, project_id=?, amount=?, due_date=?, status=?, installments_count=?, initial_payment=?, initial_payment_amount=?
                     WHERE transaction_id=?
                 ")->execute([
                     $debtData['client_id'],
-                    $debtData['project_id'],
+                    $debtData['project_id']        ?: null,
                     $debtData['amount'],
                     $debtData['due_date'],
                     $debtData['status'],
@@ -229,14 +242,15 @@ class TransactionModel
                     $id,
                 ]);
             } else {
+                // Insere nova dívida
                 $pdo->prepare("
                     INSERT INTO debts
-                      (client_id,transaction_id,project_id,amount,due_date,status,installments_count,initial_payment,initial_payment_amount)
-                    VALUES (?,?,?,?,?,?,?,?,?)
+                      (client_id, transaction_id, project_id, amount, due_date, status, installments_count, initial_payment, initial_payment_amount)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ")->execute([
                     $debtData['client_id'],
                     $id,
-                    $debtData['project_id'],
+                    $debtData['project_id']        ?: null,
                     $debtData['amount'],
                     $debtData['due_date'],
                     $debtData['status'],
@@ -246,19 +260,21 @@ class TransactionModel
                 ]);
             }
         } elseif ($existDebt) {
-            $pdo->prepare("DELETE FROM debts WHERE transaction_id = ?")
-                ->execute([$id]);
+            // Remove dívida se não aplicável
+            $pdo->prepare("DELETE FROM debts WHERE transaction_id = ?")->execute([$id]);
         }
     }
 
+    /**
+     * Deleta transação e registros relacionados.
+     *
+     * @param int $id
+     */
     public static function delete(int $id): void
     {
-        $pdo = self::connect();
-        $pdo->prepare("DELETE FROM transaction_attachments WHERE transaction_id = ?")
-            ->execute([$id]);
-        $pdo->prepare("DELETE FROM debts WHERE transaction_id = ?")
-            ->execute([$id]);
-        $pdo->prepare("DELETE FROM financial_transactions WHERE id = ?")
-            ->execute([$id]);
+        global $pdo;
+        $pdo->prepare("DELETE FROM transaction_attachments WHERE transaction_id = ?")->execute([$id]);
+        $pdo->prepare("DELETE FROM debts WHERE transaction_id = ?")->execute([$id]);
+        $pdo->prepare("DELETE FROM financial_transactions WHERE id = ?")->execute([$id]);
     }
 }

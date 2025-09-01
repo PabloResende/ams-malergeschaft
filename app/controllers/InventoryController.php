@@ -6,135 +6,69 @@ require_once __DIR__ . '/../models/Inventory.php';
 require_once __DIR__ . '/../models/InventoryHistoryModel.php';
 require_once __DIR__ . '/../models/Project.php';
 
-class InventoryController {
-    private InventoryModel        $inventoryModel;
+class InventoryController
+{
+    private InventoryModel $inventoryModel;
+    private ProjectModel $projectModel;
     private InventoryHistoryModel $historyModel;
+    private array $langText;
+    private string $baseUrl;
+    private string $currentUser;
 
-    public function __construct() {
+    public function __construct()
+    {
+        // 1) Sessão e idioma
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+        $lang = $_GET['lang'] ?? $_SESSION['lang'] ?? 'pt';
+        $_SESSION['lang'] = $lang;
+        $langFile = __DIR__ . '/../lang/' . $lang . '.php';
+        if (!file_exists($langFile)) {
+            $langFile = __DIR__ . '/../lang/pt.php';
+        }
+        $this->langText    = require $langFile;
+        $this->baseUrl     = BASE_URL;
+        // puxa nome de quem está logado
+        $this->currentUser = $_SESSION['user']['name'] ?? '';
+
+        // 2) Instancia models
         $this->inventoryModel = new InventoryModel();
+        $this->projectModel   = new ProjectModel();
         $this->historyModel   = new InventoryHistoryModel();
     }
 
     /**
-     * GET /inventory
-     * Exibe lista de itens e carrega dados para os modais.
+     * Exibe lista de itens, projetos ativos e histórico
      */
-    public function index(): void {
-        $filter         = $_GET['filter'] ?? 'all';
-        $inventoryItems = $this->inventoryModel->getAll($filter);
-        $allItems       = $this->inventoryModel->getAll('all');
-        $activeProjects = ProjectModel::getActiveProjects();
+    public function index(): void
+    {
+        $langText       = $this->langText;
+        $baseUrl        = $this->baseUrl;
+        $currentUser    = $this->currentUser;
+        $items          = $this->inventoryModel->getAll();
+        $activeProjects = $this->projectModel->getAll();
         $movements      = $this->historyModel->getAllMovements();
 
-        require_once __DIR__ . '/../views/inventory/index.php';
+        require __DIR__ . '/../views/inventory/index.php';
     }
 
     /**
-     * GET /inventory/create
+     * Processa controle de estoque (adição, perda, projeto ou criação de item)
      */
-    public function create(): void {
-        require_once __DIR__ . '/../views/inventory/create.php';
-    }
-
-    /**
-     * POST /inventory/store
-     * Cria um novo item no estoque.
-     */
-    public function store(): void {
+    public function storeControl(): void
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header("Location: " . BASE_URL . "/inventory");
             exit;
         }
 
-        $type     = $_POST['type']     ?? '';
-        $name     = trim($_POST['name']     ?? '');
-        $quantity = (int)($_POST['quantity'] ?? 0);
-
-        if ($name === '') {
-            echo "Nome do item obrigatório.";
-            return;
-        }
-
-        $this->inventoryModel->insert($type, $name, $quantity);
-        header("Location: <?= BASE_URL ?>");
-        exit;
-    }
-
-    /**
-     * GET /inventory/edit?id=...
-     * Exibe formulário de edição de um item.
-     */
-    public function edit(): void {
-        if (!isset($_GET['id'])) {
-            echo "ID de item não fornecido.";
-            exit;
-        }
-
-        $item = $this->inventoryModel->getById((int)$_GET['id']);
-        if (!$item) {
-            echo "Item não encontrado.";
-            exit;
-        }
-
-        require_once __DIR__ . '/../views/inventory/edit.php';
-    }
-
-    /**
-     * POST /inventory/update
-     * Atualiza um item existente.
-     */
-    public function update(): void {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header("Location: <?= BASE_URL ?>");
-            exit;
-        }
-
-        $id       = (int)($_POST['id']       ?? 0);
-        $type     = $_POST['type']         ?? '';
-        $name     = trim($_POST['name']     ?? '');
-        $quantity = (int)($_POST['quantity'] ?? 0);
-
-        if ($id < 1 || $name === '') {
-            echo "Dados obrigatórios faltando.";
-            return;
-        }
-
-        $this->inventoryModel->update($id, $type, $name, $quantity);
-        header("Location: <?= BASE_URL ?>");
-        exit;
-    }
-
-    /**
-     * GET /inventory/delete?id=...
-     * Remove um item do estoque.
-     */
-    public function delete(): void {
-        if (!isset($_GET['id'])) {
-            echo "ID de item não fornecido.";
-            exit;
-        }
-
-        $this->inventoryModel->delete((int)$_GET['id']);
-        header("Location: <?= BASE_URL ?>");
-        exit;
-    }
-
-    /**
-     * POST /inventory/control/store
-     * Processa adição, perda, alocação em projeto ou criação de item.
-     */
-    public function storeControl(): void {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header("Location: <?= BASE_URL ?>");
-            exit;
-        }
-
-        $user       = trim($_POST['user_name']     ?? '');
-        $rawDate    = trim($_POST['datetime']      ?? '');
-        $reason     = $_POST['reason']             ?? '';
+        $user       = trim($_POST['user_name'] ?? '');
+        $rawDate    = trim($_POST['datetime']  ?? '');
+        $reason     = $_POST['reason'] ?? '';
         $project_id = $_POST['project_id'] ?: null;
         $custom     = trim($_POST['custom_reason'] ?? '');
-        $itemsJson  = $_POST['items']              ?? '[]';
+        $itemsJson  = $_POST['items'] ?? '[]';
         $data       = json_decode($itemsJson, true);
 
         if ($user === '') {
@@ -146,7 +80,7 @@ class InventoryController {
             return;
         }
 
-        // Converte data/hora para MySQL e fuso Europe/Zurich
+        // Converte data/hora para Europe/Zurich
         try {
             $dt = \DateTime::createFromFormat(
                 'd/m/Y, H:i:s',
@@ -168,26 +102,27 @@ class InventoryController {
         }
         $datetime = $dt->format('Y-m-d H:i:s');
 
-        $pdo       = Database::connect();
+        global $pdo;
         $toHistory = [];
 
         // Criação de novo item
         if ($reason === 'criar' && isset($data['new_item'])) {
             $ni   = $data['new_item'];
-            $name = trim($ni['name']     ?? '');
-            $type = trim($ni['type']     ?? '');
+            $name = trim($ni['name'] ?? '');
+            $type = trim($ni['type'] ?? '');
             $qty  = (int)($ni['quantity'] ?? 0);
+            $desc = trim($ni['description'] ?? '');
 
             if ($name === '' || $type === '' || $qty < 1) {
-                echo "Preencha nome, tipo e quantidade do novo item.";
+                echo "Preencha nome, tipo, quantidade e descrição do novo item.";
                 return;
             }
 
             $ins = $pdo->prepare("
-                INSERT INTO inventory (type, name, quantity, created_at)
-                VALUES (?, ?, ?, NOW())
+                INSERT INTO inventory (type, name, quantity, description, created_at)
+                VALUES (?, ?, ?, ?, NOW())
             ");
-            $ins->execute([$type, $name, $qty]);
+            $ins->execute([$type, $name, $qty, $desc]);
             $newId     = (int)$pdo->lastInsertId();
             $toHistory = [ $newId => $qty ];
 
@@ -201,11 +136,11 @@ class InventoryController {
                 }
             }
             if (empty($toHistory)) {
-                echo "Selecione ao menos um item.";
+                echo "Selecione ao menos um item ou crie um novo.";
                 return;
             }
 
-            // Atualiza quantidade no estoque
+            // Atualiza quantidade
             foreach ($toHistory as $id => $q) {
                 $sql = $reason === 'adição'
                     ? "UPDATE inventory SET quantity = quantity + ? WHERE id = ?"
@@ -214,13 +149,13 @@ class InventoryController {
                 $upd->execute([$q, $id]);
             }
 
-            // Aloca em projeto, se aplicável
+            // Alocação em projeto
             if ($reason === 'projeto' && $project_id) {
                 foreach ($toHistory as $id => $q) {
                     $prCheck = $pdo->prepare("
                         SELECT id, quantity
-                        FROM project_resources
-                        WHERE project_id = ? AND resource_type = 'inventory' AND resource_id = ?
+                          FROM project_resources
+                         WHERE project_id = ? AND resource_type = 'inventory' AND resource_id = ?
                     ");
                     $prCheck->execute([$project_id, $id]);
                     $prRow = $prCheck->fetch(\PDO::FETCH_ASSOC);
@@ -228,8 +163,8 @@ class InventoryController {
                         $newQty = (int)$prRow['quantity'] + $q;
                         $prUpd = $pdo->prepare("
                             UPDATE project_resources
-                            SET quantity = ?
-                            WHERE id = ?
+                               SET quantity = ?
+                             WHERE id = ?
                         ");
                         $prUpd->execute([$newQty, $prRow['id']]);
                     } else {
@@ -244,7 +179,7 @@ class InventoryController {
             }
         }
 
-        // Registra histórico de movimentação
+        // Insere histórico
         try {
             $this->historyModel->insertMovement(
                 $user,
@@ -259,17 +194,126 @@ class InventoryController {
             return;
         }
 
-        header("Location: <?= BASE_URL ?>");
+        header("Location: " . BASE_URL . "/inventory");
+        exit;
+    }
+
+    /**
+     * AJAX: adiciona quantidade
+     */
+    public function addQuantityAjax(): void
+    {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id    = $input['id']  ?? null;
+        $qty   = (int)($input['qty'] ?? 0);
+        if (!$id || $qty < 1) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Dados inválidos']);
+            exit;
+        }
+        $this->inventoryModel->addQuantity((int)$id, $qty);
+        echo json_encode(['success' => true]);
+    }
+
+    /**
+     * AJAX: deleta item
+     */
+    public function deleteAjax(): void
+    {
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id    = $input['id'] ?? null;
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'ID inválido']);
+            exit;
+        }
+        $this->inventoryModel->delete((int)$id);
+        echo json_encode(['success' => true]);
+    }
+
+    /**
+     * AJAX: atualiza descrição
+     */
+    public function updateDescriptionAjax(): void
+    {
+        global $pdo;
+        $input = json_decode(file_get_contents('php://input'), true);
+        $id    = $input['id'] ?? null;
+        $desc  = trim($input['description'] ?? '');
+        if (!$id) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'ID inválido']);
+            exit;
+        }
+        $stmt = $pdo->prepare("UPDATE inventory SET description = ? WHERE id = ?");
+        $stmt->execute([$desc, (int)$id]);
+        echo json_encode(['success' => true]);
+    }
+
+    /**
+     * GET /inventory/edit?id=...
+     */
+    public function edit(): void
+    {
+        if (!isset($_GET['id'])) {
+            echo "ID de item não fornecido.";
+            exit;
+        }
+
+        $item = $this->inventoryModel->getById((int)$_GET['id']);
+        if (!$item) {
+            echo "Item não encontrado.";
+            exit;
+        }
+
+        require_once __DIR__ . '/../views/inventory/edit.php';
+    }
+
+    /**
+     * POST /inventory/update
+     */
+    public function update(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: " . BASE_URL . "/inventory");
+            exit;
+        }
+
+        $id       = (int)($_POST['id']       ?? 0);
+        $type     = $_POST['type']         ?? '';
+        $name     = trim($_POST['name']     ?? '');
+        $quantity = (int)($_POST['quantity'] ?? 0);
+
+        if ($id < 1 || $name === '') {
+            echo "Dados obrigatórios faltando.";
+            return;
+        }
+
+        $this->inventoryModel->update($id, $type, $name, $quantity);
+        header("Location: " . BASE_URL . "/inventory");
+        exit;
+    }
+
+    /**
+     * GET /inventory/delete?id=...
+     */
+    public function delete(): void
+    {
+        if (!isset($_GET['id'])) {
+            echo "ID de item não fornecido.";
+            exit;
+        }
+
+        $this->inventoryModel->delete((int)$_GET['id']);
+        header("Location: " . BASE_URL . "/inventory");
         exit;
     }
 
     /**
      * GET /inventory/history/details?id=...
-     * Retorna JSON com:
-     *  - movement: { user_name, datetime (Europe/Zurich), reason, project_name?, custom_reason? }
-     *  - items: [ { name, qty } … ]
      */
-    public function historyDetails(): void {
+    public function historyDetails(): void
+    {
         $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
         header('Content-Type: application/json; charset=utf-8');
 
@@ -279,9 +323,8 @@ class InventoryController {
             exit;
         }
 
-        $pdo = Database::connect();
-
-        // Busca dados da movimentação
+        global $pdo;
+        // Mestre
         $stmt = $pdo->prepare("
             SELECT m.user_name,
                    m.datetime,
@@ -300,12 +343,12 @@ class InventoryController {
             exit;
         }
 
-        // Ajusta fuso para Europe/Zurich
+        // Ajusta fuso
         $dt = new \DateTime($mv['datetime'], new \DateTimeZone('UTC'));
         $dt->setTimezone(new \DateTimeZone('Europe/Zurich'));
         $mv['datetime'] = $dt->format('Y-m-d H:i:s');
 
-        // Busca itens da movimentação
+        // Detalhes
         $stmt2 = $pdo->prepare("
             SELECT i.name,
                    d.quantity AS qty
@@ -315,11 +358,8 @@ class InventoryController {
         ");
         $stmt2->execute([$id]);
         $items = $stmt2->fetchAll(\PDO::FETCH_ASSOC);
-
-        // Filtra apenas qty>0
         $items = array_values(array_filter($items, fn($i) => (int)$i['qty'] > 0));
 
-        // Retorna JSON completo
         echo json_encode([
             'movement' => [
                 'user_name'     => $mv['user_name'],

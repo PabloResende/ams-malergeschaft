@@ -1,19 +1,38 @@
 <?php
-// public/index.php — Front controller do sistema
+// system/public/index.php — Front controller
 
 // 1) Inicia sessão
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-// 2) Carrega config de DB, uploads, timezone
+// 2) Carrega env (opcional)
+if (file_exists(__DIR__ . '/../config/env.php')) {
+    $env = require __DIR__ . '/../config/env.php';
+}
+
+// 3) Conexão com o banco
 require_once __DIR__ . '/../config/database.php';
 
-// 3) (Opcional) Carrega variáveis de ambiente
-// Se não tiver env.php, pode omitir esta linha
-$env = require __DIR__ . '/../config/env.php';
+// 4) Helpers (url(), asset(), isLoggedIn(), isEmployee(), isAdminOrFinance()…)
+require_once __DIR__ . '/../app/helpers.php';
 
-// 4) Carrega controllers e traduções
+// 5) Idioma e traduções
+$lang = $_GET['lang'] ?? $_SESSION['lang'] ?? 'pt';
+$_SESSION['lang'] = $lang;
+$langFile = __DIR__ . "/../app/lang/{$lang}.php";
+$langText = file_exists($langFile) ? require $langFile : [];
+
+// 6) BASE_URL
+if (! defined('BASE_URL')) {
+    if (! empty($env['base_url'])) {
+        define('BASE_URL', rtrim($env['base_url'], '/'));
+    } else {
+        define('BASE_URL', 'https://ams.swiss/system');
+    }
+}
+
+// 7) Carrega controllers
 require_once __DIR__ . '/../app/controllers/UserController.php';
 require_once __DIR__ . '/../app/controllers/ProjectController.php';
 require_once __DIR__ . '/../app/controllers/InventoryController.php';
@@ -22,17 +41,10 @@ require_once __DIR__ . '/../app/controllers/ClientsController.php';
 require_once __DIR__ . '/../app/controllers/CalendarController.php';
 require_once __DIR__ . '/../app/controllers/AnalyticsController.php';
 require_once __DIR__ . '/../app/controllers/FinancialController.php';
-require_once __DIR__ . '/../app/lang/lang.php';
+require_once __DIR__ . '/../app/controllers/WorkLogController.php';
+require_once __DIR__ . '/../app/controllers/CarController.php'; 
 
-// 5) Helpers de URL e assets
-function url(string $path = ''): string {
-    return BASE_URL . '/' . ltrim($path, '/');
-}
-function asset(string $path = ''): string {
-    return BASE_URL . '/public/' . ltrim($path, '/');
-}
-
-// 6) Monta a rota atual (remove /system do início)
+// 8) Resolve rota
 $uri   = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $route = preg_replace('#^/system#', '', $uri);
 $route = rtrim($route, '/');
@@ -40,22 +52,46 @@ if ($route === '') {
     $route = '/';
 }
 
-// 7) Troca de idioma
-if (isset($_GET['lang'])) {
-    $_SESSION['lang'] = $_GET['lang'];
-    if (! headers_sent()) {
-        setcookie('lang', $_GET['lang'], time() + 86400 * 30, "/system/");
+// Rotas públicas
+$publicRoutes = ['/', '/login', '/auth', '/register', '/store'];
+if (!in_array($route, $publicRoutes, true) && !isLoggedIn()) {
+    redirect('/login');
+}
+
+// Só employee e finance acessa seu dashboard e profile
+if (in_array($route, ['/employees/dashboard', '/employees/profile'], true)
+    && !isEmployee() && !isFinance()
+) {
+    redirect('/dashboard');
+}
+
+// ─── AUTORIZAÇÃO PARA CRUD DE FUNCIONÁRIOS ───────────────────────────────
+$employeeCrudNoUpdate = [
+    '/employees',
+    '/employees/store',
+    '/employees/delete',
+    '/employees/get'
+];
+
+if ($route === '/employees/update') {
+    if (! (isAdminOrFinance() || isEmployee())) {
+        redirect('/');
+    }
+} elseif (in_array($route, $employeeCrudNoUpdate, true)) {
+    if (!isAdminOrFinance()) {
+        redirect('/');
     }
 }
 
-// 8) Verifica acesso (público vs. privado)
-$publicRoutes = ['/', '/login', '/auth', '/register', '/store'];
-if (! in_array($route, $publicRoutes, true) && ! isset($_SESSION['user'])) {
-    header("Location: " . url('login'));
-    exit;
+// Finance só acessa aba financeira e análises
+$financeOnly = ['/finance','/analytics','/analytics/stats'];
+if (in_array($route, $financeOnly, true) && !isFinance() && !isAdmin()) {
+    redirect('/');
 }
 
-// 9) Instancia controllers
+/* ===== FIM DO BLOCO DE VALIDAÇÃO POR ROLES ===== */
+
+// 10) Instancia controllers
 $userController      = new UserController();
 $projectController   = new ProjectController();
 $inventoryController = new InventoryController();
@@ -64,8 +100,10 @@ $clientsController   = new ClientsController();
 $calendarController  = new CalendarController();
 $analyticsController = new AnalyticsController();
 $financialController = new FinancialController();
+$workLogController   = new WorkLogController();
+$carController       = new CarController(); // <--- Adicionado
 
-// Dispatcher de rotas
+// 11) Dispatcher de rotas
 switch ($route) {
     // USUÁRIO
     case '/':
@@ -84,11 +122,14 @@ switch ($route) {
     case '/dashboard':
         $userController->dashboard();
         break;
+    case '/employees/dashboard':
+        $userController->employeeDashboard();
+        break;
+    case '/employees/profile':
+        $employeeController->profile();
+        break;
     case '/logout':
         $userController->logout();
-        break;
-    case '/profile':
-        $userController->profile();
         break;
 
     // PROJETOS
@@ -101,28 +142,33 @@ switch ($route) {
     case '/projects/update':
         $projectController->update();
         break;
-    case '/projects/edit':
-        $projectController->edit();
+    case '/projects/delete':
+        $projectController->delete();
         break;
     case '/projects/show':
         $projectController->show();
         break;
-    case '/projects/delete':
-        $projectController->delete();
+    case '/projects/checkEmployee':
+        $projectController->checkEmployee();
         break;
     case '/projects/transactions':
         $projectController->transactions();
         break;
-    case '/projects/checkEmployee':
-        $projectController->checkEmployee();
+
+    // WORK LOGS
+    case '/work_logs/index':
+        $workLogController->index();
+        break;
+    case '/work_logs/store':
+        $workLogController->store();
+        break;
+    case '/work_logs/project_totals':
+        $workLogController->project_totals();
         break;
 
-    // FUNCIONÁRIOS
+    // FUNCIONÁRIOS CRUD
     case '/employees':
         $employeeController->list();
-        break;
-    case '/employees/checkAllocation':
-        $employeeController->checkAllocation();
         break;
     case '/employees/store':
         $employeeController->store();
@@ -144,17 +190,14 @@ switch ($route) {
     case '/clients/create':
         $clientsController->create();
         break;
-    case '/clients/store':
-        $clientsController->store();
-        break;
     case '/clients/show':
         $clientsController->show();
         break;
     case '/clients/edit':
         $clientsController->edit();
         break;
-    case '/clients/update':
-        $clientsController->update();
+    case '/clients/save':
+        $clientsController->save();
         break;
     case '/clients/delete':
         $clientsController->delete();
@@ -187,6 +230,37 @@ switch ($route) {
         break;
     case '/inventory/history/details':
         $inventoryController->historyDetails();
+        break;
+
+    // INVENTÁRIO AJAX (Novas rotas)
+    case '/inventory/add-quantity-ajax':
+        $inventoryController->addQuantityAjax();
+        break;
+    case '/inventory/delete-ajax':
+        $inventoryController->deleteAjax();
+        break;
+    case '/inventory/update-description-ajax':
+        $inventoryController->updateDescriptionAjax();
+        break;
+
+     // CARROS
+    case '/cars':
+        $carController->index();
+        break;
+    case '/cars/store':
+        $carController->store();
+        break;
+    case '/cars/get':
+        $carController->get();
+        break;
+    case '/cars/update':
+        $carController->update();
+        break;
+    case '/cars/delete':
+        $carController->delete();
+        break;
+    case '/cars/usage/store':     
+        $carController->storeUsage();
         break;
 
     // CALENDÁRIO

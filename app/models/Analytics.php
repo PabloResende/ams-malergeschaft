@@ -1,25 +1,44 @@
 <?php
-// app/models/Analytics.php
+// system/app/models/Analytics.php
+
 require_once __DIR__ . '/../../config/database.php';
 
-class Analytics {
-    public static function getStats(int $year, string $quarter = '', string $semester = ''): array {
-        $pdo = Database::connect();
+class Analytics
+{
+    /** @var \PDO */
+    private $pdo;
 
-        // 1) Define the period
+    public function __construct()
+    {
+        global $pdo;
+        $this->pdo = $pdo;
+    }
+
+    /**
+     * Compila estatísticas de projetos, finanças e materiais no período.
+     *
+     * @param int    $year      Ano base (ex: 2025)
+     * @param string $quarter   Trimestre (ex: '1', '2', '3', '4') ou '' para ano todo
+     * @param string $semester  Semestre (ex: '1' ou '2') ou '' para ano todo
+     * @return array
+     */
+    public function getStats(int $year, string $quarter = '', string $semester = ''): array
+    {
+        // 1) Define período inicial/final
         $start = "$year-01-01";
         $end   = "$year-12-31";
-        if ($quarter) {
-            $q  = (int)$quarter;
-            $m1 = ($q - 1)*3 + 1;
-            $m3 = $m1 + 2;
+        if ($quarter !== '') {
+            $q   = (int)$quarter;
+            $m1  = ($q - 1)*3 + 1;
+            $m3  = $m1 + 2;
             $start = sprintf("%04d-%02d-01", $year, $m1);
             $end   = sprintf(
                 "%04d-%02d-%02d",
-                $year, $m3,
+                $year,
+                $m3,
                 cal_days_in_month(CAL_GREGORIAN, $m3, $year)
             );
-        } elseif ($semester) {
+        } elseif ($semester !== '') {
             $s = (int)$semester;
             if ($s === 1) {
                 $start = "$year-01-01";
@@ -30,7 +49,7 @@ class Analytics {
             }
         }
 
-        // 2) Build months & labels
+        // 2) Monta meses e rótulos
         $months = [];
         $labels = [];
         $dt     = new DateTime($start);
@@ -38,7 +57,7 @@ class Analytics {
         $names  = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
         while ($dt <= $dtEnd) {
             $m = (int)$dt->format('n');
-            if (!in_array($m, $months, true)) {
+            if (! in_array($m, $months, true)) {
                 $months[] = $m;
                 $labels[] = $names[$m-1];
             }
@@ -46,7 +65,7 @@ class Analytics {
         }
         $in = implode(',', $months);
 
-        // 3) Projects created per month
+        // 3) Projetos criados por mês
         $sql = "
           SELECT MONTH(created_at) AS m, COUNT(*) AS cnt
             FROM projects
@@ -54,24 +73,24 @@ class Analytics {
              AND MONTH(created_at) IN ($in)
            GROUP BY m
         ";
-        $stmt = $pdo->prepare($sql);
+        $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['start'=>$start,'end'=>$end]);
         $createdData = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
-        // 4) Projects completed per month
+        // 4) Projetos concluídos por mês
         $sql = "
           SELECT MONTH(end_date) AS m, COUNT(*) AS cnt
             FROM projects
-           WHERE status='completed'
+           WHERE status = 'completed'
              AND end_date BETWEEN :start AND :end
              AND MONTH(end_date) IN ($in)
            GROUP BY m
         ";
-        $stmt = $pdo->prepare($sql);
+        $stmt = $this->pdo->prepare($sql);
         $stmt->execute(['start'=>$start,'end'=>$end]);
         $completedData = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
-        // 5) Fill arrays
+        // 5) Preenche arrays completos
         $created   = [];
         $completed = [];
         foreach ($months as $m) {
@@ -79,8 +98,8 @@ class Analytics {
             $completed[] = (int)($completedData[$m] ?? 0);
         }
 
-        // 6) Status breakdown
-        $stmt = $pdo->prepare("
+        // 6) Breakdown por status
+        $stmt = $this->pdo->prepare("
           SELECT status, COUNT(*) AS cnt
             FROM projects
            WHERE created_at BETWEEN :start AND :end
@@ -94,8 +113,8 @@ class Analytics {
             'completed'   => (int)($rows['completed']   ?? 0),
         ];
 
-        // 7) Budget totals
-        $stmt = $pdo->prepare("
+        // 7) Totais de budget
+        $stmt = $this->pdo->prepare("
           SELECT 
             SUM(budget) AS total,
             SUM(CASE WHEN status='completed' THEN budget ELSE 0 END) AS used
@@ -105,8 +124,8 @@ class Analytics {
         $stmt->execute(['start'=>$start,'end'=>$end]);
         $budg = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // 8) Materials usage
-        $stmt = $pdo->prepare("
+        // 8) Uso de materiais
+        $stmt = $this->pdo->prepare("
           SELECT SUM(quantity) AS mat
             FROM project_resources
            WHERE resource_type='inventory'
@@ -115,8 +134,8 @@ class Analytics {
         $stmt->execute(['start'=>$start,'end'=>$end]);
         $materials = (int)$stmt->fetchColumn();
 
-        // 9) Materials per month
-        $stmt = $pdo->prepare("
+        // 9) Materiais por mês
+        $stmt = $this->pdo->prepare("
           SELECT MONTH(created_at) AS m, SUM(quantity) AS sumq
             FROM project_resources
            WHERE resource_type='inventory'
@@ -131,8 +150,8 @@ class Analytics {
             $materialsUsage[] = (int)($matRows[$m] ?? 0);
         }
 
-        // 10) Total hours on completed projects
-        $stmt = $pdo->prepare("
+        // 10) Horas totais em projetos concluídos
+        $stmt = $this->pdo->prepare("
           SELECT SUM(total_hours) AS hrs
             FROM projects
            WHERE status='completed'
@@ -141,14 +160,12 @@ class Analytics {
         $stmt->execute(['start'=>$start,'end'=>$end]);
         $hours = (int)$stmt->fetchColumn();
 
-        // --- NEW METRICS ---
+        // --- Métricas adicionais ---
+        $totalProjects       = array_sum($created);
+        $totalCompleted      = array_sum($completed);
 
-        // a) Totals
-        $totalProjects   = array_sum($created);
-        $totalCompleted  = array_sum($completed);
-
-        // b) Average duration (in days) of completed projects
-        $stmt = $pdo->prepare("
+        // d) Duração média (dias) de projetos concluídos
+        $stmt = $this->pdo->prepare("
           SELECT AVG(DATEDIFF(end_date, start_date)) AS avg_days
             FROM projects
            WHERE status='completed'
@@ -157,18 +174,18 @@ class Analytics {
         $stmt->execute(['start'=>$start,'end'=>$end]);
         $avgDays = (float)$stmt->fetchColumn();
 
-        // c) Average budget per project created
+        // e) Orçamento médio por projeto
         $avgBudgetPerProject = $totalProjects
             ? ($budg['total'] / $totalProjects)
             : 0;
 
-        // d) Peak months
-        $peakCreatedIndex    = array_search(max($created), $created);
-        $peakCompletedIndex  = array_search(max($completed), $completed);
-        $peakCreatedMonth    = $months[$peakCreatedIndex];
-        $peakCompletedMonth  = $months[$peakCompletedIndex];
-        $peakCreatedLabel    = $names[$peakCreatedMonth - 1];
-        $peakCompletedLabel  = $names[$peakCompletedMonth - 1];
+        // f) Meses de pico
+        $peakCreatedIndex   = array_search(max($created), $created);
+        $peakCompletedIndex = array_search(max($completed), $completed);
+        $peakCreatedMonth   = $months[$peakCreatedIndex];
+        $peakCompletedMonth = $months[$peakCompletedIndex];
+        $peakCreatedLabel   = $names[$peakCreatedMonth - 1];
+        $peakCompletedLabel = $names[$peakCompletedMonth - 1];
 
         return [
             'labels'               => $labels,
@@ -180,8 +197,6 @@ class Analytics {
             'materials'            => $materials,
             'materialsUsage'       => $materialsUsage,
             'hours'                => $hours,
-
-            // new
             'totalProjects'        => $totalProjects,
             'totalCompleted'       => $totalCompleted,
             'avgDuration'          => round($avgDays, 1),

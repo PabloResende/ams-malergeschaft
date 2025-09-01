@@ -152,7 +152,8 @@ document.addEventListener("DOMContentLoaded", () => {
           cellDate.setHours(0,0,0,0);
 
           const eventsForDay = getAllEvents().filter(evt => {
-            const d = new Date(evt.reminder_date);
+            // evt.start vem do servidor ou de reminders
+            const d = new Date(evt.start || evt.reminder_date);
             d.setHours(0,0,0,0);
             return d.getTime() === cellDate.getTime();
           });
@@ -161,7 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
           eventsForDay.slice(0, maxVisibleEvents).forEach(evt => {
             const evtDiv = document.createElement("div");
             evtDiv.className = "mt-1 text-xs text-white rounded px-1 truncate cursor-pointer";
-            evtDiv.style.backgroundColor = evt.color || "#3b82f6";
+            evtDiv.style.backgroundColor = evt.color;
             evtDiv.textContent = evt.title;
 
             // Tooltip
@@ -256,7 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
           cellDate.setHours(0,0,0,0);
 
           const eventsForDay = getAllEvents().filter(evt => {
-            const d = new Date(evt.reminder_date);
+            const d = new Date(evt.start || evt.reminder_date);
             d.setHours(0,0,0,0);
             return d.getTime() === cellDate.getTime();
           });
@@ -264,7 +265,7 @@ document.addEventListener("DOMContentLoaded", () => {
           eventsForDay.forEach(evt => {
             const evtDiv = document.createElement("div");
             evtDiv.className = "mt-1 text-sm text-white rounded px-2 truncate cursor-pointer";
-            evtDiv.style.backgroundColor = evt.color || "#3b82f6";
+            evtDiv.style.backgroundColor = evt.color;
             evtDiv.textContent = evt.title;
 
             evtDiv.addEventListener("mouseenter", e => {
@@ -311,7 +312,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // Carrega lembretes e redesenha
   function loadAndRenderCalendars() {
     fetchReminders().then(fetchedReminders => {
-      reminders = fetchedReminders;
+      reminders = fetchedReminders.map(evt => ({
+        id: evt.id,
+        title: evt.title,
+        start: evt.start || evt.reminder_date,
+        color: evt.color
+      }));
       renderYearCalendars();
     });
   }
@@ -320,20 +326,31 @@ document.addEventListener("DOMContentLoaded", () => {
   const reminderForm = document.getElementById("reminderForm");
   reminderForm.addEventListener("submit", e => {
     e.preventDefault();
-    const formData = new FormData(reminderForm);
+
+    const title = reminderForm.querySelector('input[name="title"]').value.trim();
+    const reminder_date = reminderForm.querySelector('input[name="reminder_date"]').value;
+    const color = reminderForm.querySelector('input[name="color"]').value;
+
     fetch(`${baseUrl}/calendar/store`, {
       method: "POST",
-      body: formData
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, reminder_date, color })
     })
       .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          alert(data.message);
+      .then(evt => {
+        if (evt.id) {
+          // adiciona ao array local e redesenha
+          reminders.push({
+            id: evt.id,
+            title: evt.title,
+            start: evt.start,
+            color: evt.color
+          });
           reminderModal.classList.add("hidden");
           reminderForm.reset();
-          loadAndRenderCalendars();
-        } else {
-          alert(data.message || "Erro desconhecido");
+          renderYearCalendars();
+        } else if (evt.error) {
+          alert(evt.error);
         }
       })
       .catch(err => {
@@ -354,9 +371,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const options = { year: "numeric", month: "long", day: "numeric" };
     const dateString = cellDate.toLocaleDateString("pt-BR", options);
 
-    const modal       = document.getElementById("dayEventsModal");
-    const titleEl     = document.getElementById("dayModalTitle");
-    const contentEl   = document.getElementById("dayEventsContent");
+    const modal     = document.getElementById("dayEventsModal");
+    const titleEl   = document.getElementById("dayModalTitle");
+    const contentEl = document.getElementById("dayEventsContent");
 
     titleEl.textContent = `${eventsOn} ${dateString}`;
     contentEl.innerHTML = "";
@@ -364,13 +381,12 @@ document.addEventListener("DOMContentLoaded", () => {
     events.forEach(evt => {
       const div = document.createElement("div");
       div.className = "p-2 border rounded mb-2";
-      div.style.backgroundColor = evt.color || "#3b82f6";
+      div.style.backgroundColor = evt.color;
       div.textContent = evt.title;
       contentEl.appendChild(div);
     });
 
     modal.classList.remove("hidden");
-
     modal.addEventListener("click", e => {
       if (e.target === modal) modal.classList.add("hidden");
     });

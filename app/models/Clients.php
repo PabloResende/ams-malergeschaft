@@ -1,130 +1,209 @@
 <?php
-// app/models/Clients.php
+// system/app/models/Clients.php
 
 require_once __DIR__ . '/../../config/database.php';
 
 class Client
 {
-    /**
-     * Retorna todos os clientes cadastrados.
-     *
-     * @return array
-     */
-    public static function all()
+    /** @var \PDO */
+    private \PDO $pdo;
+
+    public function __construct()
     {
-        $pdo  = Database::connect();
-        $stmt = $pdo->query("SELECT * FROM client ORDER BY name ASC");
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        global $pdo;
+        $this->pdo = $pdo;
     }
 
     /**
-     * Encontra um cliente pelo ID.
+     * Lista todos os clientes
+     */
+    public function all(): array
+    {
+        $stmt = $this->pdo->query("
+            SELECT
+            c.*,
+            COUNT(p.id) AS loyalty_points
+            FROM client c
+            LEFT JOIN projects p
+            ON p.client_id = c.id
+            WHERE c.active = 1
+            GROUP BY c.id
+            ORDER BY c.name ASC
+        ");
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Encontra um cliente pelo ID e injeta loyalty_points com base em countProjects().
      *
      * @param int $id
-     * @return array|false
+     * @return array|null
      */
-    public static function find($id)
+    public function find(int $id): ?array
     {
-        $pdo  = Database::connect();
-        $stmt = $pdo->prepare("SELECT * FROM client WHERE id = ?");
-        $stmt->execute([$id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $stmt = $this->pdo->prepare("
+            SELECT *
+            FROM client
+            WHERE id = :id
+        ");
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if (! $row) {
+            return null;
+        }
+        // recalcula pontos de fidelidade
+        $row['loyalty_points'] = $this->countProjects($id);
+        return $row;
     }
-
     /**
      * Cria um novo cliente.
-     *
-     * @param array $data
-     * @return bool
+     * Retorna o ID inserido.
      */
-    public static function create($data)
+    public function create(array $data): int
     {
-        $pdo = Database::connect();
-        $stmt = $pdo->prepare("
-            INSERT INTO client
-              (name, address, phone, active, loyalty_points)
-            VALUES
-              (?, ?, ?, ?, ?)
+        $stmt = $this->pdo->prepare("
+            INSERT INTO client (
+            contact_number,name,address,zip_code,city,country,complement,about,
+            phone,phone2,mobile,fax,email,email2,website,skype,
+            contact_person,owner,correspondence,language,category,branch,
+            employee_count,registry_number,vat_number,tax_id_number,
+            profile_picture,active
+            ) VALUES (
+            :contact_number,:name,:address,:zip_code,:city,:country,
+            :complement,:about,:phone,:phone2,:mobile,:fax,
+            :email,:email2,:website,:skype,
+            :contact_person,:owner,:correspondence,:language,
+            :category,:branch,:employee_count,:registry_number,
+            :vat_number,:tax_id_number,:profile_picture,:active
+            )
         ");
-        return $stmt->execute([
-            $data['name'],
-            $data['address']        ?? null,
-            $data['phone']          ?? null,
-            $data['active']         ?? 1,
-            // inicializa sempre 0, mas fidelidade desativada em view/js
-            $data['loyalty_points'] ?? 0
+        $stmt->execute([
+            'contact_number'  => $data['contact_number'],
+            'name'            => $data['name'],
+            'address'         => $data['address'],
+            'zip_code'        => $data['zip_code'],
+            'city'            => $data['city'],
+            'country'         => $data['country'],
+            'complement'      => $data['complement'],
+            'about'           => $data['about'],
+            'phone'           => $data['phone'],
+            'phone2'          => $data['phone2'],
+            'mobile'          => $data['mobile'],
+            'fax'             => $data['fax'],
+            'email'           => $data['email'],
+            'email2'          => $data['email2'],
+            'website'         => $data['website'],
+            'skype'           => $data['skype'],
+            'contact_person'  => $data['contact_person'],
+            'owner'           => $data['owner'],
+            'correspondence'  => $data['correspondence'],
+            'language'        => $data['language'],
+            'category'        => $data['category'],
+            'branch'          => $data['branch'],
+            'employee_count'  => $data['employee_count'],
+            'registry_number' => $data['registry_number'],
+            'vat_number'      => $data['vat_number'],
+            'tax_id_number'   => $data['tax_id_number'],
+            'profile_picture' => $data['profile_picture'],
+            'active'          => $data['active'],
         ]);
+
+        return (int)$this->pdo->lastInsertId();
     }
 
     /**
      * Atualiza um cliente existente.
-     *
-     * @param int   $id
-     * @param array $data
-     * @return bool
      */
-    public static function update($id, $data)
+   
+    public function update(int $id, array $data): bool
     {
-        $pdo = Database::connect();
-        $stmt = $pdo->prepare("
+        $stmt = $this->pdo->prepare("
             UPDATE client SET
-              name           = ?,
-              address        = ?,
-              phone          = ?,
-              active         = ?
-            WHERE id = ?
+            contact_number  = :contact_number,
+            name            = :name,
+            address         = :address,
+            zip_code        = :zip_code,
+            city            = :city,
+            country         = :country,
+            complement      = :complement,
+            about           = :about,
+            phone           = :phone,
+            phone2          = :phone2,
+            mobile          = :mobile,
+            fax             = :fax,
+            email           = :email,
+            email2          = :email2,
+            website         = :website,
+            skype           = :skype,
+            contact_person  = :contact_person,
+            owner           = :owner,
+            correspondence  = :correspondence,
+            language        = :language,
+            category        = :category,
+            branch          = :branch,
+            employee_count  = :employee_count,
+            registry_number = :registry_number,
+            vat_number      = :vat_number,
+            tax_id_number   = :tax_id_number,
+            profile_picture = COALESCE(:profile_picture, profile_picture),
+            active          = :active
+            WHERE id = :id
         ");
         return $stmt->execute([
-            $data['name'],
-            $data['address'] ?? null,
-            $data['phone']   ?? null,
-            $data['active']  ?? 1,
-            $id
+            'contact_number'  => $data['contact_number'],
+            'name'            => $data['name'],
+            'address'         => $data['address'],
+            'zip_code'        => $data['zip_code'],
+            'city'            => $data['city'],
+            'country'         => $data['country'],
+            'complement'      => $data['complement'],
+            'about'           => $data['about'],
+            'phone'           => $data['phone'],
+            'phone2'          => $data['phone2'],
+            'mobile'          => $data['mobile'],
+            'fax'             => $data['fax'],
+            'email'           => $data['email'],
+            'email2'          => $data['email2'],
+            'website'         => $data['website'],
+            'skype'           => $data['skype'],
+            'contact_person'  => $data['contact_person'],
+            'owner'           => $data['owner'],
+            'correspondence'  => $data['correspondence'],
+            'language'        => $data['language'],
+            'category'        => $data['category'],
+            'branch'          => $data['branch'],
+            'employee_count'  => $data['employee_count'],
+            'registry_number' => $data['registry_number'],
+            'vat_number'      => $data['vat_number'],
+            'tax_id_number'   => $data['tax_id_number'],
+            'profile_picture' => $data['profile_picture'],
+            'active'          => $data['active'],
+            'id'              => $id,
         ]);
     }
 
-    /**
-     * Remove um cliente.
-     *
-     * @param int $id
-     * @return bool
-     */
-    public static function delete($id)
+    public function countProjects(int $id): int
     {
-        $pdo  = Database::connect();
-        $stmt = $pdo->prepare("DELETE FROM client WHERE id = ?");
-        return $stmt->execute([$id]);
-    }
-
-    /**
-     * Conta quantos projetos estão associados a este cliente.
-     *
-     * @param int $id
-     * @return int
-     */
-    public static function countProjects($id)
-    {
-        $pdo  = Database::connect();
-        $stmt = $pdo->prepare("SELECT COUNT(*) AS cnt FROM projects WHERE client_id = ?");
-        $stmt->execute([$id]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return (int)($row['cnt'] ?? 0);
-    }
-
-    /**
-     * Atualiza os pontos de fidelidade do cliente.
-     * ATENÇÃO: método comentado para desativar fidelidade temporariamente.
-     */
-    /*
-    public static function setPoints($id, $points)
-    {
-        $pdo = Database::connect();
-        $stmt = $pdo->prepare("
-            UPDATE client
-               SET loyalty_points = ?
-             WHERE id = ?
+        $stmt = $this->pdo->prepare("
+            SELECT COUNT(*) AS cnt
+              FROM projects
+             WHERE client_id = :cid
         ");
-        return $stmt->execute([$points, $id]);
+        $stmt->execute(['cid' => $id]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return isset($row['cnt']) ? (int)$row['cnt'] : 0;
     }
-    */
+
+   /**
+     * Remove de verdade um cliente do banco.
+     */
+    public function delete(int $id): bool
+    {
+        $stmt = $this->pdo->prepare("
+            DELETE FROM client
+             WHERE id = :id
+        ");
+        return $stmt->execute(['id' => $id]);
+    }
 }
+

@@ -1,17 +1,29 @@
 <?php
-// app/models/InventoryHistoryModel.php
+// system/app/models/InventoryHistoryModel.php
+
 require_once __DIR__ . '/../../config/database.php';
 
-class InventoryHistoryModel {
-    private $pdo;
+class InventoryHistoryModel
+{
+    /** @var \PDO */
+    private \PDO $pdo;
 
-    public function __construct() {
+    public function __construct()
+    {
         global $pdo;
         $this->pdo = $pdo;
     }
 
     /**
      * Insere 1 movimento mestre + vários detalhes.
+     *
+     * @param string      $user
+     * @param string      $datetime
+     * @param string      $reason
+     * @param int|null    $projectId
+     * @param string|null $custom
+     * @param array       $items      [ itemId => qty, … ] ou ['new_item'=>[…]]
+     * @return int ID do movimento inserido
      */
     public function insertMovement(
         string $user,
@@ -23,7 +35,7 @@ class InventoryHistoryModel {
     ): int {
         $this->pdo->beginTransaction();
 
-        // mestre
+        // Mestre
         $stmt = $this->pdo->prepare("
             INSERT INTO inventory_movements
               (user_name, datetime, reason, project_id, custom_reason)
@@ -32,12 +44,13 @@ class InventoryHistoryModel {
         $stmt->execute([$user, $datetime, $reason, $projectId, $custom]);
         $movementId = (int)$this->pdo->lastInsertId();
 
-        // detalhes
+        // Detalhes
         $detail = $this->pdo->prepare("
             INSERT INTO inventory_movement_details
               (movement_id, item_id, quantity)
             VALUES (?, ?, ?)
         ");
+
         if (isset($items['new_item'])) {
             $ni = $items['new_item'];
             $detail->execute([
@@ -61,21 +74,28 @@ class InventoryHistoryModel {
 
     /**
      * Retorna todas as movimentações (sem detalhes).
+     *
+     * @return array
      */
-    public function getAllMovements(): array {
+    public function getAllMovements(): array
+    {
         $stmt = $this->pdo->query("
             SELECT id, user_name, datetime, reason, project_id, custom_reason
-            FROM inventory_movements
-            ORDER BY datetime DESC
+              FROM inventory_movements
+          ORDER BY datetime DESC
         ");
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
     /**
      * Retorna mestre + detalhes de 1 movimentação.
+     *
+     * @param int $movementId
+     * @return array ['master'=>[…], 'details'=>[…]]
      */
-    public function getMovementWithDetails(int $movementId): array {
-        // mestre + projeto
+    public function getMovementWithDetails(int $movementId): array
+    {
+        // Mestre + projeto
         $stmt = $this->pdo->prepare("
             SELECT
               m.id,
@@ -90,9 +110,9 @@ class InventoryHistoryModel {
             WHERE m.id = ?
         ");
         $stmt->execute([$movementId]);
-        $master = $stmt->fetch(PDO::FETCH_ASSOC);
+        $master = $stmt->fetch(\PDO::FETCH_ASSOC) ?: [];
 
-        // detalhes de itens
+        // Detalhes
         $stmt2 = $this->pdo->prepare("
             SELECT
               d.item_id,
@@ -103,7 +123,7 @@ class InventoryHistoryModel {
             WHERE d.movement_id = ?
         ");
         $stmt2->execute([$movementId]);
-        $details = $stmt2->fetchAll(PDO::FETCH_ASSOC);
+        $details = $stmt2->fetchAll(\PDO::FETCH_ASSOC);
 
         return [
             'master'  => $master,

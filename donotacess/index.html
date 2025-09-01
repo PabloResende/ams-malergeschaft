@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema Restrito</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      background: linear-gradient(135deg, #1e1e1e, #2c2c2c);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #fff;
+    }
+
+    .aviso {
+      text-align: center;
+      padding: 40px;
+      border: 2px solid #ff5555;
+      border-radius: 12px;
+      background-color: rgba(0, 0, 0, 0.6);
+      box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+    }
+
+    .aviso h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      color: #ff5555;
+      animation: blink 1s infinite;
+    }
+
+    .aviso p {
+      font-size: 1.2rem;
+      color: #ccc;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.2; }
+    }
+  </style>
+</head>
+<body>
+  <div class="aviso">
+    <h1>⚠️ SISTEMA <span>RESTRITO</span> ⚠️</h1>
+    <p>Você não tem permissão para acessar esta área.<br>Contate o administrador do sistema se você acredita que isso é um erro.</p>
+  </div>
+</body>
+</html>

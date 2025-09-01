@@ -1,87 +1,88 @@
 <?php
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
-}
 
-require_once __DIR__ . '/../../../../config/database.php';
+global $pdo, $langText;
 
-global $pdo;
-
-$baseUrl = '<?= BASE_URL ?>';
-
-if (!function_exists('addNotif')) {
+// --- helpers ---
+if (! function_exists('addNotif')) {
     function addNotif(array &$arr, string $key, string $text, string $url): void {
-        $arr[] = compact('key', 'text', 'url');
+        $arr[] = compact('key','text','url');
     }
 }
 
 $notifications = [];
 
-// ——— Materiais com estoque abaixo de faixas ———
-$faixas = [100, 75, 50, 25, 10, 5, 1, 0];
+// --- Materiais com estoque baixo ---
+$faixas = [100,75,50,25,10,5,1,0];
 $stmt = $pdo->query("
-    SELECT id, name, quantity
-    FROM inventory
-    WHERE type = 'material' AND quantity < 100
+    SELECT id,name,quantity
+      FROM inventory
+     WHERE type='material' AND quantity<100
 ");
 while ($it = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    foreach ($faixas as $limite) {
-        if ($it['quantity'] <= $limite) {
-            $key  = "inventory_{$it['id']}_q{$limite}";
-            $text = $it['quantity'] == 0
-                ? "Acabou: «{$it['name']}»"
-                : "Tem {$it['quantity']}× «{$it['name']}» (≤ {$limite})";
-            $url  = "{$baseUrl}/inventory?show={$it['id']}";
+    foreach ($faixas as $lim) {
+        if ($it['quantity'] <= $lim) {
+            $key  = "inventory_{$it['id']}_q{$lim}";
+            if ($it['quantity'] === 0) {
+                $text = sprintf($langText['notif_inventory_empty'], $it['name']);
+            } else {
+                $text = sprintf(
+                    $langText['notif_inventory_low'],
+                    $it['quantity'],
+                    $it['name'],
+                    $lim
+                );
+            }
+            $url = BASE_URL."/inventory?show={$it['id']}";
             addNotif($notifications, $key, $text, $url);
-            break; // pega só a menor faixa atingida
+            break;
         }
     }
 }
 
-// ——— Projetos vencendo em até 7 dias ———
-$today = date('Y-m-d');
-$limit = date('Y-m-d', strtotime('+7 days'));
-$stmt = $pdo->prepare("
-    SELECT id, name, end_date
-    FROM projects
-    WHERE end_date BETWEEN ? AND ?
+// --- Projetos vencendo em até 7 dias ---
+$hoje  = date('Y-m-d');
+$lim   = date('Y-m-d', strtotime('+7 days'));
+$stmt  = $pdo->prepare("
+    SELECT id,name,end_date
+      FROM projects
+     WHERE end_date BETWEEN ? AND ?
 ");
-$stmt->execute([$today, $limit]);
+$stmt->execute([$hoje,$lim]);
 while ($pj = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $diff = (strtotime($pj['end_date']) - strtotime($today)) / 86400;
-    $dias = (int)$diff;
-
+    $dias = (int)((strtotime($pj['end_date']) - strtotime($hoje)) / 86400);
     if ($dias < 0) continue;
 
-    $label = match($dias) {
-        0 => "vence hoje",
-        1 => "vence em 1 dia",
-        default => "vence em {$dias} dias"
-    };
-    $key  = "project_{$pj['id']}_d{$dias}";
-    $text = "Projeto «{$pj['name']}» {$label}!";
-    $url  = "{$baseUrl}/projects?show={$pj['id']}";
-    addNotif($notifications, $key, $text, $url);
+    switch ($dias) {
+      case 0:
+        $msg = sprintf($langText['notif_project_due_0'], $pj['name']);
+        break;
+      case 1:
+        $msg = sprintf($langText['notif_project_due_1'], $pj['name']);
+        break;
+      default:
+        $msg = sprintf($langText['notif_project_due_x'], $pj['name'], $dias);
+    }
+
+    $key = "project_{$pj['id']}_d{$dias}";
+    $url = BASE_URL."/projects?show={$pj['id']}";
+    addNotif($notifications, $key, $msg, $url);
 }
 
-// ——— Clientes com múltiplos de 5 projetos ———
+// --- Clientes com múltiplos de 5 projetos ---
 $stmt = $pdo->query("
-    SELECT c.id, c.name, COUNT(p.id) AS cnt
-    FROM client c
-    JOIN projects p ON p.client_id = c.id
-    GROUP BY c.id
-    HAVING cnt >= 5
+     SELECT c.id,c.name,COUNT(p.id) AS cnt
+       FROM client c
+  LEFT JOIN projects p ON p.client_id=c.id
+   GROUP BY c.id
+  HAVING cnt>=5
 ");
 while ($c = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $qtd = (int) $c['cnt'];
-    $faixa = floor($qtd / 5) * 5;
-
-    if ($faixa >= 5) {
-        $key  = "client_{$c['id']}_p{$faixa}";
-        $text = "Cliente «{$c['name']}» fez {$qtd} projetos";
-        $url  = "{$baseUrl}/clients?show={$c['id']}";
-        addNotif($notifications, $key, $text, $url);
-    }
+    $qtd = (int)$c['cnt'];
+    $faixa = floor($qtd/5)*5;
+    $key  = "client_{$c['id']}_p{$faixa}";
+    $msg  = sprintf($langText['notif_client_projects'], $c['name'], $qtd);
+    $url  = BASE_URL."/clients?show={$c['id']}";
+    addNotif($notifications, $key, $msg, $url);
 }
 
 return $notifications;

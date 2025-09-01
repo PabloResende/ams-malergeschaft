@@ -1,5 +1,14 @@
 <?php
 
+/** @var \PDO */
+private $pdo;
+
+public function __construct()
+{
+    global $pdo; 
+    $this->pdo = $pdo;
+}
+
 class Reminder {
 
     public static function getAll($pdo) {

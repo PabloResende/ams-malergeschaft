@@ -1,82 +1,92 @@
 // public/js/header.js
 
-document.addEventListener('DOMContentLoaded', () => {
+(() => {
   const STORAGE_KEY = 'readNotifications';
   let readSet = new Set();
 
-  // Tenta carregar do localStorage as notificações já lidas
+  // Carrega notificações lidas do localStorage
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (Array.isArray(saved)) readSet = new Set(saved);
-  } catch {
-    console.warn('Não foi possível ler readNotifications do localStorage');
+  } catch (err) {
+    console.warn('Não foi possível ler readNotifications do localStorage', err);
   }
 
   /**
-   * Inicia o badge de notificações.
+   * Atualiza o contador (badge) com base nas notificações existentes e lidas.
    */
-  function initBadge(btnId, listId, countId) {
+  function updateBadge(listEl, badgeEl) {
+    const items   = Array.from(listEl.querySelectorAll('.notification-item'));
+    const allKeys = items.map(i => i.dataset.key).filter(k => k);
+    const unread  = allKeys.filter(k => !readSet.has(k));
+    if (unread.length > 0) {
+      badgeEl.textContent = unread.length;
+      badgeEl.classList.remove('hidden');
+    } else {
+      badgeEl.classList.add('hidden');
+    }
+  }
+
+
+
+  /**
+   * Inicializa badge e eventos de clique tanto no botão quanto em cada item.
+   */
+  function initNotifications(btnId, listId, countId) {
     const btn   = document.getElementById(btnId);
     const list  = document.getElementById(listId);
     const badge = document.getElementById(countId);
     if (!btn || !list || !badge) return;
 
-    const items   = Array.from(list.querySelectorAll('.notification-item'));
-    const allKeys = items.map(i => i.dataset.key).filter(k => k);
-    const unread  = allKeys.filter(k => !readSet.has(k));
-
-    if (unread.length > 0) {
-      badge.textContent = unread.length;
-      badge.classList.remove('hidden');
-    } else {
-      badge.classList.add('hidden');
-    }
+    updateBadge(list, badge);
 
     btn.addEventListener('click', e => {
       e.stopPropagation();
       list.classList.toggle('hidden');
+    });
 
-      allKeys.forEach(k => readSet.add(k));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(readSet)));
+    list.querySelectorAll('.notification-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const key = item.dataset.key;
+        if (!key || readSet.has(key)) return;
 
-      badge.textContent = '0';
-      badge.classList.add('hidden');
+        readSet.add(key);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(readSet)));
+        updateBadge(list, badge);
+
+        const link = item.querySelector('a');
+        if (link) window.location.href = link.href;
+      });
     });
   }
 
-  // Inicializa notificações desktop e mobile
-  initBadge('notificationBtn',       'notificationList',       'notificationCount');
-  initBadge('notificationBtnMobile', 'notificationListMobile', 'notificationCountMobile');
-
   /**
-   * Toggle do menu de idiomas (desktop e mobile)
+   * Inicializa toggle de idioma.
    */
   function initLanguageToggle(btnId, menuId) {
     const btn  = document.getElementById(btnId);
     const menu = document.getElementById(menuId);
     if (!btn || !menu) return;
-
     btn.addEventListener('click', e => {
       e.stopPropagation();
       menu.classList.toggle('hidden');
     });
   }
 
+  // notificações desktop e mobile
+  initNotifications('notificationBtn',       'notificationList',       'notificationCount');
+  initNotifications('notificationBtnMobile', 'notificationListMobile', 'notificationCountMobile');
+
+  // dropdown de idioma desktop e mobile
   initLanguageToggle('language-button',        'language-menu');
   initLanguageToggle('language-button-mobile', 'language-menu-mobile');
 
-  // Fecha dropdowns ao clicar fora
+  // Fecha qualquer dropdown ao clicar fora
   document.addEventListener('click', () => {
-    // notificações
-    const notifList        = document.getElementById('notificationList');
-    const notifListMobile  = document.getElementById('notificationListMobile');
-    if (notifList)       notifList.classList.add('hidden');
-    if (notifListMobile) notifListMobile.classList.add('hidden');
-
-    // idiomas
-    const langMenu        = document.getElementById('language-menu');
-    const langMenuMobile  = document.getElementById('language-menu-mobile');
-    if (langMenu)        langMenu.classList.add('hidden');
-    if (langMenuMobile)  langMenuMobile.classList.add('hidden');
+    ['notificationList', 'notificationListMobile', 'language-menu', 'language-menu-mobile']
+      .forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
   });
-});
+})();

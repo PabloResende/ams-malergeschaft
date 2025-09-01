@@ -1,5 +1,5 @@
 <?php
-// app/controllers/FinancialController.php
+// system/app/controllers/FinancialController.php
 
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../models/TransactionModel.php';
@@ -9,207 +9,232 @@ require_once __DIR__ . '/../models/Clients.php';
 
 class FinancialController
 {
-    private array $langText;
-    private string $baseUrl = '<?= BASE_URL ?>';
+    private $langText;
+    private $baseUrl;
 
     public function __construct()
     {
-        // 1) Inicia sessão e detecta idioma
         if (session_status() !== PHP_SESSION_ACTIVE) {
             session_start();
         }
+
+        // Escolhe idioma
         $lang = $_GET['lang'] ?? $_SESSION['lang'] ?? 'pt';
         $_SESSION['lang'] = $lang;
-
-        // 2) Monta o caminho para app/lang/{pt,en,de,fr}.php
-        $langFile = __DIR__ . '/../lang/' . $lang . '.php';
-
-        // 3) Fallback para pt se não existir
+        $langFile = __DIR__ . "/../lang/{$lang}.php";
         if (! file_exists($langFile)) {
             $langFile = __DIR__ . '/../lang/pt.php';
         }
-
-        // 4) Carrega o array de traduções
         $this->langText = require $langFile;
+        $this->baseUrl  = BASE_URL;
     }
 
-    public function index()
+    /**
+     * Exibe a tela principal de Financeiro, com calendário.
+     */
+    public function index(): void
     {
-        // Extrai as traduções para a view
         $langText = $this->langText;
 
-        // 1) Se o usuário não enviou start/end, valores ficam nulos
-        $start    = $_GET['start']    ?? null;
-        $end      = $_GET['end']      ?? null;
+        // parâmetros de filtro
+        $start    = $_GET['start']    ?? date('Y-m-01');
+        $end      = $_GET['end']      ?? date('Y-m-d');
         $type     = $_GET['type']     ?? '';
         $category = $_GET['category'] ?? '';
 
-        // 2) Busca transações: sem filtro de data se start/end forem nulos
-        $transactions = TransactionModel::getAll([
-            'start'    => $start,
-            'end'      => $end,
-            'type'     => $type,
-            'category' => $category,
-        ]);
+        // modelos
+        $txModel      = new TransactionModel();
+        $projectModel = new ProjectModel();
+        $empModel     = new Employee();
+        $clientModel  = new Client();
 
-        // 3) Resumo também ajustado: totaliza tudo ou por intervalo
-        $summary   = TransactionModel::getSummary($start, $end);
-        $projects  = ProjectModel::getAll();
-        $employees = Employee::all();
-        $clients   = Client::all();
+        // busca transações
+        if ($start && $end) {
+            $transactions = $txModel->getFiltered($type, $start, $end, $category);
+        } else {
+            $transactions = $txModel->getAll();
+        }
 
-        // Dropdown de categorias (mantive igual)
+        // resumo e listas auxiliares
+        $summary   = $txModel->getSummary($start, $end);
+        $projects  = $projectModel->getAll();
+        $employees = $empModel->all();
+        $clients   = $clientModel->all();
+
+        // categorias com fallback de rótulos
         $categories = [
-            ['value'=>'funcionarios',      'name'=>$langText['category_funcionarios'],      'assoc'=>'employee'],
-            ['value'=>'clientes',          'name'=>$langText['category_clientes'],          'assoc'=>'client'],
-            ['value'=>'projetos',          'name'=>$langText['category_projetos'],          'assoc'=>'project'],
-            ['value'=>'compras_materiais', 'name'=>$langText['category_compras_materiais'], 'assoc'=>null],
-            ['value'=>'emprestimos',       'name'=>$langText['category_emprestimos'],       'assoc'=>null],
-            ['value'=>'gastos_gerais',     'name'=>$langText['category_gastos_gerais'],     'assoc'=>null],
-            ['value'=>'parcelamento',      'name'=>$langText['category_parcelamento'],      'assoc'=>null],
+            ['value'=>'funcionarios',      'name'=>$langText['category_funcionarios']      ?? 'Funcionários',      'assoc'=>'funcionarios'],
+            ['value'=>'clientes',          'name'=>$langText['category_clientes']          ?? 'Clientes',          'assoc'=>'clientes'],
+            ['value'=>'projetos',          'name'=>$langText['category_projetos']          ?? 'Projetos',          'assoc'=>'projetos'],
+            ['value'=>'compras_materiais', 'name'=>$langText['category_compras_materiais'] ?? 'Compras de Materiais','assoc'=>'compras_materiais'],
+            ['value'=>'emprestimos',       'name'=>$langText['category_emprestimos']       ?? 'Empréstimos',       'assoc'=>'emprestimos'],
+            ['value'=>'gastos_gerais',     'name'=>$langText['category_gastos_gerais']     ?? 'Gastos Gerais',     'assoc'=>'gastos_gerais'],
+            ['value'=>'parcelamento',      'name'=>$langText['category_parcelamento']      ?? 'Parcelamento',      'assoc'=>'parcelamento'],
         ];
 
-        require __DIR__ . '/../views/finance/index.php';
+        // monta array de eventos para o FullCalendar
+        $events = [];
+        foreach ($transactions as $tx) {
+            $catName = $langText['category_' . $tx['category']] ?? ucfirst($tx['category']);
+            $events[] = [
+                'id'    => $tx['id'],
+                'title' => $catName . ' – R$ ' . number_format($tx['amount'], 2, ',', '.'),
+                'start' => $tx['date'],
+            ];
+        }
+
+        // renderiza a view
+        require __DIR__ . '/../../app/views/finance/index.php';
     }
 
-    public function edit()
+    /**
+     * Retorna JSON para editar transação.
+     */
+    public function edit(): void
     {
-        $langText = $this->langText;
-
+        header('Content-Type: application/json; charset=UTF-8');
         $id = (int)($_GET['id'] ?? 0);
         $tx = TransactionModel::find($id);
-        if (!$tx) {
+
+        if (! $tx) {
             http_response_code(404);
-            echo json_encode(['error' => $langText['error_tx_not_found']]);
+            echo json_encode(['error' => 'Transação não encontrada']);
             exit;
         }
-        $tx['attachments']            = TransactionModel::getAttachments($id);
-        $debt                         = TransactionModel::getDebt($id);
-        $tx['due_date']               = $debt['due_date']             ?? null;
-        $tx['installments_count']     = $debt['installments_count']   ?? null;
-        $tx['initial_payment']        = $debt['initial_payment']      ?? 0;
-        $tx['initial_payment_amount'] = $debt['initial_payment_amount'] ?? null;
 
-        header('Content-Type: application/json; charset=utf-8');
+        // inclui anexos e dados de dívida
+        $tx['attachments'] = TransactionModel::getAttachments($id);
+        $debt = TransactionModel::getDebt($id);
+        if ($debt) {
+            $tx['due_date']               = $debt['due_date'];
+            $tx['initial_payment']        = (bool)$debt['initial_payment'];
+            $tx['initial_payment_amount'] = $debt['initial_payment_amount'];
+            $tx['installments_count']     = $debt['installments_count'];
+        }
+
         echo json_encode($tx);
         exit;
     }
 
-    public function store()
+    /**
+     * Armazena nova transação.
+     */
+    public function store(): void
     {
-        $langText = $this->langText;
-
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            session_start();
-        }
         $userId = $_SESSION['user']['id'] ?? null;
-
         $data = [
             'user_id'     => $userId,
-            'category'    => $_POST['category']            ?? null,
-            'type'        => $_POST['type']                ?? null,
-            'client_id'   => $_POST['client_id']           ?? null,
-            'project_id'  => $_POST['project_id']          ?? null,
-            'employee_id' => $_POST['employee_id']         ?? null,
-            'amount'      => $_POST['amount']              ?? null,
-            'date'        => $_POST['date']                ?? null,
-            'description' => $_POST['description']         ?? '',
+            'category'    => $_POST['category']  ?? null,
+            'type'        => $_POST['type']      ?? null,
+            'client_id'   => $_POST['client_id'] ?? null,
+            'project_id'  => $_POST['project_id']?? null,
+            'employee_id' => $_POST['employee_id']?? null,
+            'amount'      => $_POST['amount']    ?? null,
+            'date'        => $_POST['date']      ?? null,
+            'description' => $_POST['description']?? '',
         ];
 
-        // Validação básica
+        // validações básicas
         foreach (['category','type','amount','date'] as $f) {
             if (empty($data[$f])) {
-                die(htmlspecialchars($langText['required_field_missing'] . $f, ENT_QUOTES));
+                die(htmlspecialchars($this->langText['required_field_missing'] . $f, ENT_QUOTES));
             }
         }
 
-        $attachments = $this->processAttachments($_FILES['attachments'] ?? null);
-
-        $debtData = null;
-        if ($data['type'] === 'debt' || $data['category'] === 'parcelamento') {
+        $attachments = $this->processAttachments($_FILES['attachments'] ?? []);
+        $debtData    = null;
+        if ($data['type']==='debt' || $data['category']==='parcelamento') {
             $debtData = [
-                'client_id'              => $_POST['client_id']             ?? null,
+                'client_id'              => $_POST['client_id']              ?? null,
                 'amount'                 => $data['amount'],
-                'due_date'               => $_POST['due_date']              ?? null,
+                'due_date'               => $_POST['due_date']               ?? null,
                 'status'                 => 'open',
-                'project_id'             => $_POST['project_id']            ?? null,
-                'installments_count'     => $_POST['installments_count']    ?? null,
-                'initial_payment'        => isset($_POST['initial_payment']) ? 1 : 0,
+                'project_id'             => $_POST['project_id']             ?? null,
+                'installments_count'     => $_POST['installments_count']     ?? null,
+                'initial_payment'        => isset($_POST['initial_payment'])  ? 1 : 0,
                 'initial_payment_amount' => $_POST['initial_payment_amount'] ?? null,
             ];
         }
 
         TransactionModel::store($data, $attachments, $debtData);
-        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? $this->baseUrl . '/finance'));
+        header('Location: ' . ($this->baseUrl . '/finance'));
         exit;
     }
 
-    public function update()
+    /**
+     * Atualiza transação existente.
+     */
+    public function update(): void
     {
-        $langText = $this->langText;
-
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            session_start();
-        }
-        $id = (int)($_POST['id'] ?? 0);
-
+        $id   = (int)($_POST['id'] ?? 0);
         $data = [
-            'category'    => $_POST['category']            ?? null,
-            'type'        => $_POST['type']                ?? null,
-            'client_id'   => $_POST['client_id']           ?? null,
-            'project_id'  => $_POST['project_id']          ?? null,
-            'employee_id' => $_POST['employee_id']         ?? null,
-            'amount'      => $_POST['amount']              ?? null,
-            'date'        => $_POST['date']                ?? null,
-            'description' => $_POST['description']         ?? '',
+            'category'    => $_POST['category']   ?? null,
+            'type'        => $_POST['type']       ?? null,
+            'client_id'   => $_POST['client_id']  ?? null,
+            'project_id'  => $_POST['project_id'] ?? null,
+            'employee_id' => $_POST['employee_id']?? null,
+            'amount'      => $_POST['amount']     ?? null,
+            'date'        => $_POST['date']       ?? null,
+            'description' => $_POST['description']?? '',
         ];
 
         foreach (['category','type','amount','date'] as $f) {
             if (empty($data[$f])) {
-                die(htmlspecialchars($langText['required_field_missing'] . $f, ENT_QUOTES));
+                die(htmlspecialchars($this->langText['required_field_missing'] . $f, ENT_QUOTES));
             }
         }
 
-        $attachments = $this->processAttachments($_FILES['attachments'] ?? null);
-
-        $debtData = null;
-        if ($data['type'] === 'debt' || $data['category'] === 'parcelamento') {
+        $attachments = $this->processAttachments($_FILES['attachments'] ?? []);
+        $debtData    = null;
+        if ($data['type']==='debt' || $data['category']==='parcelamento') {
             $debtData = [
-                'client_id'              => $_POST['client_id']             ?? null,
+                'client_id'              => $_POST['client_id']              ?? null,
                 'amount'                 => $data['amount'],
-                'due_date'               => $_POST['due_date']              ?? null,
-                'status'                 => $_POST['status']                ?? 'open',
-                'project_id'             => $_POST['project_id']            ?? null,
-                'installments_count'     => $_POST['installments_count']    ?? null,
-                'initial_payment'        => isset($_POST['initial_payment']) ? 1 : 0,
+                'due_date'               => $_POST['due_date']               ?? null,
+                'status'                 => $_POST['status']                 ?? 'open',
+                'project_id'             => $_POST['project_id']             ?? null,
+                'installments_count'     => $_POST['installments_count']     ?? null,
+                'initial_payment'        => isset($_POST['initial_payment'])  ? 1 : 0,
                 'initial_payment_amount' => $_POST['initial_payment_amount'] ?? null,
             ];
         }
 
         TransactionModel::update($id, $data, $attachments, $debtData);
-        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? $this->baseUrl . '/finance'));
+        header('Location: ' . ($this->baseUrl . '/finance'));
         exit;
     }
 
-    public function delete()
+    /**
+     * Exclui transação.
+     */
+    public function delete(): void
     {
-        if (isset($_GET['id'])) {
-            TransactionModel::delete((int)$_GET['id']);
+        $id = (int)($_GET['id'] ?? 0);
+        if ($id) {
+            TransactionModel::delete($id);
         }
-        header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? $this->baseUrl . '/finance'));
+        header('Location: ' . ($this->baseUrl . '/finance'));
         exit;
     }
 
-    private function processAttachments($files): array
+    /**
+     * Processa uploads de anexos.
+     *
+     * @param array $files
+     * @return array
+     */
+    private function processAttachments(array $files): array
     {
         $res = [];
-        if (!$files || !isset($files['tmp_name'])) {
+        if (empty($files['tmp_name'])) {
             return $res;
         }
+
         $dir = __DIR__ . '/../../public/uploads/finance/';
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
+
         foreach ($files['tmp_name'] as $i => $tmp) {
             if ($files['error'][$i] !== UPLOAD_ERR_OK) {
                 continue;
@@ -219,6 +244,7 @@ class FinancialController
             move_uploaded_file($tmp, $dir . $name);
             $res[] = ['file_path' => 'uploads/finance/' . $name];
         }
+
         return $res;
     }
 }

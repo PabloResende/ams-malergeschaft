@@ -3,169 +3,223 @@
 
 /**
  * Gera URL completa para os recursos do sistema
- * 
- * @param string $path Caminho relativo (ex: '/login', '/projects')
- * @return string URL completa
+ *
+ * @param string $path
+ * @return string
  */
-function url($path = '') {
-    $baseUrl = 'https://ams.swiss/system';  // Ajustado para o subdomínio
-    $path = ltrim($path, '/');
-    return $baseUrl . '/' . $path;
+if (! function_exists('url')) {
+    function url(string $path = ''): string {
+        return rtrim(BASE_URL, '/') . '/' . ltrim($path, '/');
+    }
 }
 
 /**
  * Retorna caminho para os assets (JS, CSS, imagens)
- * 
- * @param string $path Caminho relativo do asset
- * @return string URL completa para o asset
+ *
+ * @param string $path
+ * @return string
  */
-function asset($path = '') {
-    $path = ltrim($path, '/');
-    return url('public/' . $path);
+if (! function_exists('asset')) {
+    function asset(string $path = ''): string {
+        return rtrim(BASE_URL, '/') . '/' . ltrim($path, '/');
+    }
+}
+
+// verifica se está logado
+function isLoggedIn(): bool {
+    return ! empty($_SESSION['user']);
+}
+
+// verifica employee
+function isEmployee(): bool {
+    return isset($_SESSION['user']['role'])
+        && $_SESSION['user']['role'] === 'employee';
+}
+
+// verifica finance
+function isFinance(): bool {
+    return isset($_SESSION['user']['role'])
+        && $_SESSION['user']['role'] === 'finance';
+}
+
+// verifica admin
+function isAdmin(): bool {
+    return isset($_SESSION['user']['role'])
+        && $_SESSION['user']['role'] === 'admin';
+}
+
+// verifica admin ou finance
+function isAdminOrFinance(): bool {
+    return isAdmin() || isFinance();
 }
 
 /**
  * Redireciona para a URL especificada
- * 
- * @param string $path Caminho para redirecionar
+ *
+ * @param string $path
  * @return void
  */
-function redirect($path = '') {
-    header('Location: ' . url($path));
-    exit;
+if (! function_exists('redirect')) {
+    function redirect(string $path = ''): void {
+        header('Location: ' . url($path));
+        exit;
+    }
 }
 
 /**
  * Formata um valor como moeda
- * 
- * @param float $value Valor a ser formatado
- * @param string $currency Código da moeda (default: BRL)
- * @return string Valor formatado como moeda
+ *
+ * @param float  $value
+ * @param string $currency
+ * @return string
  */
-function formatCurrency($value, $currency = 'BRL') {
-    if ($currency === 'BRL') {
-        return 'R$ ' . number_format($value, 2, ',', '.');
-    } else if ($currency === 'USD') {
-        return '$ ' . number_format($value, 2, '.', ',');
-    } else if ($currency === 'EUR') {
-        return '€ ' . number_format($value, 2, ',', '.');
-    } else if ($currency === 'CHF') {
-        return 'CHF ' . number_format($value, 2, '.', ',');
+if (! function_exists('formatCurrency')) {
+    function formatCurrency(float $value, string $currency = 'BRL'): string {
+        switch ($currency) {
+            case 'USD':
+                return '$ '  . number_format($value, 2, '.', ',');
+            case 'EUR':
+                return '€ '  . number_format($value, 2, ',', '.');
+            case 'CHF':
+                return 'CHF ' . number_format($value, 2, '.', ',');
+            case 'BRL':
+            default:
+                return 'R$ ' . number_format($value, 2, ',', '.');
+        }
     }
-    
-    return number_format($value, 2, '.', ',');
 }
 
 /**
  * Sanitiza uma string de entrada
- * 
- * @param string $string String a ser sanitizada
- * @return string String sanitizada
+ *
+ * @param string $string
+ * @return string
  */
-function sanitize($string) {
-    return htmlspecialchars(trim($string), ENT_QUOTES, 'UTF-8');
+if (! function_exists('sanitize')) {
+    function sanitize(string $string): string {
+        return htmlspecialchars(trim($string), ENT_QUOTES, 'UTF-8');
+    }
 }
 
 /**
  * Gera um número de fatura
- * 
- * @return string Número da fatura no formato INV-AAAAMMDD-XXXX
+ *
+ * @return string
  */
-function generateInvoiceNumber() {
-    return 'INV-' . date('Ymd') . '-' . rand(1000, 9999);
+if (! function_exists('generateInvoiceNumber')) {
+    function generateInvoiceNumber(): string {
+        return 'INV-' . date('Ymd') . '-' . rand(1000, 9999);
+    }
 }
 
 /**
  * Verifica se o usuário está logado
- * 
- * @return bool Verdadeiro se o usuário estiver logado
+ *
+ * @return bool
  */
-function isLoggedIn() {
-    return isset($_SESSION['user']);
+if (! function_exists('isLoggedIn')) {
+    function isLoggedIn(): bool {
+        return isset($_SESSION['user']);
+    }
 }
 
 /**
  * Obtém o idioma atual
- * 
- * @return string Código do idioma atual
+ *
+ * @return string
  */
-function getCurrentLanguage() {
-    return $_SESSION['lang'] ?? 'pt';
+function url(string $path, array $params = []): string {
+    $params['lang'] = $_SESSION['lang'] ?? 'pt';
+    $qs = http_build_query($params);
+    return rtrim(BASE_URL, '/') . '/' . ltrim($path, '/') . '?' . $qs;
 }
+
+
+
 
 /**
  * Verifica se um arquivo existe e é legível
- * 
- * @param string $path Caminho do arquivo
- * @return bool Verdadeiro se o arquivo existir e for legível
+ *
+ * @param string $path
+ * @return bool
  */
-function fileExists($path) {
-    return file_exists($path) && is_readable($path);
+if (! function_exists('fileExists')) {
+    function fileExists(string $path): bool {
+        return file_exists($path) && is_readable($path);
+    }
 }
 
 /**
  * Cria um diretório se não existir
- * 
- * @param string $path Caminho do diretório
- * @param int $permissions Permissões do diretório (default: 0755)
- * @return bool Verdadeiro se o diretório existir ou for criado com sucesso
+ *
+ * @param string $path
+ * @param int    $permissions
+ * @return bool
  */
-function createDirIfNotExists($path, $permissions = 0755) {
-    if (!file_exists($path)) {
-        return mkdir($path, $permissions, true);
+if (! function_exists('createDirIfNotExists')) {
+    function createDirIfNotExists(string $path, int $permissions = 0755): bool {
+        if (! file_exists($path)) {
+            return mkdir($path, $permissions, true);
+        }
+        return true;
     }
-    return true;
 }
 
 /**
  * Remove caracteres especiais de uma string
- * 
- * @param string $string String a ser limpa
- * @return string String sem caracteres especiais
+ *
+ * @param string $string
+ * @return string
  */
-function removeSpecialChars($string) {
-    $string = preg_replace('/[áàãâä]/ui', 'a', $string);
-    $string = preg_replace('/[éèêë]/ui', 'e', $string);
-    $string = preg_replace('/[íìîï]/ui', 'i', $string);
-    $string = preg_replace('/[óòõôö]/ui', 'o', $string);
-    $string = preg_replace('/[úùûü]/ui', 'u', $string);
-    $string = preg_replace('/[ç]/ui', 'c', $string);
-    $string = preg_replace('/[^a-z0-9]/i', '_', $string);
-    $string = preg_replace('/_+/', '_', $string);
-    return strtolower(trim($string, '_'));
+if (! function_exists('removeSpecialChars')) {
+    function removeSpecialChars(string $string): string {
+        $replacements = [
+            '/[áàãâä]/ui' => 'a', '/[éèêë]/ui' => 'e',
+            '/[íìîï]/ui' => 'i', '/[óòõôö]/ui' => 'o',
+            '/[úùûü]/ui' => 'u', '/[ç]/ui'      => 'c',
+        ];
+        $string = preg_replace(array_keys($replacements), array_values($replacements), $string);
+        $string = preg_replace('/[^a-z0-9]/i', '_', $string);
+        $string = preg_replace('/_+/', '_', $string);
+        return strtolower(trim($string, '_'));
+    }
 }
 
 /**
  * Obtém a extensão de um arquivo
- * 
- * @param string $filename Nome do arquivo
- * @return string Extensão do arquivo
+ *
+ * @param string $filename
+ * @return string
  */
-function getFileExtension($filename) {
-    return strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-}
-
-/**
- * Formata uma data do banco de dados para um formato amigável
- * 
- * @param string $date Data no formato YYYY-MM-DD
- * @param string $format Formato desejado (default: d/m/Y)
- * @return string Data formatada
- */
-function formatDate($date, $format = 'd/m/Y') {
-    if (empty($date)) {
-        return '';
+if (! function_exists('getFileExtension')) {
+    function getFileExtension(string $filename): string {
+        return strtolower(pathinfo($filename, PATHINFO_EXTENSION));
     }
-    
-    $timestamp = strtotime($date);
-    return date($format, $timestamp);
 }
 
 /**
- * Obtém o caminho raiz da aplicação
- * 
- * @return string Caminho absoluto da raiz da aplicação
+ * Formata uma data para exibição
+ *
+ * @param string $date
+ * @param string $format
+ * @return string
  */
-function getRootPath() {
-    return realpath(__DIR__ . '/..');
+if (! function_exists('formatDate')) {
+    function formatDate(string $date, string $format = 'd/m/Y'): string {
+        if (empty($date)) {
+            return '';
+        }
+        return date($format, strtotime($date));
+    }
+}
+
+/**
+ * Caminho raiz da aplicação
+ *
+ * @return string
+ */
+if (! function_exists('getRootPath')) {
+    function getRootPath(): string {
+        return realpath(__DIR__ . '/..');
+    }
 }

@@ -1,6 +1,5 @@
 <?php
-
-// system/public/index.php — Front controller ATUALIZADO
+// system/public/index.php — Front controller CORRIGIDO
 
 // 1) Inicia sessão
 if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -106,7 +105,7 @@ $carController = new CarController();
 
 // 11) Dispatcher de rotas
 switch (true) {
-    // USUÁRIO
+    // ===== USUÁRIO =====
     case $route === '/' || $route === '/login':
         $userController->login();
         break;
@@ -122,17 +121,19 @@ switch (true) {
     case $route === '/dashboard':
         $userController->dashboard();
         break;
-    case $route === '/employees/dashboard':
-        $userController->employeeDashboard();
-        break;
-    case $route === '/employees/profile':
-        $employeeController->profile();
-        break;
     case $route === '/logout':
         $userController->logout();
         break;
 
-    // PROJETOS
+    // ===== FUNCIONÁRIOS - DASHBOARDS =====
+    case $route === '/employees/dashboard':
+        $employeeController->dashboard_employee();
+        break;
+    case $route === '/employees/profile':
+        $employeeController->profile();
+        break;
+
+    // ===== PROJETOS =====
     case $route === '/projects':
         $projectController->index();
         break;
@@ -155,7 +156,7 @@ switch (true) {
         $projectController->transactions();
         break;
 
-    // WORK LOGS
+    // ===== WORK LOGS - SISTEMA ANTIGO E NOVO =====
     case $route === '/work_logs/index':
         $workLogController->index();
         break;
@@ -169,7 +170,7 @@ switch (true) {
         $workLogController->project_totals();
         break;
 
-    // FUNCIONÁRIOS CRUD
+    // ===== FUNCIONÁRIOS - CRUD =====
     case $route === '/employees':
         $employeeController->list();
         break;
@@ -186,20 +187,36 @@ switch (true) {
         $employeeController->get();
         break;
 
-    // API HORAS DOS FUNCIONÁRIOS - NOVAS ROTAS
+    // ===== API FUNCIONÁRIOS - HORAS =====
     case preg_match('/^\/api\/employees\/hours\/(\d+)$/', $route, $matches):
         $employeeController->getEmployeeHours((int) $matches[1]);
         break;
     case $route === '/api/employees/hours-summary':
         $employeeController->getEmployeeHoursSummary();
         break;
+    case $route === '/api/employees/ranking':
+        $employeeController->getRanking();
+        break;
 
-    // API WORK LOGS
+    // ===== API WORK LOGS - SISTEMA NOVO =====
     case preg_match('/^\/api\/work_logs\/time_entries\/(\d+)$/', $route, $matches):
         $workLogController->time_entries((int) $matches[1]);
         break;
 
-    // CLIENTES
+    // ===== API PROJETOS =====
+    case $route === '/api/projects/active':
+        $projectController->getActiveProjects();
+        break;
+    case preg_match('/^\/api\/projects\/(\d+)$/', $route, $matches):
+        $projectController->getProjectDetails((int) $matches[1]);
+        break;
+
+    // ===== API DELETAR REGISTROS DE PONTO =====
+    case $route === '/api/time_entries/delete':
+        $workLogController->deleteTimeEntry();
+        break;
+
+    // ===== CLIENTES =====
     case $route === '/clients':
         $clientsController->list();
         break;
@@ -219,7 +236,7 @@ switch (true) {
         $clientsController->delete();
         break;
 
-    // INVENTÁRIO
+    // ===== INVENTÁRIO =====
     case $route === '/inventory':
         $inventoryController->index();
         break;
@@ -248,7 +265,7 @@ switch (true) {
         $inventoryController->historyDetails();
         break;
 
-    // INVENTÁRIO AJAX
+    // ===== INVENTÁRIO AJAX =====
     case $route === '/inventory/add-quantity-ajax':
         $inventoryController->addQuantityAjax();
         break;
@@ -259,7 +276,7 @@ switch (true) {
         $inventoryController->updateDescriptionAjax();
         break;
 
-     // CARROS
+    // ===== CARROS =====
     case $route === '/cars':
         $carController->index();
         break;
@@ -279,7 +296,7 @@ switch (true) {
         $carController->storeUsage();
         break;
 
-    // CALENDÁRIO
+    // ===== CALENDÁRIO =====
     case $route === '/calendar':
         $calendarController->index();
         break;
@@ -290,7 +307,7 @@ switch (true) {
         $calendarController->fetch();
         break;
 
-    // ANALYTICS
+    // ===== ANALYTICS =====
     case $route === '/analytics':
         $analyticsController->index();
         break;
@@ -307,7 +324,7 @@ switch (true) {
         $analyticsController->sendEmail();
         break;
 
-    // FINANCEIRO
+    // ===== FINANCEIRO =====
     case $route === '/finance':
         $financialController->index();
         break;
@@ -333,6 +350,7 @@ switch (true) {
         $financialController->downloadAttachment();
         break;
 
+    // ===== 404 - PÁGINA NÃO ENCONTRADA =====
     default:
         http_response_code(404);
         echo '404 - Página não encontrada.';

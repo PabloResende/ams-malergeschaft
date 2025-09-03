@@ -172,13 +172,185 @@ class WorkLogController
             exit;
         }
         
-        $entries = $this->timeEntryModel->getByEmployeeAndProject($empId, $projId);
+        $entries = $this->timeEntryModel->getIndividualEntries($empId, $projId);
         $totalHours = $this->timeEntryModel->getTotalHoursByEmployee($empId);
         
         echo json_encode([
             'entries' => $entries,
             'total_hours' => number_format($totalHours, 2, '.', '')
         ]);
+        exit;
+    }
+
+    /**
+     * NOVO: API: Lista todos os projetos (para dropdown de admin)
+     * GET /api/projects/list
+     */
+    public function getProjectsList()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        
+        global $pdo;
+        try {
+            $stmt = $pdo->query("
+                SELECT id, name, client_id, status 
+                FROM projects 
+                WHERE status IN ('in_progress', 'pending')
+                ORDER BY name ASC
+            ");
+            $projects = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            echo json_encode($projects);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Erro ao carregar projetos']);
+        }
+        exit;
+    }
+
+    /**
+     * NOVO: API: Admin cria/edita registro de tempo
+     * POST /api/work_logs/admin_time_entry
+     */
+    public function adminCreateTimeEntry()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Método não permitido']);
+            exit;
+        }
+        
+        // Verifica se é admin
+        if ($_SESSION['user']['role'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Acesso negado']);
+            exit;
+        }
+        
+        $employeeId = (int)($_POST['employee_id'] ?? 0);
+        $projectId = (int)($_POST['project_id'] ?? 0);
+        $date = $_POST['date'] ?? date('Y-m-d');
+        $entryTime = $_POST['entry_time'] ?? '';
+        $exitTime = $_POST['exit_time'] ?? '';
+        
+        if (!$employeeId || !$projectId || !$date) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Dados obrigatórios faltando']);
+            exit;
+        }
+        
+        try {
+            // Cria os registros de entrada e saída
+            $success = true;
+            
+            if ($entryTime) {
+                $success &= $this->timeEntryModel->addTimeEntry($employeeId, $projectId, $date, 'entry', $entryTime);
+            }
+            
+            if ($exitTime && $success) {
+                $success &= $this->timeEntryModel->addTimeEntry($employeeId, $projectId, $date, 'exit', $exitTime);
+            }
+            
+            if ($success) {
+                // Atualiza totais do projeto
+                $this->updateProjectTotalHours($projectId);
+                echo json_encode(['success' => true, 'message' => 'Registro criado com sucesso']);
+            } else {
+                throw new Exception('Erro ao salvar registros');
+            }
+            
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Erro interno: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+
+    /**
+     * NOVO: API: Admin atualiza registro de tempo  
+     * PUT /api/work_logs/time_entries/{id}
+     */
+    public function updateTimeEntry($entryId = null)
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'PUT') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Método não permitido']);
+            exit;
+        }
+        
+        // Verifica se é admin
+        if ($_SESSION['user']['role'] !== 'admin') {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'message' => 'Acesso negado']);
+            exit;
+        }
+        
+        // Parseia dados PUT
+        parse_str(file_get_contents("php://input"), $_PUT);
+        
+        $id = $entryId ?? (int)($_PUT['id'] ?? 0);
+        $projectId = (int)($_PUT['project_id'] ?? 0);
+        $date = $_PUT['date'] ?? '';
+        $entryTime = $_PUT['entry_time'] ?? '';
+        $exitTime = $_PUT['exit_time'] ?? '';
+        
+        if (!$id || !$projectId || !$date) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Dados obrigatórios faltando']);
+            exit;
+        }
+        
+        try {
+            global $pdo;
+            
+            // Monta novo registro JSON
+            $records = ['entries' => []];
+            
+            if ($entryTime) {
+                $records['entries'][] = ['type' => 'entry', 'time' => $entryTime];
+            }
+            
+            if ($exitTime) {
+                $records['entries'][] = ['type' => 'exit', 'time' => $exitTime];
+            }
+            
+            // Calcula total de horas
+            $totalHours = 0;
+            if ($entryTime && $exitTime) {
+                $start = strtotime($entryTime);
+                $end = strtotime($exitTime);
+                if ($end > $start) {
+                    $totalHours = ($end - $start) / 3600; // Converte para horas
+                }
+            }
+            
+            // Atualiza registro
+            $stmt = $pdo->prepare("
+                UPDATE time_entries 
+                SET project_id = ?, date = ?, time_records = ?, total_hours = ?, updated_at = NOW()
+                WHERE id = ?
+            ");
+            
+            $success = $stmt->execute([
+                $projectId,
+                $date,
+                json_encode($records, JSON_UNESCAPED_UNICODE),
+                $totalHours,
+                $id
+            ]);
+            
+            if ($success) {
+                // Atualiza totais do projeto
+                $this->updateProjectTotalHours($projectId);
+                echo json_encode(['success' => true, 'message' => 'Registro atualizado com sucesso']);
+            } else {
+                throw new Exception('Erro ao atualizar registro');
+            }
+            
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Erro interno: ' . $e->getMessage()]);
+        }
         exit;
     }
 
@@ -206,4 +378,53 @@ class WorkLogController
         echo json_encode($data);
         exit;
     }
+
+    /**
+ * API: Deleta um registro de ponto (tanto sistema antigo quanto novo)
+ */
+public function deleteTimeEntry()
+{
+    header('Content-Type: application/json; charset=UTF-8');
+    
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'message' => 'Método não permitido']);
+        exit;
+    }
+    
+    $input = json_decode(file_get_contents('php://input'), true);
+    $entryId = $input['entry_id'] ?? '';
+    
+    if (!$entryId) {
+        echo json_encode(['success' => false, 'message' => 'ID não informado']);
+        exit;
+    }
+    
+    try {
+        global $pdo;
+        
+        // Verifica se é um registro do sistema novo ou antigo
+        if (strpos($entryId, 'old_') === 0) {
+            // Sistema antigo (project_work_logs)
+            $realId = str_replace('old_', '', $entryId);
+            $stmt = $pdo->prepare("DELETE FROM project_work_logs WHERE id = ?");
+            $success = $stmt->execute([$realId]);
+        } else {
+            // Sistema novo (time_entries)
+            $stmt = $pdo->prepare("DELETE FROM time_entries WHERE id = ?");
+            $success = $stmt->execute([$entryId]);
+        }
+        
+        if ($success) {
+            echo json_encode(['success' => true, 'message' => 'Registro excluído com sucesso']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Erro ao excluir registro']);
+        }
+        
+    } catch (Exception $e) {
+        error_log("WorkLogController::deleteTimeEntry error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Erro interno do servidor']);
+    }
+    exit;
+}
 }

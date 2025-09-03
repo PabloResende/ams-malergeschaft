@@ -211,4 +211,103 @@ class ProjectController
         echo json_encode($transactions);
         exit;
     }
+
+    /**
+ * API: Retorna lista de projetos ativos para selects
+ */
+public function getActiveProjects()
+{
+    header('Content-Type: application/json; charset=UTF-8');
+    
+    try {
+        global $pdo;
+        
+        $stmt = $pdo->query("
+            SELECT id, name 
+            FROM projects 
+            WHERE status = 'in_progress' 
+            ORDER BY name
+        ");
+        
+        $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        echo json_encode($projects);
+        
+    } catch (Exception $e) {
+        echo json_encode([]);
+    }
+    exit;
+}
+
+/**
+ * API: Retorna detalhes completos de um projeto
+ */
+public function getProjectDetails(int $projectId)
+{
+    header('Content-Type: application/json; charset=UTF-8');
+    
+    if (!$projectId) {
+        echo json_encode(['error' => 'ID inválido']);
+        exit;
+    }
+    
+    try {
+        global $pdo;
+        
+        // Busca projeto com cliente
+        $stmt = $pdo->prepare("
+            SELECT p.*, c.name as client_name
+            FROM projects p
+            LEFT JOIN client c ON p.client_id = c.id
+            WHERE p.id = ?
+        ");
+        $stmt->execute([$projectId]);
+        $project = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$project) {
+            echo json_encode(['error' => 'Projeto não encontrado']);
+            exit;
+        }
+        
+        // Busca tarefas
+        $stmt = $pdo->prepare("SELECT * FROM tasks WHERE project_id = ? ORDER BY created_at");
+        $stmt->execute([$projectId]);
+        $project['tasks'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Busca funcionários (usando a tabela correta project_resources)
+        $stmt = $pdo->prepare("
+            SELECT e.name, e.last_name
+            FROM project_resources pr
+            JOIN employees e ON pr.resource_id = e.id
+            WHERE pr.project_id = ? AND pr.resource_type = 'employee'
+            ORDER BY e.name
+        ");
+        $stmt->execute([$projectId]);
+        $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $project['employees'] = array_map(function($emp) {
+            return ['name' => trim($emp['name'] . ' ' . $emp['last_name'])];
+        }, $employees);
+        
+        // Busca inventário (usando a tabela correta project_resources)
+        $stmt = $pdo->prepare("
+            SELECT i.name, i.description
+            FROM project_resources pr
+            JOIN inventory i ON pr.resource_id = i.id
+            WHERE pr.project_id = ? AND pr.resource_type = 'inventory'
+            ORDER BY i.name
+        ");
+        $stmt->execute([$projectId]);
+        $inventory = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $project['inventory'] = array_map(function($inv) {
+            return ['name' => $inv['name'] . ($inv['description'] ? ' - ' . $inv['description'] : '')];
+        }, $inventory);
+        
+        echo json_encode($project);
+        
+    } catch (Exception $e) {
+        echo json_encode(['error' => 'Erro interno']);
+    }
+    exit;
+}
 }

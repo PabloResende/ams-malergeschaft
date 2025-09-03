@@ -1,5 +1,5 @@
 <?php
-// app/models/TimeEntryModel.php
+// app/models/TimeEntryModel.php - VERSÃO CORRIGIDA COMPLETA
 
 require_once __DIR__ . '/../../config/database.php';
 
@@ -34,6 +34,12 @@ class TimeEntryModel
             if ($existing) {
                 // Atualiza registro existente
                 $records = json_decode($existing['time_records'], true) ?? ['entries' => []];
+                
+                // Garante que existe o array entries
+                if (!isset($records['entries']) || !is_array($records['entries'])) {
+                    $records['entries'] = [];
+                }
+                
                 $records['entries'][] = ['type' => $type, 'time' => $time];
                 
                 // Recalcula total de horas
@@ -81,28 +87,46 @@ class TimeEntryModel
     }
     
     /**
-     * Calcula total de horas baseado nos pares entrada/saída
+     * Calcula total de horas baseado nos pares entrada/saída - CORRIGIDO
      */
     private function calculateTotalHours(array $entries): float 
     {
+        if (empty($entries)) {
+            return 0.0;
+        }
+        
         $totalMinutes = 0;
         $currentEntry = null;
         
-        // Ordena por horário
+        // Ordena por horário para processar cronologicamente
         usort($entries, function($a, $b) {
-            return strcmp($a['time'], $b['time']);
+            $timeA = $a['time'] ?? '00:00';
+            $timeB = $b['time'] ?? '00:00';
+            return strcmp($timeA, $timeB);
         });
         
         foreach ($entries as $entry) {
-            if ($entry['type'] === 'entry') {
-                if ($currentEntry) {
-                    // Entrada sem saída correspondente anterior - ignora entrada anterior
+            $entryType = $entry['type'] ?? '';
+            $entryTime = $entry['time'] ?? '';
+            
+            if (empty($entryTime)) continue;
+            
+            if ($entryType === 'entry') {
+                // Se já há uma entrada em aberto, fecha ela com a entrada atual como saída imaginária
+                if ($currentEntry !== null) {
+                    // Calcula tempo até esta nova entrada (considera como fim do período anterior)
+                    $start = strtotime("1970-01-01 " . $currentEntry);
+                    $end = strtotime("1970-01-01 " . $entryTime);
+                    if ($end > $start) {
+                        $totalMinutes += ($end - $start) / 60;
+                    }
                 }
-                $currentEntry = $entry['time'];
-            } elseif ($entry['type'] === 'exit' && $currentEntry) {
+                $currentEntry = $entryTime;
+                
+            } elseif ($entryType === 'exit' && $currentEntry !== null) {
                 // Calcula diferença em minutos
-                $start = strtotime($currentEntry);
-                $end = strtotime($entry['time']);
+                $start = strtotime("1970-01-01 " . $currentEntry);
+                $end = strtotime("1970-01-01 " . $entryTime);
                 if ($end > $start) {
                     $totalMinutes += ($end - $start) / 60;
                 }
@@ -110,11 +134,11 @@ class TimeEntryModel
             }
         }
         
-        return round($totalMinutes / 60, 2);
+        return round($totalMinutes / 60.0, 2);
     }
     
     /**
-     * Busca registros de um funcionário em um projeto
+     * Busca registros de um funcionário em um projeto com formatação corrigida
      */
     public function getByEmployeeAndProject(int $employeeId, int $projectId): array 
     {
@@ -128,12 +152,14 @@ class TimeEntryModel
         $results = [];
         foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
             $records = json_decode($row['time_records'], true) ?? ['entries' => []];
+            $entries = $records['entries'] ?? [];
+            
             $results[] = [
                 'id' => $row['id'],
                 'date' => $row['date'],
                 'total_hours' => $row['total_hours'],
-                'entries' => $records['entries'],
-                'formatted_display' => $this->formatDisplay($records['entries'], $row['date'])
+                'entries' => $entries,
+                'formatted_display' => $this->formatDisplay($entries, $row['date'])
             ];
         }
         
@@ -142,38 +168,55 @@ class TimeEntryModel
     
     /**
      * Formata para exibição: "entrada 8:00 saída 12:00 - entrada 14:00 saída 18:00 09/04/2025"
+     * VERSÃO CORRIGIDA PARA LIDAR COM REGISTROS COMPLEXOS
      */
     private function formatDisplay(array $entries, string $date): string
     {
+        if (empty($entries)) {
+            return 'Sem registros para esta data ' . date('d/m/Y', strtotime($date));
+        }
+        
         // Ordena por horário
         usort($entries, function($a, $b) {
-            return strcmp($a['time'], $b['time']);
+            $timeA = $a['time'] ?? '00:00';
+            $timeB = $b['time'] ?? '00:00';
+            return strcmp($timeA, $timeB);
         });
         
         $pairs = [];
         $currentEntry = null;
         
         foreach ($entries as $entry) {
-            if ($entry['type'] === 'entry') {
-                if ($currentEntry) {
-                    // Entrada sem saída correspondente
+            $type = $entry['type'] ?? '';
+            $time = $entry['time'] ?? '';
+            
+            if (empty($time)) continue;
+            
+            if ($type === 'entry') {
+                // Se já existe uma entrada sem saída, fecha com saída indefinida
+                if ($currentEntry !== null) {
                     $pairs[] = "entrada {$currentEntry} saída ?";
                 }
-                $currentEntry = $entry['time'];
-            } elseif ($entry['type'] === 'exit') {
-                if ($currentEntry) {
-                    $pairs[] = "entrada {$currentEntry} saída {$entry['time']}";
+                $currentEntry = $time;
+                
+            } elseif ($type === 'exit') {
+                if ($currentEntry !== null) {
+                    $pairs[] = "entrada {$currentEntry} saída {$time}";
                     $currentEntry = null;
                 } else {
                     // Saída sem entrada correspondente  
-                    $pairs[] = "entrada ? saída {$entry['time']}";
+                    $pairs[] = "entrada ? saída {$time}";
                 }
             }
         }
         
-        // Entrada pendente sem saída
-        if ($currentEntry) {
+        // Se ainda há uma entrada em aberto
+        if ($currentEntry !== null) {
             $pairs[] = "entrada {$currentEntry} saída ?";
+        }
+        
+        if (empty($pairs)) {
+            return 'Registros sem pares válidos ' . date('d/m/Y', strtotime($date));
         }
         
         $dateFormatted = date('d/m/Y', strtotime($date));
@@ -181,7 +224,7 @@ class TimeEntryModel
     }
     
     /**
-     * Total de horas de um funcionário (para compatibilidade com dashboard admin)
+     * Total de horas de um funcionário
      */
     public function getTotalHoursByEmployee(int $employeeId): float 
     {
@@ -195,7 +238,7 @@ class TimeEntryModel
     }
     
     /**
-     * Total de horas por projeto (para dashboard admin)
+     * Total de horas por projeto
      */
     public function getTotalHoursByProject(int $projectId): float 
     {
@@ -209,7 +252,7 @@ class TimeEntryModel
     }
     
     /**
-     * Registros individuais para API (formato compatível com código atual)
+     * Registros individuais para API (formato compatível)
      */
     public function getIndividualEntries(int $employeeId, int $projectId): array
     {
@@ -224,13 +267,13 @@ class TimeEntryModel
         foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
             $records = json_decode($row['time_records'], true) ?? ['entries' => []];
             
-            // Converte cada entrada/saída individual para o formato esperado
-            foreach ($records['entries'] as $entry) {
+            // Converte cada entrada/saída individual
+            foreach ($records['entries'] ?? [] as $entry) {
                 $results[] = [
                     'id' => $row['id'],
                     'date' => $row['date'],
-                    'time' => $entry['time'],
-                    'entry_type' => $entry['type']
+                    'time' => $entry['time'] ?? '',
+                    'entry_type' => $entry['type'] ?? ''
                 ];
             }
         }

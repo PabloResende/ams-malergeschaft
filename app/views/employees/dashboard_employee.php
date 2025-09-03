@@ -1,238 +1,244 @@
 <?php
-// app/views/employees/dashboard_employee.php
+// app/views/employees/dashboard_employee.php - ARQUIVO COMPLETO ATUALIZADO
 
-require __DIR__ . '/../layout/header_employee.php';
+require __DIR__.'/../layout/header.php';
 
-require_once __DIR__ . '/../../../app/models/WorkLogModel.php';
-require_once __DIR__ . '/../../../app/models/Employees.php';
-require_once __DIR__ . '/../../../app/models/Project.php';
+// Get employee info
+$userId = (int) ($_SESSION['user']['id'] ?? 0);
+$empModel = new Employee();
+$emp = $empModel->findByUserId($userId);
+$empId = $emp['id'] ?? 0;
 
-$wlModel   = new WorkLogModel();
-$userId    = (int)($_SESSION['user']['id'] ?? 0);
-$empModel  = new Employee();
-$emp       = $empModel->findByUserId($userId);
-$empId     = $emp['id'] ?? 0;
-$totalH    = $wlModel->getTotalHoursByEmployee($empId);
-
-$projModel = new ProjectModel();
-$projects  = $projModel->getByEmployee($empId);
+// Get total hours from new system
+require_once __DIR__.'/../../models/TimeEntryModel.php';
+$timeEntryModel = new TimeEntryModel();
+$totalHours = $timeEntryModel->getTotalHoursByEmployee($empId);
 ?>
-<script>
-  window.baseUrl  = <?= json_encode(BASE_URL, JSON_UNESCAPED_SLASHES) ?>;
-  window.langText = <?= json_encode($langText, JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_QUOT|JSON_HEX_APOS) ?>;
-</script>
 
-<div class="pt-20 px-4 sm:px-8 sm:ml-56 pb-8">
-  <!-- Título -->
-  <h1 class="text-3xl font-bold mb-4">
-    <?= htmlspecialchars($langText['employee_dashboard'] ?? 'Seu Painel', ENT_QUOTES) ?>
-  </h1>
-
-  <!-- Boas-vindas -->
-  <p class="mb-6 text-gray-700">
-    <?= sprintf(
-         htmlspecialchars($langText['welcome_employee'] ?? 'Bem-vindo, %s!', ENT_QUOTES),
-         htmlspecialchars($_SESSION['user']['name'], ENT_QUOTES)
-       ) ?>
-  </p>
-
-  <!-- Card de Total de Horas -->
-  <div class="mb-8">
-    <div class="bg-white p-6 rounded-lg shadow flex flex-col items-center">
-      <h3 class="font-semibold text-gray-600 mb-2">
-        <?= htmlspecialchars($langText['total_hours'] ?? 'Total de Horas', ENT_QUOTES) ?>
-      </h3>
-      <p id="employeeTotalHoursValue" class="text-4xl font-bold">
-        <?= number_format($totalH, 2) ?>h
-      </p>
-    </div>
-  </div>
-
-  <!-- Grid de Projetos -->
-  <div id="projectsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    <?php if (empty($projects)): ?>
-      <div class="col-span-full text-center text-gray-500">
-        <?= htmlspecialchars($langText['no_projects_allocated'] ?? 'Nenhum projeto alocado.', ENT_QUOTES) ?>
-      </div>
-    <?php else: foreach ($projects as $p):
-        switch ($p['status']) {
-          case 'in_progress':
-            $tagClass = 'bg-blue-500';   $tagText = $langText['active']    ?? 'Em Andamento'; break;
-          case 'pending':
-            $tagClass = 'bg-yellow-500'; $tagText = $langText['pending']   ?? 'Pendente';     break;
-          default:
-            $tagClass = 'bg-green-500';  $tagText = $langText['completed'] ?? 'Concluído';    break;
-        }
-    ?>
-      <div
-        class="project-item bg-white p-4 sm:p-6 rounded-xl shadow hover:shadow-md transition cursor-pointer flex flex-col justify-between"
-        data-project-id="<?= (int)$p['id'] ?>"
-      >
-        <div>
-          <div class="flex justify-between items-start mb-3">
-            <h4 class="text-xl font-bold flex-1"><?= htmlspecialchars($p['name'], ENT_QUOTES) ?></h4>
-            <span class="<?= $tagClass ?> inline-block text-white text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full font-semibold ml-4">
-              <?= htmlspecialchars($tagText, ENT_QUOTES) ?>
-            </span>
-          </div>
-          <p class="text-sm text-gray-600 mb-1">
-            <strong><?= htmlspecialchars($langText['client'] ?? 'Cliente', ENT_QUOTES) ?>:</strong>
-            <?= htmlspecialchars($p['client_name'] ?? '—', ENT_QUOTES) ?>
-          </p>
-          <?php if (!empty($p['location'])): ?>
-          <p class="text-sm text-gray-600 mb-1">
-            <strong><?= htmlspecialchars($langText['location'] ?? 'Local', ENT_QUOTES) ?>:</strong>
-            <?= htmlspecialchars($p['location'], ENT_QUOTES) ?>
-          </p>
-          <?php endif; ?>
-          <p class="text-sm text-gray-600 mb-3">
-            <strong><?= htmlspecialchars($langText['budget'] ?? 'Orçamento', ENT_QUOTES) ?>:</strong>
-            <?= number_format($p['budget'], 2, ',', '.') ?>
-          </p>
+<div class="min-h-screen bg-gray-100 py-6">
+  <div class="max-w-7xl mx-auto px-4">
+    
+    <!-- Header com estatísticas -->
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold text-gray-900 mb-4">
+        <?= htmlspecialchars($langText['employee_dashboard'] ?? 'Dashboard do Funcionário', ENT_QUOTES); ?>
+      </h1>
+      
+      <!-- Cards de estatísticas -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold text-gray-700 mb-2">
+            <?= htmlspecialchars($langText['total_projects'] ?? 'Projetos Ativos', ENT_QUOTES); ?>
+          </h3>
+          <p class="text-3xl font-bold text-blue-600"><?= count($projects); ?></p>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold text-gray-700 mb-2">
+            <?= htmlspecialchars($langText['total_hours_worked'] ?? 'Horas Trabalhadas', ENT_QUOTES); ?>
+          </h3>
+          <p class="text-3xl font-bold text-green-600"><?= number_format($totalHours, 2, ',', '.'); ?>h</p>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold text-gray-700 mb-2">
+            <?= htmlspecialchars($langText['this_month'] ?? 'Este Mês', ENT_QUOTES); ?>
+          </h3>
+          <p class="text-3xl font-bold text-purple-600">0h</p>
         </div>
       </div>
-    <?php endforeach; endif; ?>
+    </div>
+
+    <!-- Lista de Projetos -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">
+        <?= htmlspecialchars($langText['my_projects'] ?? 'Meus Projetos', ENT_QUOTES); ?>
+      </h2>
+      
+      <?php if (empty($projects)): ?>
+        <div class="bg-white rounded-lg shadow p-6 text-center">
+          <p class="text-gray-500">
+            <?= htmlspecialchars($langText['no_projects_assigned'] ?? 'Nenhum projeto atribuído', ENT_QUOTES); ?>
+          </p>
+        </div>
+      <?php else: ?>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <?php foreach ($projects as $project): ?>
+            <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer project-item"
+                 data-project-id="<?= htmlspecialchars($project['id'], ENT_QUOTES); ?>">
+              <div class="p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                  <?= htmlspecialchars($project['name'], ENT_QUOTES); ?>
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">
+                  <?= htmlspecialchars($project['client_name'] ?? 'Cliente não definido', ENT_QUOTES); ?>
+                </p>
+                
+                <!-- Progress bar -->
+                <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+                  <div class="bg-blue-600 h-2 rounded-full" 
+                       style="width: <?= min(100, max(0, (int) ($project['progress'] ?? 0))); ?>%"></div>
+                </div>
+                
+                <div class="flex justify-between text-sm text-gray-500">
+                  <span><?= htmlspecialchars($project['location'] ?? 'Local não definido', ENT_QUOTES); ?></span>
+                  <span><?= (int) ($project['progress'] ?? 0); ?>%</span>
+                </div>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
+    </div>
+
   </div>
 </div>
 
 <!-- Modal de Detalhes do Projeto -->
-<div
-  id="projectDetailsModal"
-  class="fixed inset-0 hidden items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-50"
->
-  <div class="bg-white rounded-2xl p-6 sm:p-8 w-full max-w-3xl mx-4 sm:mx-auto max-h-[90vh] overflow-y-auto relative">
-    <button
-      id="closeProjectDetailsModal"
-      class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl"
-      aria-label="Close"
-    >&times;</button>
-
-    <h3 class="text-xl font-bold mb-4">
-      <?= htmlspecialchars($langText['project_details'] ?? 'Detalhes do Projeto', ENT_QUOTES) ?>
-    </h3>
-
-    <!-- Abas de Visualização -->
-    <nav class="mb-6">
-      <ul class="flex flex-wrap gap-4 border-b">
-        <li>
-          <button data-tab="geral"
-                  class="tab-btn pb-2 font-medium text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
-            <?= htmlspecialchars($langText['general'] ?? 'Geral', ENT_QUOTES) ?>
-          </button>
-        </li>
-        <li>
-          <button data-tab="tarefas"
-                  class="tab-btn pb-2 font-medium text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
-            <?= htmlspecialchars($langText['tasks'] ?? 'Tarefas', ENT_QUOTES) ?>
-          </button>
-        </li>
-        <li>
-          <button data-tab="funcionarios"
-                  class="tab-btn pb-2 font-medium text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
-            <?= htmlspecialchars($langText['employees'] ?? 'Funcionários', ENT_QUOTES) ?>
-          </button>
-        </li>
-        <li>
-          <button data-tab="inventario"
-                  class="tab-btn pb-2 font-medium text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
-            <?= htmlspecialchars($langText['inventory'] ?? 'Inventário', ENT_QUOTES) ?>
-          </button>
-        </li>
-        <li>
-          <button data-tab="pontos" type="button"
-                  class="tab-btn pb-2 font-medium text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
-            <?= htmlspecialchars($langText['time_tracking'] ?? 'Ponto', ENT_QUOTES) ?>
-          </button>
-        </li>
-      </ul>
-    </nav>
-
-    <!-- Conteúdo das Abas -->
-    <div id="tab-geral" class="tab-panel">
-      <p><strong><?= htmlspecialchars($langText['name'] ?? 'Nome', ENT_QUOTES) ?>:</strong> <span id="roName"></span></p>
-      <p><strong><?= htmlspecialchars($langText['client'] ?? 'Cliente', ENT_QUOTES) ?>:</strong> <span id="roClient"></span></p>
-      <p><strong><?= htmlspecialchars($langText['location'] ?? 'Local', ENT_QUOTES) ?>:</strong> <span id="roLocation"></span></p>
-      <p><strong><?= htmlspecialchars($langText['start_date'] ?? 'Início', ENT_QUOTES) ?>:</strong> <span id="roStart"></span></p>
-      <p><strong><?= htmlspecialchars($langText['end_date'] ?? 'Término', ENT_QUOTES) ?>:</strong> <span id="roEnd"></span></p>
-    </div>
-
-    <div id="tab-tarefas" class="tab-panel hidden">
-      <ul id="roTasks" class="list-disc list-inside text-gray-700"></ul>
-    </div>
-
-    <div id="tab-funcionarios" class="tab-panel hidden">
-      <ul id="roEmployees" class="list-disc list-inside text-gray-700"></ul>
-    </div>
-
-    <div id="tab-inventario" class="tab-panel hidden">
-      <ul id="roInventory" class="list-disc list-inside text-gray-700"></ul>
-    </div>
-
-    <div id="tab-pontos" class="tab-panel hidden">
-      <div class="mb-4">
-        <h4 class="font-semibold text-gray-600">
-          <?= htmlspecialchars($langText['total_hours_registered'] ?? 'Total Horas', ENT_QUOTES) ?>:
-          <span id="workLogTotal">0</span>h
-        </h4>
+<div id="projectDetailsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+  <div class="bg-white rounded-lg shadow-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+    <div class="p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-900">Detalhes do Projeto</h2>
+        <button id="closeProjectDetailsModal" class="text-gray-400 hover:text-gray-600">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
       </div>
+
+      <!-- Abas -->
+      <div class="border-b border-gray-200 mb-6">
+        <nav class="-mb-px flex space-x-8">
+          <button class="tab-btn border-b-2 border-blue-600 text-blue-600 py-2 px-1 text-sm font-medium" data-tab="geral">
+            Geral
+          </button>
+          <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-2 px-1 text-sm font-medium" data-tab="tarefas">
+            Tarefas
+          </button>
+          <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-2 px-1 text-sm font-medium" data-tab="funcionarios">
+            Funcionários
+          </button>
+          <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-2 px-1 text-sm font-medium" data-tab="inventario">
+            Inventário
+          </button>
+          <button class="tab-btn border-b-2 border-transparent text-gray-500 hover:text-gray-700 py-2 px-1 text-sm font-medium" data-tab="ponto">
+            Registrar Ponto
+          </button>
+        </nav>
+      </div>
+
+      <!-- Conteúdo das Abas -->
       
-      <!-- Formulário de Registro de Ponto -->
-      <form id="timeTrackingForm"
-            method="POST"
-            action="<?= BASE_URL ?>/work_logs/store_time_entry"
-            class="mb-6 bg-gray-50 p-4 rounded-lg"
-      >
-        <input type="hidden" name="project_id" id="timeTrackingProjectId">
-        
-        <h5 class="font-medium mb-3"><?= htmlspecialchars($langText['register_time_entry'] ?? 'Registrar Ponto', ENT_QUOTES) ?></h5>
-        
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+      <!-- Aba Geral -->
+      <div id="tab-geral" class="tab-panel">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label class="block text-gray-700 mb-1">
-              <?= htmlspecialchars($langText['input_date_label'] ?? 'Data', ENT_QUOTES) ?>
-            </label>
-            <input type="date" 
-                   name="date" 
-                   id="entryDate"
-                   value="<?= date('Y-m-d') ?>"
-                   class="w-full p-2 border rounded" 
-                   required>
+            <label class="block text-gray-700 font-semibold">Nome do Projeto</label>
+            <p id="roName" class="text-gray-900"></p>
           </div>
-          
           <div>
-            <label class="block text-gray-700 mb-1">
-              <?= htmlspecialchars($langText['entry_type'] ?? 'Tipo', ENT_QUOTES) ?>
-            </label>
-            <select name="entry_type" class="w-full p-2 border rounded" required>
-              <option value="entry"><?= htmlspecialchars($langText['entry'] ?? 'Entrada', ENT_QUOTES) ?></option>
-              <option value="exit"><?= htmlspecialchars($langText['exit'] ?? 'Saída', ENT_QUOTES) ?></option>
-            </select>
+            <label class="block text-gray-700 font-semibold">Cliente</label>
+            <p id="roClient" class="text-gray-900"></p>
           </div>
-          
           <div>
-            <label class="block text-gray-700 mb-1">
-              <?= htmlspecialchars($langText['input_time_label'] ?? 'Horário', ENT_QUOTES) ?>
-            </label>
-            <input type="time" 
-                   name="time" 
-                   value="<?= date('H:i') ?>"
-                   class="w-full p-2 border rounded" 
-                   required>
+            <label class="block text-gray-700 font-semibold">Localização</label>
+            <p id="roLocation" class="text-gray-900"></p>
           </div>
-          
-          <div class="flex items-end">
-            <button type="submit"
-                    class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
-              <?= htmlspecialchars($langText['button_register_entry'] ?? 'Registrar', ENT_QUOTES) ?>
-            </button>
+          <div>
+            <label class="block text-gray-700 font-semibold">Data de Início</label>
+            <p id="roStart" class="text-gray-900"></p>
+          </div>
+          <div>
+            <label class="block text-gray-700 font-semibold">Data de Fim</label>
+            <p id="roEnd" class="text-gray-900"></p>
           </div>
         </div>
-      </form>
+      </div>
 
-      <!-- Lista de Registros Agrupados por Data -->
-      <div id="timeEntriesList" class="space-y-4">
-        <div class="text-gray-500 text-center py-4">
-          <?= htmlspecialchars($langText['no_time_entries'] ?? 'Nenhum registro de ponto', ENT_QUOTES) ?>
+      <!-- Aba Tarefas -->
+      <div id="tab-tarefas" class="tab-panel hidden">
+        <h4 class="text-lg font-semibold mb-4">Tarefas do Projeto</h4>
+        <ul id="roTasks" class="list-disc pl-5 space-y-2"></ul>
+      </div>
+
+      <!-- Aba Funcionários -->
+      <div id="tab-funcionarios" class="tab-panel hidden">
+        <h4 class="text-lg font-semibold mb-4">Funcionários Alocados</h4>
+        <ul id="roEmployees" class="list-disc pl-5 space-y-2"></ul>
+      </div>
+
+      <!-- Aba Inventário -->
+      <div id="tab-inventario" class="tab-panel hidden">
+        <h4 class="text-lg font-semibold mb-4">Inventário Alocado</h4>
+        <ul id="roInventory" class="list-disc pl-5 space-y-2"></ul>
+      </div>
+
+      <!-- Aba Registrar Ponto - NOVA -->
+      <div id="tab-ponto" class="tab-panel hidden">
+        <h4 class="text-lg font-semibold mb-4">
+          <?= htmlspecialchars($langText['total_hours'] ?? 'Total Horas', ENT_QUOTES); ?>:
+          <span id="workLogTotal">0</span>h
+        </h4>
+        
+        <!-- Formulário de Registro de Ponto -->
+        <form id="timeTrackingForm"
+              method="POST"
+              action="<?= BASE_URL; ?>/work_logs/store_time_entry"
+              class="mb-6 bg-gray-50 p-4 rounded-lg"
+        >
+          <input type="hidden" name="project_id" id="timeTrackingProjectId">
+          
+          <h5 class="font-medium mb-3"><?= htmlspecialchars($langText['register_time_entry'] ?? 'Registrar Ponto', ENT_QUOTES); ?></h5>
+          
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <div>
+              <label class="block text-gray-700 mb-1">
+                <?= htmlspecialchars($langText['input_date_label'] ?? 'Data', ENT_QUOTES); ?>
+              </label>
+              <input type="date" 
+                     name="date" 
+                     id="entryDate"
+                     value="<?= date('Y-m-d'); ?>"
+                     class="w-full p-2 border rounded" 
+                     required>
+            </div>
+            
+            <div>
+              <label class="block text-gray-700 mb-1">
+                <?= htmlspecialchars($langText['entry_type'] ?? 'Tipo', ENT_QUOTES); ?>
+              </label>
+              <select name="entry_type" class="w-full p-2 border rounded" required>
+                <option value="entry"><?= htmlspecialchars($langText['entry'] ?? 'Entrada', ENT_QUOTES); ?></option>
+                <option value="exit"><?= htmlspecialchars($langText['exit'] ?? 'Saída', ENT_QUOTES); ?></option>
+              </select>
+            </div>
+            
+            <div>
+              <label class="block text-gray-700 mb-1">
+                <?= htmlspecialchars($langText['input_time_label'] ?? 'Horário', ENT_QUOTES); ?>
+              </label>
+              <input type="time" 
+                     name="time" 
+                     value="<?= date('H:i'); ?>"
+                     class="w-full p-2 border rounded" 
+                     required>
+            </div>
+            
+            <div class="flex items-end">
+              <button type="submit"
+                      class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
+                <?= htmlspecialchars($langText['button_register_entry'] ?? 'Registrar', ENT_QUOTES); ?>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Lista de Registros Agrupados por Data -->
+        <div id="timeEntriesList" class="space-y-4">
+          <div class="text-gray-500 text-center py-4">
+            <?= htmlspecialchars($langText['no_time_entries'] ?? 'Nenhum registro de ponto', ENT_QUOTES); ?>
+          </div>
         </div>
       </div>
     </div>
@@ -240,6 +246,8 @@ $projects  = $projModel->getByEmployee($empId);
 </div>
 
 <script>
+  window.baseUrl = '<?= BASE_URL; ?>';
+  
   // abre modal ao clicar num card
   document.querySelectorAll('.project-item').forEach(card => {
     card.addEventListener('click', () => {
@@ -322,7 +330,7 @@ $projects  = $projModel->getByEmployee($empId);
     });
   });
 
-  // Função para carregar registros de ponto
+  // Função para carregar registros de ponto - NOVA IMPLEMENTAÇÃO
   function loadTimeEntries(projectId) {
     fetch(`${window.baseUrl}/api/work_logs/time_entries/${projectId}`)
       .then(res => res.json())
@@ -336,63 +344,16 @@ $projects  = $projModel->getByEmployee($empId);
           return;
         }
         
-        // Agrupa por data
-        const groupedByDate = {};
-        data.entries.forEach(entry => {
-          if (!groupedByDate[entry.date]) {
-            groupedByDate[entry.date] = [];
-          }
-          groupedByDate[entry.date].push(entry);
-        });
-        
-        // Monta HTML
+        // Monta HTML com novo formato
         let html = '';
-        Object.keys(groupedByDate).sort().reverse().forEach(date => {
-          const entries = groupedByDate[date];
-          const dateFormatted = new Date(date + 'T00:00:00').toLocaleDateString('pt-BR');
-          
-          // Separa entradas e saídas
-          const timeEntries = entries.sort((a, b) => a.time.localeCompare(b.time));
-          const pairs = [];
-          let currentEntry = null;
-          
-          timeEntries.forEach(entry => {
-            if (entry.entry_type === 'entry') {
-              if (currentEntry) {
-                // Entrada sem saída correspondente
-                pairs.push({ entry: currentEntry, exit: null });
-              }
-              currentEntry = entry;
-            } else if (entry.entry_type === 'exit') {
-              if (currentEntry) {
-                pairs.push({ entry: currentEntry, exit: entry });
-                currentEntry = null;
-              } else {
-                // Saída sem entrada correspondente
-                pairs.push({ entry: null, exit: entry });
-              }
-            }
-          });
-          
-          // Adiciona entrada pendente se houver
-          if (currentEntry) {
-            pairs.push({ entry: currentEntry, exit: null });
-          }
-          
-          // Monta string de horários
-          const timeRanges = pairs.map(pair => {
-            const entryTime = pair.entry ? pair.entry.time.substring(0, 5) : '?';
-            const exitTime = pair.exit ? pair.exit.time.substring(0, 5) : '?';
-            return `entrada ${entryTime} saída ${exitTime}`;
-          }).join(' - ');
-          
+        data.entries.forEach(entry => {
           html += `
             <div class="bg-white p-4 rounded-lg border">
               <div class="font-medium text-gray-900 mb-2">
-                ${timeRanges} ${dateFormatted}
+                ${entry.formatted_display}
               </div>
               <div class="text-sm text-gray-600">
-                Total de registros: ${entries.length}
+                Total do dia: ${parseFloat(entry.total_hours).toFixed(2)}h
               </div>
             </div>
           `;
@@ -407,7 +368,7 @@ $projects  = $projModel->getByEmployee($empId);
       });
   }
 
-  // Submissão do formulário de ponto
+  // Submissão do formulário de ponto - NOVO ENDPOINT
   document.getElementById('timeTrackingForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -424,8 +385,22 @@ $projects  = $projModel->getByEmployee($empId);
         const projectId = document.getElementById('timeTrackingProjectId').value;
         loadTimeEntries(projectId);
         
-        // Limpa o formulário (mantém data e project_id)
+        // Limpa o horário (mantém data e project_id)
         this.querySelector('[name="time"]').value = new Date().toTimeString().substring(0, 5);
+        
+        // Feedback visual
+        const button = this.querySelector('button[type="submit"]');
+        const originalText = button.textContent;
+        button.textContent = 'Registrado!';
+        button.classList.add('bg-green-600');
+        button.classList.remove('bg-blue-600');
+        
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.classList.remove('bg-green-600');
+          button.classList.add('bg-blue-600');
+        }, 2000);
+        
       } else {
         alert(data.message || 'Erro ao registrar ponto');
       }
@@ -436,5 +411,9 @@ $projects  = $projModel->getByEmployee($empId);
   });
 </script>
 
-<script src="<?= BASE_URL ?>/public/js/employee-projects.js?v=<?= time() ?>" defer></script>
-<script defer src="<?= asset('js/header.js') ?>"></script>
+<script src="<?= BASE_URL; ?>/public/js/employee-projects.js?v=<?= time(); ?>" defer></script>
+<script defer src="<?= asset('js/header.js'); ?>"></script>
+
+<?php require __DIR__.'/../layout/footer.php'; ?>
+
+   

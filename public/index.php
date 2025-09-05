@@ -155,6 +155,10 @@ switch (true) {
     case $route === '/projects/transactions':
         $projectController->transactions();
         break;
+    case preg_match('/^\/api\/projects\/(\d+)$/', $route, $matches):
+        $projectController = new ProjectController();
+        $projectController->getProjectDetails((int) $matches[1]);
+        break;
 
     // ===== WORK LOGS - SISTEMA ANTIGO E NOVO =====
     case $route === '/work_logs/index':
@@ -168,6 +172,21 @@ switch (true) {
         break;
     case $route === '/work_logs/project_totals':
         $workLogController->project_totals();
+        break;
+    // ===== API WORK LOGS - SISTEMA NOVO =====
+    case $route === '/api/worklog/add-time-entry':
+        $workLogController->addTimeEntry();
+        break;
+    case $route === '/api/worklog/time-entries':
+        $workLogController->time_entries();
+        break;
+    case $route === '/api/worklog/delete-time-entry':
+        $workLogController->deleteTimeEntry();
+        break;
+
+    // ===== API FUNCIONÁRIOS - HORAS =====
+    case $route === '/api/employees/hours-summary':
+        $employeeController->hours_summary();
         break;
 
     // ===== FUNCIONÁRIOS - CRUD =====

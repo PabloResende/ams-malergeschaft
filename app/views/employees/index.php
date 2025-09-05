@@ -3,7 +3,7 @@
 
 require __DIR__.'/../layout/header.php';
 
-// Busca funcionários - CORRIGIDO: mudando getAll() para all()
+// Busca funcionários
 require_once __DIR__.'/../../models/Employees.php';
 $employeeModel = new Employee();
 $employees = $employeeModel->all();
@@ -60,354 +60,160 @@ $roles = $stmt->fetchAll(PDO::FETCH_ASSOC);
   </div>
 </div>
 
-<!-- Modal de Criação -->
-<div id="employeeCreateModal"
-     class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
-  <div class="bg-white rounded-2xl w-full sm:w-11/12 max-w-6xl mx-4 p-6 lg:p-10 max-h-[90vh] overflow-y-auto relative">
-    <button id="closeEmployeeModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-    <h2 class="text-2xl font-bold mb-4">
-      <?= htmlspecialchars($langText['add_employee'] ?? 'Adicionar Funcionário', ENT_QUOTES); ?>
-    </h2>
+<!-- Modal de Adicionar Funcionário -->
+<div id="employeeModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+  <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
+    <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-medium text-gray-900" id="modalTitle">
+          <?= htmlspecialchars($langText['add_employee'] ?? 'Adicionar Funcionário', ENT_QUOTES); ?>
+        </h3>
+        <button class="close-modal text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+    </div>
 
-    <form id="employeeCreateForm" method="POST" action="<?= BASE_URL; ?>/employees/store" enctype="multipart/form-data">
+    <form id="employeeForm" class="p-6">
+      <input type="hidden" id="employeeId" name="employee_id" value="">
 
-      <!-- Abas de Criação -->
-      <div class="mb-4">
-        <nav class="flex space-x-1 bg-gray-100 p-1 rounded-lg">
-          <button type="button" data-tab="general-create" class="tab-btn-create flex-1 py-2 px-3 text-sm font-medium rounded-md bg-white text-blue-600 shadow-sm">
-            <?= htmlspecialchars($langText['general'] ?? 'Geral', ENT_QUOTES); ?>
-          </button>
-          <button type="button" data-tab="documents-create" class="tab-btn-create flex-1 py-2 px-3 text-sm font-medium rounded-md text-gray-600 hover:text-gray-800">
-            <?= htmlspecialchars($langText['documents'] ?? 'Documentos', ENT_QUOTES); ?>
-          </button>
-          <button type="button" data-tab="login-create" class="tab-btn-create flex-1 py-2 px-3 text-sm font-medium rounded-md text-gray-600 hover:text-gray-800">
-            <?= htmlspecialchars($langText['account'] ?? 'Acesso', ENT_QUOTES); ?>
-          </button>
-        </nav>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block mb-2"><?= htmlspecialchars($langText['name'] ?? 'Nome', ENT_QUOTES); ?></label>
+          <input type="text" id="employeeName" name="name" class="w-full border rounded-lg p-2" required>
+        </div>
+        <div>
+          <label class="block mb-2"><?= htmlspecialchars($langText['last_name'] ?? 'Sobrenome', ENT_QUOTES); ?></label>
+          <input type="text" id="employeeLastName" name="last_name" class="w-full border rounded-lg p-2" required>
+        </div>
       </div>
 
-      <div class="tab-content">
-        <!-- Painel Geral -->
-        <div id="panel-general-create" class="tab-panel">
-          <h3 class="text-lg font-semibold mb-2">
-            <?= htmlspecialchars($langText['personal_information'] ?? 'Informações Pessoais', ENT_QUOTES); ?>
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['name'] ?? 'Nome', ENT_QUOTES); ?></label>
-              <input type="text" name="name" required class="w-full border rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['last_name'] ?? 'Sobrenome', ENT_QUOTES); ?></label>
-              <input type="text" name="last_name" required class="w-full border rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['function'] ?? 'Função', ENT_QUOTES); ?></label>
-              <input type="text" name="function" class="w-full border rounded-lg p-2">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['address'] ?? 'Endereço', ENT_QUOTES); ?></label>
-              <input type="text" name="address" class="w-full border rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['city'] ?? 'Cidade', ENT_QUOTES); ?></label>
-              <input type="text" name="city" class="w-full border rounded-lg p-2">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['zip_code'] ?? 'CEP', ENT_QUOTES); ?></label>
-              <input type="text" name="zip_code" class="w-full border rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['birth_date'] ?? 'Data Nascimento', ENT_QUOTES); ?></label>
-              <input type="date" name="birth_date" class="w-full border rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['nationality'] ?? 'Nacionalidade', ENT_QUOTES); ?></label>
-              <input type="text" name="nationality" class="w-full border rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['phone'] ?? 'Telefone', ENT_QUOTES); ?></label>
-              <input type="text" name="phone" class="w-full border rounded-lg p-2">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['permission_type'] ?? 'Tipo Permissão', ENT_QUOTES); ?></label>
-              <input type="text" name="permission_type" class="w-full border rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['ahv_number'] ?? 'Número AHV', ENT_QUOTES); ?></label>
-              <input type="text" name="ahv_number" class="w-full border rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['religion'] ?? 'Religião', ENT_QUOTES); ?></label>
-              <input type="text" name="religion" class="w-full border rounded-lg p-2">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['start_date'] ?? 'Data Início', ENT_QUOTES); ?></label>
-              <input type="date" name="start_date" class="w-full border rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['sex'] ?? 'Sexo', ENT_QUOTES); ?></label>
-              <select name="sex" class="w-full border rounded-lg p-2">
-                <option value=""><?= htmlspecialchars($langText['select'] ?? 'Selecione...', ENT_QUOTES); ?></option>
-                <option value="M"><?= htmlspecialchars($langText['male'] ?? 'Masculino', ENT_QUOTES); ?></option>
-                <option value="F"><?= htmlspecialchars($langText['female'] ?? 'Feminino', ENT_QUOTES); ?></option>
-              </select>
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['marital_status'] ?? 'Estado Civil', ENT_QUOTES); ?></label>
-              <select name="marital_status" class="w-full border rounded-lg p-2">
-                <option value=""><?= htmlspecialchars($langText['select'] ?? 'Selecione...', ENT_QUOTES); ?></option>
-                <option value="single"><?= htmlspecialchars($langText['single'] ?? 'Solteiro', ENT_QUOTES); ?></option>
-                <option value="married"><?= htmlspecialchars($langText['married'] ?? 'Casado', ENT_QUOTES); ?></option>
-                <option value="divorced"><?= htmlspecialchars($langText['divorced'] ?? 'Divorciado', ENT_QUOTES); ?></option>
-              </select>
-            </div>
-          </div>
-
-          <div class="mt-4">
-            <label class="block mb-2"><?= htmlspecialchars($langText['about'] ?? 'Sobre', ENT_QUOTES); ?></label>
-            <textarea name="about" rows="3" class="w-full border rounded-lg p-2"></textarea>
-          </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block mb-2"><?= htmlspecialchars($langText['email'] ?? 'Email', ENT_QUOTES); ?></label>
+          <input type="email" id="employeeEmail" name="email" class="w-full border rounded-lg p-2" required>
         </div>
-
-        <!-- Painel Documentos -->
-        <div id="panel-documents-create" class="tab-panel hidden">
-          <h3 class="text-lg font-semibold mb-2"><?= htmlspecialchars($langText['documents'] ?? 'Documentos', ENT_QUOTES); ?></h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <?php foreach ([
-              'passport' => 'Passaporte',
-              'permission_photo_front' => 'Foto Permissão (Frente)',
-              'permission_photo_back' => 'Foto Permissão (Verso)',
-              'health_card_front' => 'Cartão Saúde (Frente)',
-              'health_card_back' => 'Cartão Saúde (Verso)',
-              'bank_card_front' => 'Cartão Banco (Frente)',
-              'bank_card_back' => 'Cartão Banco (Verso)',
-              'marriage_certificate' => 'Certidão Casamento',
-            ] as $field => $label): ?>
-            <div>
-              <label class="block mb-2">
-                <?= htmlspecialchars($langText[$field] ?? $label, ENT_QUOTES); ?>
-              </label>
-              <input type="file" name="<?= $field; ?>" class="w-full border rounded-lg p-2">
-            </div>
-            <?php endforeach; ?>
-          </div>
+        <div>
+          <label class="block mb-2"><?= htmlspecialchars($langText['phone'] ?? 'Telefone', ENT_QUOTES); ?></label>
+          <input type="tel" id="employeePhone" name="phone" class="w-full border rounded-lg p-2">
         </div>
-
-        <!-- Painel Login -->
-        <div id="panel-login-create" class="tab-panel hidden">
-          <h3 class="text-lg font-semibold mb-2">
-            <?= htmlspecialchars($langText['account'] ?? 'Acesso', ENT_QUOTES); ?>
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['email'] ?? 'Email', ENT_QUOTES); ?></label>
-              <input type="email" name="email" required class="w-full border rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['password'] ?? 'Senha', ENT_QUOTES); ?></label>
-              <input type="password" name="password" required class="w-full border rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['role'] ?? 'Nível', ENT_QUOTES); ?></label>
-              <select name="role_id" required class="w-full border rounded-lg p-2">
-                <option value=""><?= htmlspecialchars($langText['select_role'] ?? 'Selecione...', ENT_QUOTES); ?></option>
-                <?php foreach ($roles as $r): ?>
-                  <option value="<?= (int) $r['id']; ?>">
-                    <?= htmlspecialchars(ucfirst($r['name']), ENT_QUOTES); ?>
-                  </option>
-                <?php endforeach; ?>
-              </select>
-            </div>
-          </div>
-        </div>
-
       </div>
 
-      <div class="flex justify-end space-x-2 pt-4 border-t">
-        <button type="button" id="cancelEmployeeModal"
-                class="px-4 py-2 border rounded-lg hover:bg-gray-100">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block mb-2"><?= htmlspecialchars($langText['position'] ?? 'Função', ENT_QUOTES); ?></label>
+          <input type="text" id="employeePosition" name="position" class="w-full border rounded-lg p-2" required>
+        </div>
+        <div>
+          <label class="block mb-2"><?= htmlspecialchars($langText['password'] ?? 'Senha', ENT_QUOTES); ?></label>
+          <input type="password" id="employeePassword" name="password" class="w-full border rounded-lg p-2" required>
+        </div>
+      </div>
+
+      <div class="flex items-center mb-6">
+        <input type="checkbox" id="employeeActive" name="active" class="mr-2" checked>
+        <label for="employeeActive"><?= htmlspecialchars($langText['active'] ?? 'Ativo', ENT_QUOTES); ?></label>
+      </div>
+
+      <div class="flex justify-end space-x-3">
+        <button type="button" class="close-modal bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-4 rounded-lg">
           <?= htmlspecialchars($langText['cancel'] ?? 'Cancelar', ENT_QUOTES); ?>
         </button>
-        <button type="submit"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-          <?= htmlspecialchars($langText['submit'] ?? 'Salvar', ENT_QUOTES); ?>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg">
+          <?= htmlspecialchars($langText['save'] ?? 'Salvar', ENT_QUOTES); ?>
         </button>
       </div>
     </form>
   </div>
 </div>
 
-<!-- Modal de Edição/Detalhes -->
-<div id="employeeDetailsModal"
-     class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm hidden z-50">
-  <div class="bg-white rounded-2xl w-full sm:w-11/12 max-w-6xl mx-4 p-6 lg:p-10 max-h-[90vh] overflow-y-auto relative">
-    <button class="closeEmployeeDetailsModal absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
-    <h2 class="text-2xl font-bold mb-4">
-      <?= htmlspecialchars($langText['employee_details'] ?? 'Detalhes do Funcionário', ENT_QUOTES); ?>
-    </h2>
+<!-- Modal de Detalhes do Funcionário -->
+<div id="employeeDetailsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+  <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden">
+    <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-medium text-gray-900">
+          <?= htmlspecialchars($langText['employee_details'] ?? 'Detalhes do Funcionário', ENT_QUOTES); ?>
+        </h3>
+        <button class="close-modal text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+    </div>
 
-    <form id="employeeDetailsForm" method="POST" action="<?= BASE_URL; ?>/employees/update" enctype="multipart/form-data">
-      <input type="hidden" id="detailsLoginUserId" name="user_id">
-      <input type="hidden" id="detailsEmployeeId" name="id">
-
-      <!-- Abas de Detalhes -->
-      <div class="mb-4">
-        <nav class="flex flex-wrap space-x-1 bg-gray-100 p-1 rounded-lg">
-          <button type="button" data-tab="general-details" class="tab-btn flex-1 py-2 px-3 text-sm font-medium rounded-md text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
-            <?= htmlspecialchars($langText['general'] ?? 'Geral', ENT_QUOTES); ?>
+    <div class="flex-1 overflow-y-auto" style="max-height: calc(90vh - 140px);">
+      <!-- Tabs de navegação -->
+      <div class="border-b border-gray-200">
+        <nav class="px-6 flex space-x-8">
+          <button data-tab="panel-general-details" class="py-4 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600">
+            Geral
           </button>
-          <button type="button" data-tab="documents-details" class="tab-btn flex-1 py-2 px-3 text-sm font-medium rounded-md text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
-            <?= htmlspecialchars($langText['documents'] ?? 'Documentos', ENT_QUOTES); ?>
+          <button data-tab="panel-documents-details" class="py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700">
+            Documentos
           </button>
-          <button type="button" data-tab="login-details" class="tab-btn flex-1 py-2 px-3 text-sm font-medium rounded-md text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
-            <?= htmlspecialchars($langText['account'] ?? 'Acesso', ENT_QUOTES); ?>
+          <button data-tab="panel-access-details" class="py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700">
+            Acesso
           </button>
-          <button type="button" data-tab="transactions-details" class="tab-btn flex-1 py-2 px-3 text-sm font-medium rounded-md text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
-            <?= htmlspecialchars($langText['transactions'] ?? 'Transações', ENT_QUOTES); ?>
+          <button data-tab="panel-transactions-details" class="py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700">
+            Transações
           </button>
-          <!-- NOVA ABA HORAS - SEGUINDO O MESMO PADRÃO -->
-          <button type="button" data-tab="hours-details" class="tab-btn flex-1 py-2 px-3 text-sm font-medium rounded-md text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
-            <?= htmlspecialchars($langText['work_hours'] ?? 'Horas', ENT_QUOTES); ?>
+          <button data-tab="panel-hours-details" class="py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700">
+            <?= htmlspecialchars($langText['work_hours'] ?? 'Horas de Trabalho', ENT_QUOTES); ?>
           </button>
         </nav>
       </div>
 
-      <div class="tab-content">
+      <!-- Conteúdo das abas -->
+      <div class="p-6">
         <!-- Painel Geral Detalhes -->
         <div id="panel-general-details" class="tab-panel">
-          <h3 class="text-lg font-semibold mb-2">
-            <?= htmlspecialchars($langText['personal_information'] ?? 'Informações Pessoais', ENT_QUOTES); ?>
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <h3 class="text-lg font-semibold mb-2"><?= htmlspecialchars($langText['personal_information'] ?? 'Informações Pessoais', ENT_QUOTES); ?></h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label class="block mb-2"><?= htmlspecialchars($langText['name'] ?? 'Nome', ENT_QUOTES); ?></label>
-              <input type="text" id="detailsEmployeeName" name="name" required class="w-full border rounded-lg p-2">
+              <input type="text" id="detailsName" name="name" class="w-full border rounded-lg p-2" required>
             </div>
             <div>
               <label class="block mb-2"><?= htmlspecialchars($langText['last_name'] ?? 'Sobrenome', ENT_QUOTES); ?></label>
-              <input type="text" id="detailsEmployeeLastName" name="last_name" required class="w-full border rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['function'] ?? 'Função', ENT_QUOTES); ?></label>
-              <input type="text" id="detailsEmployeeFunction" name="function" class="w-full border rounded-lg p-2">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['address'] ?? 'Endereço', ENT_QUOTES); ?></label>
-              <input type="text" id="detailsEmployeeAddress" name="address" class="w-full border rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['city'] ?? 'Cidade', ENT_QUOTES); ?></label>
-              <input type="text" id="detailsEmployeeCity" name="city" class="w-full border rounded-lg p-2">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['zip_code'] ?? 'CEP', ENT_QUOTES); ?></label>
-              <input type="text" id="detailsEmployeeZipCode" name="zip_code" class="w-full border rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['birth_date'] ?? 'Data Nascimento', ENT_QUOTES); ?></label>
-              <input type="date" id="detailsEmployeeBirthDate" name="birth_date" class="w-full border rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['nationality'] ?? 'Nacionalidade', ENT_QUOTES); ?></label>
-              <input type="text" id="detailsEmployeeNationality" name="nationality" class="w-full border rounded-lg p-2">
+              <input type="text" id="detailsLastName" name="last_name" class="w-full border rounded-lg p-2" required>
             </div>
             <div>
               <label class="block mb-2"><?= htmlspecialchars($langText['phone'] ?? 'Telefone', ENT_QUOTES); ?></label>
-              <input type="text" id="detailsEmployeePhone" name="phone" class="w-full border rounded-lg p-2">
+              <input type="tel" id="detailsPhone" name="phone" class="w-full border rounded-lg p-2">
             </div>
           </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['permission_type'] ?? 'Tipo Permissão', ENT_QUOTES); ?></label>
-              <input type="text" id="detailsEmployeePermissionType" name="permission_type" class="w-full border rounded-lg p-2">
+              <label class="block mb-2"><?= htmlspecialchars($langText['position'] ?? 'Função', ENT_QUOTES); ?></label>
+              <input type="text" id="detailsPosition" name="position" class="w-full border rounded-lg p-2" required>
             </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['ahv_number'] ?? 'Número AHV', ENT_QUOTES); ?></label>
-              <input type="text" id="detailsEmployeeAhvNumber" name="ahv_number" class="w-full border rounded-lg p-2">
+            <div class="flex items-center">
+              <input type="checkbox" id="detailsActive" name="active" class="mr-2">
+              <label for="detailsActive"><?= htmlspecialchars($langText['active'] ?? 'Ativo', ENT_QUOTES); ?></label>
             </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['religion'] ?? 'Religião', ENT_QUOTES); ?></label>
-              <input type="text" id="detailsEmployeeReligion" name="religion" class="w-full border rounded-lg p-2">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['start_date'] ?? 'Data Início', ENT_QUOTES); ?></label>
-              <input type="date" id="detailsEmployeeStartDate" name="start_date" class="w-full border rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['sex'] ?? 'Sexo', ENT_QUOTES); ?></label>
-              <select id="detailsEmployeeSex" name="sex" class="w-full border rounded-lg p-2">
-                <option value=""><?= htmlspecialchars($langText['select'] ?? 'Selecione...', ENT_QUOTES); ?></option>
-                <option value="M"><?= htmlspecialchars($langText['male'] ?? 'Masculino', ENT_QUOTES); ?></option>
-                <option value="F"><?= htmlspecialchars($langText['female'] ?? 'Feminino', ENT_QUOTES); ?></option>
-              </select>
-            </div>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText['marital_status'] ?? 'Estado Civil', ENT_QUOTES); ?></label>
-              <select id="detailsEmployeeMaritalStatus" name="marital_status" class="w-full border rounded-lg p-2">
-                <option value=""><?= htmlspecialchars($langText['select'] ?? 'Selecione...', ENT_QUOTES); ?></option>
-                <option value="single"><?= htmlspecialchars($langText['single'] ?? 'Solteiro', ENT_QUOTES); ?></option>
-                <option value="married"><?= htmlspecialchars($langText['married'] ?? 'Casado', ENT_QUOTES); ?></option>
-                <option value="divorced"><?= htmlspecialchars($langText['divorced'] ?? 'Divorciado', ENT_QUOTES); ?></option>
-              </select>
-            </div>
-          </div>
-
-          <div class="mt-4">
-            <label class="block mb-2"><?= htmlspecialchars($langText['about'] ?? 'Sobre', ENT_QUOTES); ?></label>
-            <textarea id="detailsEmployeeAbout" name="about" rows="4" class="w-full border rounded-lg p-2"></textarea>
           </div>
         </div>
 
         <!-- Painel Documentos Detalhes -->
         <div id="panel-documents-details" class="tab-panel hidden">
           <h3 class="text-lg font-semibold mb-2"><?= htmlspecialchars($langText['documents'] ?? 'Documentos', ENT_QUOTES); ?></h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <?php foreach ([
-              'passport' => 'Passaporte',
-              'permission_photo_front' => 'Foto Permissão (Frente)',
-              'permission_photo_back' => 'Foto Permissão (Verso)',
-              'health_card_front' => 'Cartão Saúde (Frente)',
-              'health_card_back' => 'Cartão Saúde (Verso)',
-              'bank_card_front' => 'Cartão Banco (Frente)',
-              'bank_card_back' => 'Cartão Banco (Verso)',
-              'marriage_certificate' => 'Certidão Casamento',
-            ] as $field => $label): ?>
-            <div>
-              <label class="block mb-2"><?= htmlspecialchars($langText[$field] ?? $label, ENT_QUOTES); ?></label>
-              <img id="view<?= ucfirst(str_replace('_', '', $field)); ?>" class="w-full h-32 object-cover rounded border mb-2" style="display:none;">
-              <a id="link<?= ucfirst(str_replace('_', '', $field)); ?>" class="text-blue-600 underline block mb-2" target="_blank" style="display:none;"></a>
-              <input type="file" name="<?= $field; ?>" class="w-full border rounded-lg p-2">
-            </div>
-            <?php endforeach; ?>
+          <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+            <i class="fas fa-upload text-gray-400 text-3xl mb-4"></i>
+            <p class="text-gray-500 mb-2"><?= htmlspecialchars($langText['drag_drop_files'] ?? 'Arraste arquivos aqui ou clique para enviar', ENT_QUOTES); ?></p>
+            <input type="file" class="hidden" id="documentUpload" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+            <button type="button" onclick="document.getElementById('documentUpload').click()" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+              <?= htmlspecialchars($langText['select_files'] ?? 'Selecionar Arquivos', ENT_QUOTES); ?>
+            </button>
+          </div>
+          <div id="documentsList" class="mt-4">
+            <!-- Lista de documentos será carregada aqui -->
           </div>
         </div>
 
         <!-- Painel Acesso Detalhes -->
-        <div id="panel-login-details" class="tab-panel hidden">
-          <h3 class="text-lg font-semibold mb-2"><?= htmlspecialchars($langText['account'] ?? 'Acesso', ENT_QUOTES); ?></h3>
+        <div id="panel-access-details" class="tab-panel hidden">
+          <h3 class="text-lg font-semibold mb-2"><?= htmlspecialchars($langText['access'] ?? 'Acesso', ENT_QUOTES); ?></h3>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label class="block mb-2"><?= htmlspecialchars($langText['email'] ?? 'Email', ENT_QUOTES); ?></label>
@@ -454,73 +260,306 @@ $roles = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <!-- Painel Horas de Trabalho - COPIADO EXATAMENTE DO DASHBOARD FUNCIONÁRIO -->
         <div id="panel-hours-details" class="tab-panel hidden">
-          <h3 class="text-lg font-semibold mb-2"><?= htmlspecialchars($langText['work_hours'] ?? 'Horas de Trabalho', ENT_QUOTES); ?></h3>
-          
-          <!-- Estatísticas -->
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <div class="bg-white p-4 rounded-lg shadow">
-              <h3 class="text-sm font-medium text-gray-500"><?= htmlspecialchars($langText['total_hours'] ?? 'Total de Horas', ENT_QUOTES); ?></h3>
-              <p id="employeeModalTotalHours" class="text-2xl font-bold text-blue-600">0.00h</p>
-            </div>
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-semibold text-gray-900">
+              <?= htmlspecialchars($langText['work_hours'] ?? 'Horas de Trabalho', ENT_QUOTES); ?>
+            </h3>
+            <div class="text-2xl font-bold text-blue-600" id="employeeModalTotalHours">44.00h</div>
           </div>
 
           <!-- Filtros -->
-          <div class="mb-6">
-            <div class="flex flex-wrap gap-2">
-              <button type="button" id="adminFilterToday" class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm hover:bg-blue-200">
-                <?= htmlspecialchars($langText['today'] ?? 'Hoje', ENT_QUOTES); ?>
-              </button>
-              <button type="button" id="adminFilterWeek" class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200">
-                <?= htmlspecialchars($langText['this_week'] ?? 'Esta Semana', ENT_QUOTES); ?>
-              </button>
-              <button type="button" id="adminFilterMonth" class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200">
-                <?= htmlspecialchars($langText['this_month'] ?? 'Este Mês', ENT_QUOTES); ?>
-              </button>
-              <button type="button" id="adminFilterAll" class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200">
-                <?= htmlspecialchars($langText['all_time'] ?? 'Todo Período', ENT_QUOTES); ?>
-              </button>
-            </div>
+          <div class="flex space-x-2 mb-6">
+            <button id="adminFilterall" class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-100 text-blue-700">
+              Hoje
+            </button>
+            <button id="adminFilterweek" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+              Esta Semana
+            </button>
+            <button id="adminFiltermonth" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+              Este Mês
+            </button>
+            <button id="adminFilterperiod" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+              Todo Período
+            </button>
           </div>
 
-          <!-- Lista de Horas - EXATAMENTE IGUAL AO DASHBOARD DO FUNCIONÁRIO -->
-          <div class="bg-white rounded-lg shadow">
+          <!-- Lista de registros -->
+          <div class="bg-white border rounded-lg">
             <div class="p-4 border-b border-gray-200">
-              <h3 class="text-lg font-medium text-gray-900"><?= htmlspecialchars($langText['hours_log'] ?? 'Registro de Horas', ENT_QUOTES); ?></h3>
+              <h5 class="font-medium text-gray-900">Registro de Horas</h5>
             </div>
-            <div class="p-4">
-              <div id="employeeHoursList" class="space-y-3 max-h-80 overflow-y-auto">
-                <!-- Loading inicial -->
-                <div class="flex items-center justify-center py-8">
-                  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  <span class="ml-2 text-gray-600"><?= htmlspecialchars($langText['loading_hours'] ?? 'Carregando registros de horas...', ENT_QUOTES); ?></span>
-                </div>
+            <div id="employeeHoursList" class="divide-y divide-gray-200">
+              <div class="p-4 text-center text-gray-500">
+                <?= htmlspecialchars($langText['loading_hours'] ?? 'Carregando registros de horas...', ENT_QUOTES); ?>
               </div>
             </div>
           </div>
         </div>
-
       </div>
+    </div>
 
-      <div class="flex justify-end space-x-2 pt-4 border-t">
-        <button type="button" class="closeEmployeeDetailsModal px-4 py-2 border rounded-lg hover:bg-gray-100">
-          <?= htmlspecialchars($langText['cancel'] ?? 'Cancelar', ENT_QUOTES); ?>
-        </button>
-        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+    <!-- Footer do Modal -->
+    <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-between">
+      <button class="close-modal bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors">
+        Cancelar
+      </button>
+      <div class="space-x-2">
+        <button class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
           <?= htmlspecialchars($langText['save_changes'] ?? 'Salvar Alterações', ENT_QUOTES); ?>
         </button>
-        <button type="button" id="deleteEmployeeBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
-          <?= htmlspecialchars($langText['delete'] ?? 'Excluir', ENT_QUOTES); ?>
+        <button class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+          Excluir
         </button>
       </div>
-    </form>
+    </div>
   </div>
 </div>
 
 <script>
-  window.baseUrl = '<?= BASE_URL; ?>';
-  window.langText = <?= json_encode($langText, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS); ?>;
-  window.confirmDeleteMsg = '<?= htmlspecialchars($langText['confirm_delete_employee'] ?? 'Tem certeza que deseja excluir este funcionário?', ENT_QUOTES); ?>';
-</script>
-<script src="<?= BASE_URL; ?>/public/js/employees.js?v=<?= time(); ?>" defer></script>
+window.baseUrl = '<?= BASE_URL; ?>';
+window.translations = <?= json_encode($langText); ?>';
 
-<?php require __DIR__.'/../layout/footer.php'; ?>
+// Sistema de modais e funcionários
+document.addEventListener('DOMContentLoaded', function() {
+    // Abrir modal de adicionar funcionário
+    document.getElementById('openEmployeeModalBtn').addEventListener('click', function() {
+        document.getElementById('employeeModal').classList.remove('hidden');
+        document.getElementById('employeeModal').classList.add('flex');
+        document.getElementById('modalTitle').textContent = window.translations.add_employee || 'Adicionar Funcionário';
+        document.getElementById('employeeForm').reset();
+        document.getElementById('employeeId').value = '';
+    });
+
+    // Abrir modal de detalhes do funcionário
+    document.querySelectorAll('.employee-card').forEach(card => {
+        card.addEventListener('click', function() {
+            const employeeId = this.getAttribute('data-id');
+            openEmployeeDetails(employeeId);
+        });
+    });
+
+    // Fechar modais
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById('employeeModal').classList.add('hidden');
+            document.getElementById('employeeDetailsModal').classList.add('hidden');
+        });
+    });
+
+    // Tabs do modal de detalhes
+    setupDetailsTabs();
+
+    // Formulário de funcionário
+    document.getElementById('employeeForm').addEventListener('submit', handleEmployeeSubmit);
+});
+
+function setupDetailsTabs() {
+    const tabs = document.querySelectorAll('[data-tab]');
+    const panels = document.querySelectorAll('.tab-panel');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetId = tab.getAttribute('data-tab');
+
+            // Remove active de todas as tabs
+            tabs.forEach(t => {
+                t.classList.remove('border-blue-500', 'text-blue-600');
+                t.classList.add('border-transparent', 'text-gray-500');
+            });
+
+            // Adiciona active na tab clicada
+            tab.classList.remove('border-transparent', 'text-gray-500');
+            tab.classList.add('border-blue-500', 'text-blue-600');
+
+            // Esconde todos os painéis
+            panels.forEach(panel => panel.classList.add('hidden'));
+
+            // Mostra o painel ativo
+            const activePanel = document.getElementById(targetId);
+            if (activePanel) {
+                activePanel.classList.remove('hidden');
+
+                // Se for a aba de horas, carrega os dados
+                if (targetId === 'panel-hours-details' && window.currentEmployeeId) {
+                    loadEmployeeHours(window.currentEmployeeId);
+                }
+            }
+        });
+    });
+}
+
+async function openEmployeeDetails(employeeId) {
+    window.currentEmployeeId = employeeId;
+
+    const modal = document.getElementById('employeeDetailsModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    try {
+        const response = await fetch(`${window.baseUrl}/api/employees/${employeeId}`);
+        const employee = await response.json();
+
+        if (employee.success) {
+            const data = employee.data;
+            
+            // Preenche os campos
+            document.getElementById('detailsName').value = data.name || '';
+            document.getElementById('detailsLastName').value = data.last_name || '';
+            document.getElementById('detailsPhone').value = data.phone || '';
+            document.getElementById('detailsPosition').value = data.function || '';
+            document.getElementById('detailsActive').checked = data.active == 1;
+            document.getElementById('detailsLoginEmail').value = data.email || '';
+            
+            // Role
+            const roleSelect = document.getElementById('detailsEmployeeRoleId');
+            if (roleSelect && data.role_id) {
+                roleSelect.value = data.role_id;
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao carregar funcionário:', error);
+    }
+}
+
+async function loadEmployeeHours(employeeId, filter = 'all') {
+    const container = document.getElementById('employeeHoursList');
+    const totalElement = document.getElementById('employeeModalTotalHours');
+
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="flex items-center justify-center py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span class="ml-2 text-gray-600">Carregando...</span>
+        </div>
+    `;
+
+    try {
+        let url = `${window.baseUrl}/api/employees/hours/${employeeId}`;
+        if (filter !== 'all') {
+            url += `?filter=${filter}`;
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        renderEmployeeHours(data, container, totalElement);
+    } catch (error) {
+        console.error('Erro ao carregar horas do funcionário:', error);
+        container.innerHTML = '<div class="text-red-500 text-center py-4">Erro ao carregar dados</div>';
+    }
+}
+
+function renderEmployeeHours(data, container, totalElement) {
+    if (!data.entries || data.entries.length === 0) {
+        container.innerHTML = `
+            <div class="text-gray-500 text-center py-8">
+                <i class="fas fa-clock text-4xl mb-2"></i>
+                <p>Nenhum registro encontrado</p>
+            </div>
+        `;
+        if (totalElement) totalElement.textContent = '0.00h';
+        return;
+    }
+
+    let html = '';
+    data.entries.forEach(entry => {
+        html += `
+            <div class="p-4 flex justify-between items-center">
+                <div class="flex-1">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-3 h-3 rounded-full ${entry.type === 'new_system' ? 'bg-blue-500' : 'bg-gray-400'}"></div>
+                        <div>
+                            <p class="font-medium text-gray-900">${entry.description}</p>
+                            <p class="text-sm text-gray-600">${formatDate(entry.date)}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="font-semibold text-gray-900">${entry.hours}h</span>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+    
+    if (totalElement) {
+        totalElement.textContent = `${data.total_hours || 0}h`;
+    }
+}
+
+function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR');
+}
+
+async function handleEmployeeSubmit(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    
+    try {
+        submitBtn.textContent = 'Salvando...';
+        submitBtn.disabled = true;
+        
+        const isEdit = document.getElementById('employeeId').value !== '';
+        const url = isEdit 
+            ? `${window.baseUrl}/api/employees/update` 
+            : `${window.baseUrl}/api/employees/store`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            submitBtn.textContent = 'Salvo!';
+            submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            submitBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+            
+        } else {
+            throw new Error(data.message || 'Erro ao salvar');
+        }
+        
+    } catch (error) {
+        console.error('Erro:', error);
+        alert(error.message || 'Erro ao salvar funcionário');
+        
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+// Filtros de horas (admin)
+document.querySelectorAll('[id^="adminFilter"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const filter = btn.id.replace('adminFilter', '').toLowerCase();
+        
+        // Atualiza visual dos botões
+        document.querySelectorAll('[id^="adminFilter"]').forEach(b => {
+            b.classList.remove('bg-blue-100', 'text-blue-700');
+            b.classList.add('bg-gray-100', 'text-gray-700');
+        });
+        
+        btn.classList.remove('bg-gray-100', 'text-gray-700');
+        btn.classList.add('bg-blue-100', 'text-blue-700');
+        
+        // Recarrega dados com filtro
+        if (window.currentEmployeeId) {
+            loadEmployeeHours(window.currentEmployeeId, filter);
+        }
+    });
+});
+</script>
+
+<script defer src="<?= asset('js/header.js'); ?>"></script>
+<?php require __DIR__ . '/../layout/footer.php'; ?>

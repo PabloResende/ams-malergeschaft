@@ -79,13 +79,45 @@ class EmployeeController
         require __DIR__ . '/../views/employees/index.php';
     }
 
-    /** Dashboard do funcionário */
-    public function dashboard_employee()
+ public function dashboard_employee()
     {
+        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+        if (! isEmployee()) {
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
+        }
+
+        $userId   = (int)($_SESSION['user']['id'] ?? 0);
+        $empModel = new Employee();
+        $emp      = $empModel->findByUserId($userId);
+        $empId    = $emp['id'] ?? 0;
+
+        // Buscar projetos diretamente com SQL
+        global $pdo;
+        $projects = [];
+        try {
+            $stmt = $pdo->prepare("
+                SELECT DISTINCT 
+                    p.*,
+                    c.name as client_name
+                FROM projects p
+                LEFT JOIN client c ON p.client_id = c.id
+                LEFT JOIN project_resources pr ON p.id = pr.project_id 
+                WHERE pr.resource_id = ? 
+                    AND pr.resource_type = 'employee'
+                    AND p.status IN ('in_progress', 'pending')
+                ORDER BY p.created_at DESC
+            ");
+            $stmt->execute([$empId]);
+            $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            error_log("Erro ao buscar projetos: " . $e->getMessage());
+            $projects = [];
+        }
+
         require __DIR__ . '/../views/employees/dashboard_employee.php';
     }
 
-    /** Perfil do funcionário */
     public function profile()
     {
         // Busca dados do funcionário logado
@@ -114,7 +146,60 @@ class EmployeeController
             return;
         }
         
-        require __DIR__ . '/../views/employees/profile.php';
+        // USAR O ARQUIVO PROFILE_EMPLOYEE.PHP
+        require __DIR__ . '/../views/employees/profile_employee.php';
+    }
+
+    public function hours_summary()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        
+        if (!isEmployee()) {
+            echo json_encode(['total' => '0.00', 'today' => '0.00', 'week' => '0.00']);
+            exit;
+        }
+
+        try {
+            global $pdo;
+            $userId = $_SESSION['user']['id'];
+            
+            $empStmt = $pdo->prepare("SELECT id FROM employees WHERE user_id = ?");
+            $empStmt->execute([$userId]);
+            $emp = $empStmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$emp) {
+                echo json_encode(['total' => '0.00', 'today' => '0.00', 'week' => '0.00']);
+                exit;
+            }
+            
+            $employeeId = $emp['id'];
+            
+            $totalStmt = $pdo->prepare("SELECT COALESCE(SUM(total_hours), 0) as total FROM time_entries WHERE employee_id = ?");
+            $totalStmt->execute([$employeeId]);
+            $totalHours = (float)$totalStmt->fetchColumn();
+            
+            $today = date('Y-m-d');
+            $todayStmt = $pdo->prepare("SELECT COALESCE(SUM(total_hours), 0) as today FROM time_entries WHERE employee_id = ? AND date = ?");
+            $todayStmt->execute([$employeeId, $today]);
+            $todayHours = (float)$todayStmt->fetchColumn();
+            
+            $startOfWeek = date('Y-m-d', strtotime('monday this week'));
+            $endOfWeek = date('Y-m-d', strtotime('sunday this week'));
+            
+            $weekStmt = $pdo->prepare("SELECT COALESCE(SUM(total_hours), 0) as week FROM time_entries WHERE employee_id = ? AND date BETWEEN ? AND ?");
+            $weekStmt->execute([$employeeId, $startOfWeek, $endOfWeek]);
+            $weekHours = (float)$weekStmt->fetchColumn();
+
+            echo json_encode([
+                'total' => number_format($totalHours, 2, '.', ''),
+                'today' => number_format($todayHours, 2, '.', ''),
+                'week' => number_format($weekHours, 2, '.', ''),
+            ]);
+            
+        } catch (Exception $e) {
+            echo json_encode(['total' => '0.00', 'today' => '0.00', 'week' => '0.00']);
+        }
+        exit;
     }
 
     /** Cria novo funcionário */

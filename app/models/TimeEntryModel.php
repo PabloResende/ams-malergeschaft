@@ -1,5 +1,5 @@
 <?php
-// app/models/TimeEntryModel.php - VERSÃO CORRIGIDA COMPLETA
+// app/models/TimeEntryModel.php - VERSÃO COMPLETA E CORRIGIDA
 
 require_once __DIR__ . '/../../config/database.php';
 
@@ -87,7 +87,7 @@ class TimeEntryModel
     }
     
     /**
-     * Calcula total de horas baseado nos pares entrada/saída - CORRIGIDO
+     * Calcula total de horas SIMPLIFICADO - apenas pares entrada/saída válidos
      */
     private function calculateTotalHours(array $entries): float 
     {
@@ -95,42 +95,40 @@ class TimeEntryModel
             return 0.0;
         }
         
-        $totalMinutes = 0;
-        $currentEntry = null;
-        
-        // Ordena por horário para processar cronologicamente
+        // Ordena por horário
         usort($entries, function($a, $b) {
             $timeA = $a['time'] ?? '00:00';
             $timeB = $b['time'] ?? '00:00';
             return strcmp($timeA, $timeB);
         });
         
+        // Separa entradas e saídas
+        $entradas = [];
+        $saidas = [];
+        
         foreach ($entries as $entry) {
-            $entryType = $entry['type'] ?? '';
-            $entryTime = $entry['time'] ?? '';
+            $type = $entry['type'] ?? '';
+            $time = $entry['time'] ?? '';
             
-            if (empty($entryTime)) continue;
+            if (empty($time)) continue;
             
-            if ($entryType === 'entry') {
-                // Se já há uma entrada em aberto, fecha ela com a entrada atual como saída imaginária
-                if ($currentEntry !== null) {
-                    // Calcula tempo até esta nova entrada (considera como fim do período anterior)
-                    $start = strtotime("1970-01-01 " . $currentEntry);
-                    $end = strtotime("1970-01-01 " . $entryTime);
-                    if ($end > $start) {
-                        $totalMinutes += ($end - $start) / 60;
-                    }
-                }
-                $currentEntry = $entryTime;
-                
-            } elseif ($entryType === 'exit' && $currentEntry !== null) {
-                // Calcula diferença em minutos
-                $start = strtotime("1970-01-01 " . $currentEntry);
-                $end = strtotime("1970-01-01 " . $entryTime);
-                if ($end > $start) {
-                    $totalMinutes += ($end - $start) / 60;
-                }
-                $currentEntry = null;
+            if ($type === 'entry') {
+                $entradas[] = $time;
+            } elseif ($type === 'exit') {
+                $saidas[] = $time;
+            }
+        }
+        
+        // Calcula horas apenas para pares completos
+        $totalMinutes = 0;
+        $pairsCount = min(count($entradas), count($saidas));
+        
+        for ($i = 0; $i < $pairsCount; $i++) {
+            $start = strtotime("1970-01-01 " . $entradas[$i]);
+            $end = strtotime("1970-01-01 " . $saidas[$i]);
+            
+            if ($end > $start) {
+                $totalMinutes += ($end - $start) / 60;
             }
         }
         
@@ -167,8 +165,7 @@ class TimeEntryModel
     }
     
     /**
-     * Formata para exibição: "entrada 8:00 saída 12:00 - entrada 14:00 saída 18:00 09/04/2025"
-     * VERSÃO CORRIGIDA PARA LIDAR COM REGISTROS COMPLEXOS
+     * Formata para exibição SIMPLIFICADO - SEM interrogações
      */
     private function formatDisplay(array $entries, string $date): string
     {
@@ -183,8 +180,9 @@ class TimeEntryModel
             return strcmp($timeA, $timeB);
         });
         
-        $pairs = [];
-        $currentEntry = null;
+        // Separa entradas e saídas
+        $entradas = [];
+        $saidas = [];
         
         foreach ($entries as $entry) {
             $type = $entry['type'] ?? '';
@@ -193,26 +191,28 @@ class TimeEntryModel
             if (empty($time)) continue;
             
             if ($type === 'entry') {
-                // Se já existe uma entrada sem saída, fecha com saída indefinida
-                if ($currentEntry !== null) {
-                    $pairs[] = "entrada {$currentEntry} saída ?";
-                }
-                $currentEntry = $time;
-                
+                $entradas[] = $time;
             } elseif ($type === 'exit') {
-                if ($currentEntry !== null) {
-                    $pairs[] = "entrada {$currentEntry} saída {$time}";
-                    $currentEntry = null;
-                } else {
-                    // Saída sem entrada correspondente  
-                    $pairs[] = "entrada ? saída {$time}";
-                }
+                $saidas[] = $time;
             }
         }
         
-        // Se ainda há uma entrada em aberto
-        if ($currentEntry !== null) {
-            $pairs[] = "entrada {$currentEntry} saída ?";
+        // Forma pares simples
+        $pairs = [];
+        $maxPairs = max(count($entradas), count($saidas));
+        
+        for ($i = 0; $i < $maxPairs; $i++) {
+            $entrada = isset($entradas[$i]) ? $entradas[$i] : '';
+            $saida = isset($saidas[$i]) ? $saidas[$i] : '';
+            
+            if ($entrada || $saida) {
+                $pair = '';
+                if ($entrada) $pair .= "entrada {$entrada}";
+                if ($entrada && $saida) $pair .= " ";
+                if ($saida) $pair .= "saída {$saida}";
+                
+                $pairs[] = $pair;
+            }
         }
         
         if (empty($pairs)) {

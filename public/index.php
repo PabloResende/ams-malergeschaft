@@ -228,6 +228,34 @@ switch (true) {
     case $route === '/api/employees/ranking':
         $employeeController->getRanking();
         break;
+    case preg_match('/^\/api\/employees\/(\d+)\/details$/', $route, $matches):
+        $_GET['id'] = $matches[1];
+        $employeeController->getEmployeeDetails();
+        break;
+        
+    case preg_match('/^\/api\/employees\/(\d+)\/hours-summary$/', $route, $matches):
+        $_GET['id'] = $matches[1];
+        $employeeController->getEmployeeHoursSummary();
+        break;
+    case $route === '/api/employees/ranking':
+        $employeeController->getRanking();
+        break;
+    // ADICIONAR AQUI AS NOVAS ROTAS:
+    case preg_match('/^\/api\/employees\/(\d+)\/hours$/', $route, $matches):
+        $_GET['id'] = $matches[1];
+        $employeeController->getEmployeeHours();
+        break;
+    case preg_match('/^\/api\/employees\/(\d+)\/update$/', $route, $matches):
+        $_POST['employee_id'] = $matches[1];
+        $employeeController->updateEmployee();
+        break;
+    case preg_match('/^\/api\/employees\/(\d+)\/delete$/', $route, $matches):
+        $_POST['employee_id'] = $matches[1];
+        $employeeController->deleteEmployee();
+        break;
+    case $route === '/api/employees/create':
+        $employeeController->createEmployee();
+        break;
 
     // ===== CLIENTES =====
     case $route === '/clients':

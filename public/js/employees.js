@@ -267,68 +267,38 @@
     }
   });
 
-  // Submit do formulário de registro de horas - USANDO CLICK EVENT NO BOTÃO
-  if (submitTimeTracking) {
-    submitTimeTracking.addEventListener('click', (e) => {
+  // Submit do formulário de registro de horas
+  if (timeTrackingForm) {
+    timeTrackingForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       
-      console.log('Botão de registrar ponto clicado'); // Debug
+      const formData = new FormData(timeTrackingForm);
       
-      if (!currentEmployeeId) {
-        alert('Erro: ID do funcionário não encontrado');
-        return;
-      }
-      
-      // Validar campos obrigatórios
-      if (!timeTrackingDate.value || !timeTrackingTime.value || !timeTrackingType.value) {
-        alert('Por favor, preencha todos os campos obrigatórios');
-        return;
-      }
-      
-      // Preparar dados para envio
-      const formData = {
-        employee_id: timeTrackingEmployeeId.value,
-        date: timeTrackingDate.value,
-        time: timeTrackingTime.value,
-        entry_type: timeTrackingType.value
-      };
-      
-      console.log('Dados do formulário:', formData); // Debug
-      
-      // Por enquanto apenas mostra um alerta para testar
-      alert(`Registrando ${formData.entry_type === 'entry' ? 'entrada' : 'saída'} para funcionário ${currentEmployeeId} em ${formData.date} às ${formData.time}`);
-      
-      // Limpar formulário após teste
-      timeTrackingDate.value = new Date().toISOString().split('T')[0];
-      timeTrackingTime.value = '';
-      timeTrackingType.value = 'entry';
-      
-      // Aqui você pode implementar a chamada real da API quando estiver pronta
-      /*
-      fetch(`${window.baseUrl}/api/time-tracking`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      })
-      .then(response => response.json())
-      .then(result => {
+      try {
+        const response = await fetch(`${window.baseUrl}/api/time-tracking`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        const result = await response.json();
+        
         if (result.success) {
+          // Reset form mantendo dados necessários
+          timeTrackingForm.reset();
           timeTrackingDate.value = new Date().toISOString().split('T')[0];
-          timeTrackingTime.value = '';
-          timeTrackingType.value = 'entry';
+          timeTrackingEmployeeId.value = currentEmployeeId;
+          
+          // Recarregar lista de horas
           loadEmployeeHours(currentEmployeeId, 'today');
+          
           showNotification('Ponto registrado com sucesso!', 'success');
         } else {
           showNotification(result.message || 'Erro ao registrar ponto', 'error');
         }
-      })
-      .catch(error => {
+      } catch (error) {
         console.error('Erro:', error);
         showNotification('Erro ao registrar ponto', 'error');
-      });
-      */
+      }
     });
   }
 

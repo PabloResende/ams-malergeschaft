@@ -103,8 +103,6 @@ $financialController = new FinancialController();
 $workLogController = new WorkLogController();
 $carController = new CarController();
 
-// 11) Dispatcher de rotas
-// 11) Dispatcher de rotas - SWITCH COMPLETO CORRIGIDO
 // 11) Dispatcher de rotas - SWITCH COMPLETO CORRIGIDO
 switch (true) {
     // ===== USUÁRIO =====
@@ -183,6 +181,14 @@ switch (true) {
         $workLogController->deleteTimeEntry();
         break;
 
+    // ===== NOVAS ROTAS API CORRIGIDAS =====
+    case $route === '/api/worklog/employee-projects':
+        $workLogController->getEmployeeProjects();
+        break;
+    case $route === '/api/worklog/time-entries-by-day':
+        $workLogController->getTimeEntriesByDay();
+        break;
+
     // ===== API PROJETOS =====
     case $route === '/api/projects/list':
         $workLogController->getProjectsList();
@@ -192,11 +198,6 @@ switch (true) {
         break;
     case preg_match('/^\/api\/projects\/(\d+)$/', $route, $matches):
         $projectController->getProjectDetails((int) $matches[1]);
-        break;
-
-    // ===== NOVA ROTA ADICIONADA =====
-    case $route === '/api/employee-projects':
-        $workLogController->getEmployeeProjects();
         break;
 
     // ===== API ADMIN TIME TRACKING =====
@@ -215,7 +216,7 @@ switch (true) {
         $employeeController->store();
         break;
     case $route === '/employees/update':
-        $employeeController->update();
+        $employeeController->updateEmployee();
         break;
     case $route === '/employees/delete':
         $employeeController->delete();
@@ -238,15 +239,10 @@ switch (true) {
         $_GET['id'] = $matches[1];
         $employeeController->getEmployeeDetails();
         break;
-        
     case preg_match('/^\/api\/employees\/(\d+)\/hours-summary$/', $route, $matches):
         $_GET['id'] = $matches[1];
         $employeeController->getEmployeeHoursSummary();
         break;
-    case $route === '/api/employees/ranking':
-        $employeeController->getRanking();
-        break;
-    // ADICIONAR AQUI AS NOVAS ROTAS:
     case preg_match('/^\/api\/employees\/(\d+)\/hours$/', $route, $matches):
         $_GET['id'] = $matches[1];
         $employeeController->getEmployeeHours();
@@ -265,36 +261,27 @@ switch (true) {
 
     // ===== CLIENTES =====
     case $route === '/clients':
-        $clientsController->list();
+        $clientsController->index();
         break;
-    case $route === '/clients/create':
-        $clientsController->create();
+    case $route === '/clients/store':
+        $clientsController->store();
         break;
-    case $route === '/clients/show':
-        $clientsController->show();
-        break;
-    case $route === '/clients/edit':
-        $clientsController->edit();
-        break;
-    case $route === '/clients/save':
-        $clientsController->save();
+    case $route === '/clients/update':
+        $clientsController->update();
         break;
     case $route === '/clients/delete':
         $clientsController->delete();
+        break;
+    case $route === '/clients/get':
+        $clientsController->get();
         break;
 
     // ===== INVENTÁRIO =====
     case $route === '/inventory':
         $inventoryController->index();
         break;
-    case $route === '/inventory/create':
-        $inventoryController->create();
-        break;
     case $route === '/inventory/store':
         $inventoryController->store();
-        break;
-    case $route === '/inventory/edit':
-        $inventoryController->edit();
         break;
     case $route === '/inventory/update':
         $inventoryController->update();
@@ -302,25 +289,50 @@ switch (true) {
     case $route === '/inventory/delete':
         $inventoryController->delete();
         break;
-    case $route === '/inventory/control/store':
-        $inventoryController->storeControl();
-        break;
-    case $route === '/inventory/history':
-        $inventoryController->history();
-        break;
-    case $route === '/inventory/history/details':
-        $inventoryController->historyDetails();
+    case $route === '/inventory/get':
+        $inventoryController->get();
         break;
 
-    // ===== INVENTÁRIO AJAX =====
-    case $route === '/inventory/add-quantity-ajax':
-        $inventoryController->addQuantityAjax();
+    // ===== FINANCEIRO =====
+    case $route === '/finance':
+        $financialController->index();
         break;
-    case $route === '/inventory/delete-ajax':
-        $inventoryController->deleteAjax();
+    case $route === '/finance/store':
+        $financialController->store();
         break;
-    case $route === '/inventory/update-description-ajax':
-        $inventoryController->updateDescriptionAjax();
+    case $route === '/finance/update':
+        $financialController->update();
+        break;
+    case $route === '/finance/delete':
+        $financialController->delete();
+        break;
+    case $route === '/finance/get':
+        $financialController->get();
+        break;
+
+    // ===== ANÁLISES =====
+    case $route === '/analytics':
+        $analyticsController->index();
+        break;
+    case $route === '/analytics/stats':
+        $analyticsController->stats();
+        break;
+
+    // ===== CALENDÁRIO =====
+    case $route === '/calendar':
+        $calendarController->index();
+        break;
+    case $route === '/calendar/events':
+        $calendarController->events();
+        break;
+    case $route === '/calendar/store':
+        $calendarController->store();
+        break;
+    case $route === '/calendar/update':
+        $calendarController->update();
+        break;
+    case $route === '/calendar/delete':
+        $calendarController->delete();
         break;
 
     // ===== CARROS =====
@@ -330,76 +342,21 @@ switch (true) {
     case $route === '/cars/store':
         $carController->store();
         break;
-    case $route === '/cars/get':
-        $carController->get();
-        break;
     case $route === '/cars/update':
         $carController->update();
         break;
     case $route === '/cars/delete':
         $carController->delete();
         break;
-    case $route === '/cars/usage/store':
-        $carController->storeUsage();
+    case $route === '/cars/usage':
+        $carController->usage();
         break;
 
-    // ===== CALENDÁRIO =====
-    case $route === '/calendar':
-        $calendarController->index();
-        break;
-    case $route === '/calendar/store':
-        $calendarController->store();
-        break;
-    case $route === '/calendar/fetch':
-        $calendarController->fetch();
-        break;
-
-    // ===== ANALYTICS =====
-    case $route === '/analytics':
-        $analyticsController->index();
-        break;
-    case $route === '/analytics/stats':
-        $analyticsController->stats();
-        break;
-    case $route === '/analytics/exportPdf':
-        $analyticsController->exportPdf();
-        break;
-    case $route === '/analytics/exportExcel':
-        $analyticsController->exportExcel();
-        break;
-    case $route === '/analytics/sendEmail':
-        $analyticsController->sendEmail();
-        break;
-
-    // ===== FINANCEIRO =====
-    case $route === '/finance':
-        $financialController->index();
-        break;
-    case $route === '/finance/create':
-        $financialController->create();
-        break;
-    case $route === '/finance/store':
-        $financialController->store();
-        break;
-    case $route === '/finance/edit':
-        $financialController->edit();
-        break;
-    case $route === '/finance/update':
-        $financialController->update();
-        break;
-    case $route === '/finance/delete':
-        $financialController->delete();
-        break;
-    case $route === '/finance/report':
-        $financialController->report();
-        break;
-    case $route === '/finance/attachment/download':
-        $financialController->downloadAttachment();
-        break;
-
-    // ===== 404 - PÁGINA NÃO ENCONTRADA =====
+    // ===== ROTA PADRÃO (404) =====
     default:
         http_response_code(404);
-        echo '404 - Página não encontrada.';
+        echo "<h1>404 - Página não encontrada</h1>";
+        echo "<p>A rota <strong>{$route}</strong> não foi encontrada.</p>";
+        echo "<a href='" . BASE_URL . "/dashboard'>Voltar ao Dashboard</a>";
         break;
 }

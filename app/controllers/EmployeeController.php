@@ -798,94 +798,119 @@ class EmployeeController
         exit;
     }
 
-    /** API: Atualizar funcionário existente */
     public function updateEmployee()
     {
         header('Content-Type: application/json; charset=UTF-8');
         
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
             echo json_encode(['success' => false, 'message' => 'Método não permitido']);
             exit;
         }
-
-        $employeeId = (int)($_POST['employee_id'] ?? $_POST['id'] ?? 0);
-        if (!$employeeId) {
-            echo json_encode(['success' => false, 'message' => 'ID do funcionário é obrigatório']);
-            exit;
-        }
-
+        
         try {
-            global $pdo;
-            $pdo->beginTransaction();
-
-            // Atualiza dados do funcionário
-            $employeeData = [
-                'name' => trim($_POST['name'] ?? ''),
-                'last_name' => trim($_POST['last_name'] ?? ''),
-                'function' => trim($_POST['function'] ?? ''),
-                'address' => trim($_POST['address'] ?? ''),
-                'zip_code' => trim($_POST['zip_code'] ?? ''),
-                'city' => trim($_POST['city'] ?? ''),
-                'sex' => $_POST['sex'] ?? 'male',
-                'birth_date' => $_POST['birth_date'] ?? null,
-                'nationality' => trim($_POST['nationality'] ?? ''),
-                'permission_type' => trim($_POST['permission_type'] ?? ''),
-                'ahv_number' => trim($_POST['ahv_number'] ?? ''),
-                'phone' => trim($_POST['phone'] ?? ''),
-                'religion' => trim($_POST['religion'] ?? ''),
-                'marital_status' => $_POST['marital_status'] ?? 'single',
-                'start_date' => $_POST['start_date'] ?? date('Y-m-d'),
-                'about' => trim($_POST['about'] ?? '')
+            $employeeId = (int)($_POST['id'] ?? 0);
+            
+            if (!$employeeId) {
+                echo json_encode(['success' => false, 'message' => 'ID do funcionário inválido']);
+                exit;
+            }
+            
+            // Buscar funcionário existente
+            $employee = $this->employeeModel->getById($employeeId);
+            if (!$employee) {
+                echo json_encode(['success' => false, 'message' => 'Funcionário não encontrado']);
+                exit;
+            }
+            
+            // Preparar dados para atualização (sem obrigar campos de hora)
+            $updateData = [
+                'name' => trim($_POST['name'] ?? $employee['name']),
+                'last_name' => trim($_POST['last_name'] ?? $employee['last_name']),
+                'email' => trim($_POST['email'] ?? $employee['email']),
+                'phone' => trim($_POST['phone'] ?? $employee['phone']),
+                'position' => trim($_POST['position'] ?? $employee['position']),
+                'birth_date' => $_POST['birth_date'] ?? $employee['birth_date'],
+                'nationality' => trim($_POST['nationality'] ?? $employee['nationality']),
+                'passport' => trim($_POST['passport'] ?? $employee['passport']),
+                'gender' => $_POST['gender'] ?? $employee['gender'],
+                'marital_status' => $_POST['marital_status'] ?? $employee['marital_status'],
+                'role' => $_POST['role'] ?? $employee['role']
             ];
-
+            
             // Validações básicas
-            if (empty($employeeData['name']) || empty($employeeData['last_name'])) {
-                throw new Exception('Nome e sobrenome são obrigatórios');
+            if (empty($updateData['name'])) {
+                echo json_encode(['success' => false, 'message' => 'Nome é obrigatório']);
+                exit;
             }
-
-            // Atualiza funcionário
-            $sets = [];
-            $values = [];
-            foreach ($employeeData as $field => $value) {
-                $sets[] = "{$field} = ?";
-                $values[] = $value;
+            
+            if (empty($updateData['email']) || !filter_var($updateData['email'], FILTER_VALIDATE_EMAIL)) {
+                echo json_encode(['success' => false, 'message' => 'E-mail válido é obrigatório']);
+                exit;
             }
-            $values[] = $employeeId;
-
-            $stmt = $pdo->prepare("UPDATE employees SET " . implode(', ', $sets) . " WHERE id = ?");
-            $stmt->execute($values);
-
-            // Atualiza usuário se email foi fornecido
-            $email = trim($_POST['email'] ?? '');
-            if (!empty($email)) {
+            
+            // Verificar se email já existe para outro funcionário
+            global $pdo;
+            $stmt = $pdo->prepare("SELECT id FROM employees WHERE email = ? AND id != ?");
+            $stmt->execute([$updateData['email'], $employeeId]);
+            if ($stmt->fetch()) {
+                echo json_encode(['success' => false, 'message' => 'Este e-mail já está em uso']);
+                exit;
+            }
+            
+            // Atualizar funcionário
+            $stmt = $pdo->prepare("
+                UPDATE employees SET 
+                    name = ?, last_name = ?, email = ?, phone = ?, position = ?,
+                    birth_date = ?, nationality = ?, passport = ?, gender = ?, 
+                    marital_status = ?, role = ?, updated_at = NOW()
+                WHERE id = ?
+            ");
+            
+            $success = $stmt->execute([
+                $updateData['name'],
+                $updateData['last_name'], 
+                $updateData['email'],
+                $updateData['phone'],
+                $updateData['position'],
+                $updateData['birth_date'] ?: null,
+                $updateData['nationality'],
+                $updateData['passport'],
+                $updateData['gender'],
+                $updateData['marital_status'],
+                $updateData['role'],
+                $employeeId
+            ]);
+            
+            if (!$success) {
+                echo json_encode(['success' => false, 'message' => 'Erro ao atualizar funcionário']);
+                exit;
+            }
+            
+            // Atualizar senha se fornecida
+            if (!empty($_POST['password'])) {
+                $hashedPassword = password_hash($_POST['password'], PASSWORD_DEFAULT);
+                
+                // Buscar user_id do funcionário
                 $stmt = $pdo->prepare("SELECT user_id FROM employees WHERE id = ?");
                 $stmt->execute([$employeeId]);
-                $emp = $stmt->fetch(PDO::FETCH_ASSOC);
+                $userId = $stmt->fetchColumn();
                 
-                if ($emp && $emp['user_id']) {
-                    $userUpdates = ['email = ?'];
-                    $userValues = [$email];
-                    
-                    $password = trim($_POST['password'] ?? '');
-                    if (!empty($password)) {
-                        $userUpdates[] = 'password = ?';
-                        $userValues[] = password_hash($password, PASSWORD_DEFAULT);
-                    }
-                    
-                    $userValues[] = $emp['user_id'];
-                    
-                    $stmt = $pdo->prepare("UPDATE users SET " . implode(', ', $userUpdates) . " WHERE id = ?");
-                    $stmt->execute($userValues);
+                if ($userId) {
+                    $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
+                    $stmt->execute([$hashedPassword, $userId]);
                 }
             }
-
-            $pdo->commit();
-            echo json_encode(['success' => true, 'message' => 'Funcionário atualizado com sucesso']);
-
+            
+            echo json_encode([
+                'success' => true, 
+                'message' => 'Funcionário atualizado com sucesso',
+                'employee' => $updateData
+            ]);
+            
         } catch (Exception $e) {
-            $pdo->rollback();
-            error_log("EmployeeController::updateEmployee error: " . $e->getMessage());
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            error_log("Error updating employee: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Erro interno do servidor']);
         }
         exit;
     }

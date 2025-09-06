@@ -527,87 +527,111 @@ $baseUrl = BASE_URL;
           </div>
         </div>
 
-        <!-- Painel Horas de Trabalho - SEPARADO DO FORMULÁRIO PRINCIPAL -->
-        <div id="panel-hours-details" class="tab-panel hidden">
-          <div class="p-6">
-            <div class="flex justify-between items-center mb-6">
-              <h3 class="text-lg font-semibold text-gray-900">
-                <?= htmlspecialchars($langText['work_hours'] ?? 'Horas de Trabalho', ENT_QUOTES); ?>
-              </h3>
-              <div class="text-2xl font-bold text-blue-600" id="employeeModalTotalHours">0.00h</div>
-            </div>
+      <div id="panel-hours-details" class="tab-panel hidden">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-semibold text-gray-900">
+              <?= htmlspecialchars($langText['work_hours'] ?? 'Horas de Trabalho', ENT_QUOTES); ?>
+            </h3>
+            <div class="text-2xl font-bold text-blue-600" id="employeeModalTotalHours">0.00h</div>
+          </div>
 
-            <!-- Filtros -->
-            <div class="flex space-x-2 mb-6">
-              <button type="button" id="adminFilterall" class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-100 text-blue-700">
-                Hoje
-              </button>
-              <button type="button" id="adminFilterweek" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
-                Esta Semana
-              </button>
-              <button type="button" id="adminFiltermonth" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
-                Este Mês
-              </button>
-              <button type="button" id="adminFilterperiod" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
-                Todo Período
-              </button>
-            </div>
+          <!-- Filtros -->
+          <div class="flex space-x-2 mb-6">
+            <button type="button" id="adminFilterall" class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-100 text-blue-700">
+              Hoje
+            </button>
+            <button type="button" id="adminFilterweek" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+              Esta Semana
+            </button>
+            <button type="button" id="adminFiltermonth" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+              Este Mês
+            </button>
+            <button type="button" id="adminFilterperiod" class="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200">
+              Todo Período
+            </button>
+          </div>
 
-            <!-- Formulário de registro de ponto - SEPARADO DO FORMULÁRIO PRINCIPAL -->
-            <div class="bg-gray-50 rounded-lg p-4 mb-6">
-              <h5 class="font-medium text-gray-900 mb-3">
-                <?= htmlspecialchars($langText['register_time_entry'] ?? 'Registrar Ponto', ENT_QUOTES); ?>
-              </h5>
-              <div id="timeTrackingForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <input type="hidden" id="timeTrackingEmployeeId" name="employee_id" value="">
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">
-                    <?= htmlspecialchars($langText['input_date_label'] ?? 'Data', ENT_QUOTES); ?>
-                  </label>
-                  <input type="date" id="timeTrackingDate" name="date" class="w-full border rounded-lg p-2" required>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">
-                    <?= htmlspecialchars($langText['input_time_label'] ?? 'Horário', ENT_QUOTES); ?>
-                  </label>
-                  <input type="time" id="timeTrackingTime" name="time" class="w-full border rounded-lg p-2" required>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">
-                    <?= htmlspecialchars($langText['entry_type'] ?? 'Tipo', ENT_QUOTES); ?>
-                  </label>
-                  <select id="timeTrackingType" name="entry_type" class="w-full border rounded-lg p-2" required>
-                    <option value="entry"><?= htmlspecialchars($langText['entry'] ?? 'Entrada', ENT_QUOTES); ?></option>
-                    <option value="exit"><?= htmlspecialchars($langText['exit'] ?? 'Saída', ENT_QUOTES); ?></option>
-                  </select>
-                </div>
-                
-                <div class="flex items-end">
-                  <button type="button" id="submitTimeTracking" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg">
-                    <?= htmlspecialchars($langText['button_register_entry'] ?? 'Registrar', ENT_QUOTES); ?>
-                  </button>
-                </div>
+          <!-- Formulário de registro de ponto - SEPARADO DO FORMULÁRIO PRINCIPAL -->
+          <div class="bg-gray-50 rounded-lg p-4 mb-6">
+            <h5 class="font-medium text-gray-900 mb-3">
+              <?= htmlspecialchars($langText['register_time_entry'] ?? 'Registrar Ponto', ENT_QUOTES); ?>
+            </h5>
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <input type="hidden" id="timeTrackingEmployeeId" name="employee_id" value="">
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Projeto <span class="text-red-500">*</span>
+                </label>
+                <select id="timeTrackingProject" 
+                        name="project_id" 
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required>
+                  <option value="">Carregando projetos...</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  <?= htmlspecialchars($langText['input_date_label'] ?? 'Data', ENT_QUOTES); ?>
+                </label>
+                <input type="date" 
+                      id="timeTrackingDate" 
+                      name="date" 
+                      value="<?= date('Y-m-d'); ?>"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  <?= htmlspecialchars($langText['input_time_label'] ?? 'Horário', ENT_QUOTES); ?>
+                </label>
+                <input type="time" 
+                      id="timeTrackingTime"
+                      name="time" 
+                      value="<?= date('H:i'); ?>"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  <?= htmlspecialchars($langText['entry_type'] ?? 'Tipo', ENT_QUOTES); ?>
+                </label>
+                <select id="timeTrackingType"
+                        name="type" 
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required>
+                  <option value="entry"><?= htmlspecialchars($langText['entry'] ?? 'Entrada', ENT_QUOTES); ?></option>
+                  <option value="exit"><?= htmlspecialchars($langText['exit'] ?? 'Saída', ENT_QUOTES); ?></option>
+                </select>
+              </div>
+              
+              <div class="flex items-end">
+                <button type="button" 
+                        id="submitTimeTracking"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:bg-gray-400">
+                  <?= htmlspecialchars($langText['button_register_entry'] ?? 'Registrar', ENT_QUOTES); ?>
+                </button>
               </div>
             </div>
+          </div>
 
-            <!-- Lista de registros -->
-            <div class="bg-white border rounded-lg">
-              <div class="p-4 border-b border-gray-200">
-                <h5 class="font-medium text-gray-900">Registro de Horas</h5>
-              </div>
-              <div id="employeeHoursList" class="divide-y divide-gray-200">
-                <div class="p-4 text-center text-gray-500">
-                  <?= htmlspecialchars($langText['loading_hours'] ?? 'Carregando registros de horas...', ENT_QUOTES); ?>
-                </div>
+          <!-- Lista de registros -->
+          <div class="bg-white border border-gray-200 rounded-lg">
+            <div class="p-4 border-b border-gray-200">
+              <h5 class="font-medium text-gray-900">Registro de Horas</h5>
+            </div>
+            <div id="employeeHoursList" class="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+              <div class="p-4 text-center text-gray-500">
+                <?= htmlspecialchars($langText['loading_hours'] ?? 'Carregando registros de horas...', ENT_QUOTES); ?>
               </div>
             </div>
           </div>
         </div>
-
-      </div> <!-- /.tab-content -->
+      </div>
 
       <!-- Botões de Ação do Modal - SOMENTE PARA O FORMULÁRIO PRINCIPAL -->
       <div class="flex justify-between pt-6 mt-6 border-t">

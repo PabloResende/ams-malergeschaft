@@ -76,47 +76,52 @@ class EmployeeController
             $employees = [];
         }
         
+        // ===== CORREÇÃO: CARREGAR AS ROLES =====
+        require_once __DIR__ . '/../models/Role.php';
+        $roles = Role::all(); // Carrega todas as roles do banco
+        
+        // Passa as variáveis para a view
         require __DIR__ . '/../views/employees/index.php';
     }
 
- public function dashboard_employee()
-    {
-        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
-        if (! isEmployee()) {
-            header('Location: ' . BASE_URL . '/dashboard');
-            exit;
-        }
+    public function dashboard_employee()
+        {
+            if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+            if (! isEmployee()) {
+                header('Location: ' . BASE_URL . '/dashboard');
+                exit;
+            }
 
-        $userId   = (int)($_SESSION['user']['id'] ?? 0);
-        $empModel = new Employee();
-        $emp      = $empModel->findByUserId($userId);
-        $empId    = $emp['id'] ?? 0;
+            $userId   = (int)($_SESSION['user']['id'] ?? 0);
+            $empModel = new Employee();
+            $emp      = $empModel->findByUserId($userId);
+            $empId    = $emp['id'] ?? 0;
 
-        // Buscar projetos diretamente com SQL
-        global $pdo;
-        $projects = [];
-        try {
-            $stmt = $pdo->prepare("
-                SELECT DISTINCT 
-                    p.*,
-                    c.name as client_name
-                FROM projects p
-                LEFT JOIN client c ON p.client_id = c.id
-                LEFT JOIN project_resources pr ON p.id = pr.project_id 
-                WHERE pr.resource_id = ? 
-                    AND pr.resource_type = 'employee'
-                    AND p.status IN ('in_progress', 'pending')
-                ORDER BY p.created_at DESC
-            ");
-            $stmt->execute([$empId]);
-            $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (Exception $e) {
-            error_log("Erro ao buscar projetos: " . $e->getMessage());
+            // Buscar projetos diretamente com SQL
+            global $pdo;
             $projects = [];
-        }
+            try {
+                $stmt = $pdo->prepare("
+                    SELECT DISTINCT 
+                        p.*,
+                        c.name as client_name
+                    FROM projects p
+                    LEFT JOIN client c ON p.client_id = c.id
+                    LEFT JOIN project_resources pr ON p.id = pr.project_id 
+                    WHERE pr.resource_id = ? 
+                        AND pr.resource_type = 'employee'
+                        AND p.status IN ('in_progress', 'pending')
+                    ORDER BY p.created_at DESC
+                ");
+                $stmt->execute([$empId]);
+                $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            } catch (Exception $e) {
+                error_log("Erro ao buscar projetos: " . $e->getMessage());
+                $projects = [];
+            }
 
-        require __DIR__ . '/../views/employees/dashboard_employee.php';
-    }
+            require __DIR__ . '/../views/employees/dashboard_employee.php';
+        }
 
     public function profile()
     {
@@ -237,18 +242,20 @@ class EmployeeController
             global $pdo;
             $pdo->beginTransaction();
 
-            // Cria usuário
-            $userData = [
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => password_hash($password, PASSWORD_DEFAULT),
-                'role' => 'employee'
-            ];
-
-            $userId = $this->userModel->create($userData);
-            if (!$userId) {
+            // ===== CORREÇÃO: Passa parâmetros individuais para create() =====
+            $userCreated = $this->userModel->create(
+                $data['name'] . ' ' . $data['last_name'], // nome completo
+                $data['email'],                           // email
+                password_hash($password, PASSWORD_DEFAULT), // senha hash
+                'employee'                                // role
+            );
+            
+            if (!$userCreated) {
                 throw new Exception('Erro ao criar usuário');
             }
+
+            // Pega o ID do usuário criado
+            $userId = $pdo->lastInsertId();
 
             // Cria funcionário
             $data['user_id'] = $userId;
@@ -256,11 +263,10 @@ class EmployeeController
             $data['sex'] = 'male'; // Padrão
             $data['birth_date'] = date('Y-m-d'); // Padrão hoje
             $data['start_date'] = date('Y-m-d'); // Padrão hoje
+            $data['role_id'] = 1; // Padrão employee
             
-            $employeeId = $this->employeeModel->create($data);
-            if (!$employeeId) {
-                throw new Exception('Erro ao criar funcionário');
-            }
+            // Chama o método create do Employee (que espera array + files)
+            Employee::create($data, $_FILES ?? []);
 
             $pdo->commit();
             echo json_encode(['success' => true, 'message' => 'Funcionário criado com sucesso']);

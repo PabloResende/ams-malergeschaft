@@ -105,6 +105,7 @@ $carController = new CarController();
 
 // 11) Dispatcher de rotas
 // 11) Dispatcher de rotas - SWITCH COMPLETO CORRIGIDO
+// 11) Dispatcher de rotas - SWITCH COMPLETO CORRIGIDO
 switch (true) {
     // ===== USUÁRIO =====
     case $route === '/' || $route === '/login':
@@ -191,6 +192,11 @@ switch (true) {
         break;
     case preg_match('/^\/api\/projects\/(\d+)$/', $route, $matches):
         $projectController->getProjectDetails((int) $matches[1]);
+        break;
+
+    // ===== NOVA ROTA ADICIONADA =====
+    case $route === '/api/employee-projects':
+        $workLogController->getEmployeeProjects();
         break;
 
     // ===== API ADMIN TIME TRACKING =====

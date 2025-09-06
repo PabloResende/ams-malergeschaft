@@ -156,7 +156,7 @@ class WorkLogController
         }
         exit;
     }
-    
+
     public function getEmployeeProjects()
     {
         header('Content-Type: application/json; charset=UTF-8');
@@ -171,42 +171,14 @@ class WorkLogController
         try {
             global $pdo;
             
-            // Estratégia 1: Busca projetos onde o funcionário está explicitamente alocado
             $stmt = $pdo->prepare("
-                SELECT DISTINCT p.id, p.name, p.status
-                FROM projects p
-                INNER JOIN project_allocations pa ON p.id = pa.project_id
-                WHERE pa.employee_id = ? AND p.status IN ('in_progress', 'pending')
-                ORDER BY p.name ASC
+                SELECT id, name, status
+                FROM projects
+                WHERE status IN ('in_progress', 'pending')
+                ORDER BY name ASC
             ");
-            $stmt->execute([$employeeId]);
+            $stmt->execute();
             $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Estratégia 2: Se não encontrou alocações, busca projetos onde já registrou horas
-            if (empty($projects)) {
-                $stmt = $pdo->prepare("
-                    SELECT DISTINCT p.id, p.name, p.status
-                    FROM projects p
-                    INNER JOIN time_entries te ON p.id = te.project_id
-                    WHERE te.employee_id = ? AND p.status IN ('in_progress', 'pending')
-                    ORDER BY p.name ASC
-                ");
-                $stmt->execute([$employeeId]);
-                $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            }
-            
-            // Estratégia 3: Se ainda não encontrou, busca projetos ativos (fallback)
-            if (empty($projects)) {
-                $stmt = $pdo->prepare("
-                    SELECT id, name, status
-                    FROM projects
-                    WHERE status IN ('in_progress', 'pending')
-                    ORDER BY name ASC
-                    LIMIT 10
-                ");
-                $stmt->execute();
-                $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            }
             
             echo json_encode($projects);
             
@@ -217,149 +189,7 @@ class WorkLogController
         exit;
     }
 
-    /**
-     * API: Lista registros de ponto de um funcionário - CORRIGIDO
-     * GET /api/worklog/time-entries?employee_id=X&filter=Y
-     */
-    public function time_entries()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
-        
-        // Determina o employee_id - CORRIGIDO PARA ADMINS
-        $employeeId = 0;
-        
-        // Se é admin e veio employee_id no parâmetro (CASO DO MODAL DE FUNCIONÁRIOS)
-        if (isset($_SESSION['user']['role']) && $_SESSION['user']['role'] === 'admin' && isset($_GET['employee_id'])) {
-            $employeeId = (int)$_GET['employee_id'];
-            error_log("Admin mode - employee_id from GET: $employeeId");
-        } else {
-            // Funcionário logado (dashboard do funcionário)
-            $email = $_SESSION['user']['email'] ?? '';
-            $user = $this->userModel->findByEmail($email);
-            $emp = $this->employeeModel->findByUserId((int)($user['id'] ?? 0));
-            $employeeId = $emp['id'] ?? 0;
-            error_log("Employee mode - found employeeId: $employeeId");
-        }
-        
-        if (!$employeeId) {
-            echo json_encode(['entries' => [], 'total_hours' => 0]);
-            exit;
-        }
-        
-        $filter = $_GET['filter'] ?? 'all';
-        
-        try {
-            global $pdo;
-            
-            // Define filtro de data
-            $whereClause = '';
-            $params = [$employeeId];
-            
-            switch ($filter) {
-                case 'today':
-                    $whereClause = ' AND DATE(te.date) = CURDATE()';
-                    break;
-                case 'week':
-                    $whereClause = ' AND YEARWEEK(te.date, 1) = YEARWEEK(CURDATE(), 1)';
-                    break;
-                case 'month':
-                    $whereClause = ' AND YEAR(te.date) = YEAR(CURDATE()) AND MONTH(te.date) = MONTH(CURDATE())';
-                    break;
-            }
-            
-            // Busca registros da tabela time_entries
-            $stmt = $pdo->prepare("
-                SELECT 
-                    te.id,
-                    te.date,
-                    te.time_records,
-                    te.total_hours,
-                    te.created_at,
-                    p.name as project_name,
-                    p.id as project_id
-                FROM time_entries te
-                LEFT JOIN projects p ON te.project_id = p.id
-                WHERE te.employee_id = ? {$whereClause}
-                ORDER BY te.date DESC, te.created_at DESC
-            ");
-            
-            $stmt->execute($params);
-            $timeEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            error_log("Found " . count($timeEntries) . " time entries for employee $employeeId");
-            
-            // Processa os registros para compatibilidade com o frontend
-            $entries = [];
-            $totalHours = 0;
-            
-            foreach ($timeEntries as $timeEntry) {
-                $records = json_decode($timeEntry['time_records'], true);
-                $entryRecords = $records['entries'] ?? [];
-                
-                // Cada entrada/saída vira um item separado para o frontend
-                foreach ($entryRecords as $record) {
-                    $entries[] = [
-                        'id' => $timeEntry['id'] . '_' . $record['time'],
-                        'date' => $timeEntry['date'],
-                        'time' => $record['time'],
-                        'entry_type' => $record['type'],
-                        'project_name' => $timeEntry['project_name'],
-                        'project_id' => $timeEntry['project_id'],
-                        'calculated_hours' => 0 // Será calculado abaixo
-                    ];
-                }
-                
-                $totalHours += floatval($timeEntry['total_hours']);
-            }
-            
-            // Adiciona horas calculadas por data
-            $entriesByDate = [];
-            foreach ($entries as &$entry) {
-                $date = $entry['date'];
-                if (!isset($entriesByDate[$date])) {
-                    $entriesByDate[$date] = [];
-                }
-                $entriesByDate[$date][] = &$entry;
-            }
-            
-            foreach ($entriesByDate as $date => $dateEntries) {
-                $hoursForDate = 0;
-                foreach ($timeEntries as $timeEntry) {
-                    if ($timeEntry['date'] === $date) {
-                        $hoursForDate = floatval($timeEntry['total_hours']);
-                        break;
-                    }
-                }
-                
-                // Distribui as horas entre as entradas do dia
-                $entryCount = count($dateEntries);
-                if ($entryCount > 0) {
-                    $hoursPerEntry = $hoursForDate / $entryCount;
-                    foreach ($dateEntries as &$entry) {
-                        $entry['calculated_hours'] = round($hoursPerEntry, 2);
-                    }
-                }
-            }
-            
-            error_log("Returning " . count($entries) . " processed entries with total $totalHours hours");
-            
-            echo json_encode([
-                'entries' => $entries,
-                'total_hours' => round($totalHours, 2)
-            ]);
-            
-        } catch (Exception $e) {
-            error_log("WorkLogController::time_entries error: " . $e->getMessage());
-            echo json_encode(['entries' => [], 'total_hours' => 0]);
-        }
-        exit;
-    }
-
-    /**
-     * API: Adiciona registro de entrada/saída - VERSÃO FINAL
-     * POST /api/worklog/add-time-entry
-     */
-    public function addTimeEntry()
+   public function addTimeEntry()
     {
         header('Content-Type: application/json; charset=UTF-8');
         
@@ -370,34 +200,17 @@ class WorkLogController
         }
         
         try {
-            // Log dos dados recebidos
             error_log("=== addTimeEntry DEBUG ===");
-            error_log("Content-Type: " . ($_SERVER['CONTENT_TYPE'] ?? 'undefined'));
             error_log("POST data: " . print_r($_POST, true));
             
-            // Detecta se os dados vieram via JSON ou FormData
-            $data = [];
-            $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+            $data = $_POST; // Sempre FormData
             
-            if (strpos($contentType, 'application/json') !== false) {
-                $input = json_decode(file_get_contents('php://input'), true);
-                $data = $input ?: [];
-            } else {
-                $data = $_POST;
-            }
-            
-            // Determina o employee_id
-            $employeeId = 0;
-            
+            // Para admins, employee_id vem do formulário
             if (isset($_SESSION['user']['role']) && $_SESSION['user']['role'] === 'admin') {
-                if (isset($data['employee_id']) && $data['employee_id']) {
-                    $employeeId = (int)$data['employee_id'];
-                    error_log("Admin mode - employee_id: $employeeId");
-                } else {
-                    echo json_encode(['success' => false, 'message' => 'Employee ID é obrigatório para admins']);
-                    exit;
-                }
+                $employeeId = (int)($data['employee_id'] ?? 0);
+                error_log("Admin mode - employee_id: $employeeId");
             } else {
+                // Para funcionários, busca pela sessão
                 $email = $_SESSION['user']['email'] ?? '';
                 $user = $this->userModel->findByEmail($email);
                 $emp = $this->employeeModel->findByUserId((int)($user['id'] ?? 0));
@@ -405,13 +218,12 @@ class WorkLogController
                 error_log("Employee mode - employee_id: $employeeId");
             }
             
-            // Extrai outros parâmetros
             $projectId = (int)($data['project_id'] ?? 0);
             $date = trim($data['date'] ?? '');
             $time = trim($data['time'] ?? '');
             $entryType = trim($data['type'] ?? $data['entry_type'] ?? 'entry');
             
-            error_log("Params - projectId: $projectId, date: $date, time: $time, type: $entryType");
+            error_log("Final data - employeeId: $employeeId, projectId: $projectId, date: $date, time: $time, type: $entryType");
             
             // Validações
             if (!$employeeId) {
@@ -458,7 +270,6 @@ class WorkLogController
             if ($existing) {
                 error_log("Updating existing record ID: " . $existing['id']);
                 
-                // Atualiza registro existente
                 $timeRecords = json_decode($existing['time_records'], true);
                 if (!isset($timeRecords['entries']) || !is_array($timeRecords['entries'])) {
                     $timeRecords = ['entries' => []];
@@ -482,7 +293,6 @@ class WorkLogController
             } else {
                 error_log("Creating new record");
                 
-                // Cria novo registro
                 $timeRecords = ['entries' => [['type' => $entryType, 'time' => $time]]];
                 $totalHours = $this->calculateHoursFromTimeRecords($timeRecords['entries']);
                 
@@ -513,15 +323,11 @@ class WorkLogController
         exit;
     }
 
-    /**
-     * Calcula total de horas baseado nos registros de entrada/saída
-     */
     private function calculateHoursFromTimeRecords(array $entries): float
     {
         $totalMinutes = 0;
         $entryTime = null;
         
-        // Ordena por horário
         usort($entries, function($a, $b) {
             return strcmp($a['time'], $b['time']);
         });
@@ -545,6 +351,102 @@ class WorkLogController
         
         return round($totalMinutes / 60, 2);
     }
+
+   public function time_entries()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        
+        // Para admins com employee_id no GET (modal de funcionários)
+        if (isset($_SESSION['user']['role']) && $_SESSION['user']['role'] === 'admin' && isset($_GET['employee_id'])) {
+            $employeeId = (int)$_GET['employee_id'];
+            error_log("Admin mode - employee_id from GET: $employeeId");
+        } else {
+            // Funcionário logado (dashboard do funcionário)
+            $email = $_SESSION['user']['email'] ?? '';
+            $user = $this->userModel->findByEmail($email);
+            $emp = $this->employeeModel->findByUserId((int)($user['id'] ?? 0));
+            $employeeId = $emp['id'] ?? 0;
+            error_log("Employee mode - found employeeId: $employeeId");
+        }
+        
+        if (!$employeeId) {
+            echo json_encode(['entries' => [], 'total_hours' => 0]);
+            exit;
+        }
+        
+        $filter = $_GET['filter'] ?? 'all';
+        
+        try {
+            global $pdo;
+            
+            // Define filtro de data
+            $whereClause = '';
+            $params = [$employeeId];
+            
+            switch ($filter) {
+                case 'today':
+                    $whereClause = ' AND DATE(te.date) = CURDATE()';
+                    break;
+                case 'week':
+                    $whereClause = ' AND YEARWEEK(te.date, 1) = YEARWEEK(CURDATE(), 1)';
+                    break;
+                case 'month':
+                    $whereClause = ' AND YEAR(te.date) = YEAR(CURDATE()) AND MONTH(te.date) = MONTH(CURDATE())';
+                    break;
+            }
+            
+            $stmt = $pdo->prepare("
+                SELECT 
+                    te.id,
+                    te.date,
+                    te.time_records,
+                    te.total_hours,
+                    te.created_at,
+                    p.name as project_name,
+                    p.id as project_id
+                FROM time_entries te
+                LEFT JOIN projects p ON te.project_id = p.id
+                WHERE te.employee_id = ? {$whereClause}
+                ORDER BY te.date DESC, te.created_at DESC
+            ");
+            
+            $stmt->execute($params);
+            $timeEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $entries = [];
+            $totalHours = 0;
+            
+            foreach ($timeEntries as $timeEntry) {
+                $records = json_decode($timeEntry['time_records'], true);
+                $entryRecords = $records['entries'] ?? [];
+                
+                foreach ($entryRecords as $record) {
+                    $entries[] = [
+                        'id' => $timeEntry['id'] . '_' . $record['time'],
+                        'date' => $timeEntry['date'],
+                        'time' => $record['time'],
+                        'entry_type' => $record['type'],
+                        'project_name' => $timeEntry['project_name'],
+                        'project_id' => $timeEntry['project_id'],
+                        'calculated_hours' => round(floatval($timeEntry['total_hours']) / count($entryRecords), 2)
+                    ];
+                }
+                
+                $totalHours += floatval($timeEntry['total_hours']);
+            }
+            
+            echo json_encode([
+                'entries' => $entries,
+                'total_hours' => round($totalHours, 2)
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("WorkLogController::time_entries error: " . $e->getMessage());
+            echo json_encode(['entries' => [], 'total_hours' => 0]);
+        }
+        exit;
+    }
+
 
     /** API: Excluir registro de tempo */
     public function deleteTimeEntry()

@@ -104,6 +104,7 @@ $workLogController = new WorkLogController();
 $carController = new CarController();
 
 // 11) Dispatcher de rotas
+// 11) Dispatcher de rotas - SWITCH COMPLETO CORRIGIDO
 switch (true) {
     // ===== USUÁRIO =====
     case $route === '/' || $route === '/login':
@@ -155,10 +156,6 @@ switch (true) {
     case $route === '/projects/transactions':
         $projectController->transactions();
         break;
-    case preg_match('/^\/api\/projects\/(\d+)$/', $route, $matches):
-        $projectController = new ProjectController();
-        $projectController->getProjectDetails((int) $matches[1]);
-        break;
 
     // ===== WORK LOGS - SISTEMA ANTIGO E NOVO =====
     case $route === '/work_logs/index':
@@ -173,6 +170,7 @@ switch (true) {
     case $route === '/work_logs/project_totals':
         $workLogController->project_totals();
         break;
+
     // ===== API WORK LOGS - SISTEMA NOVO =====
     case $route === '/api/worklog/add-time-entry':
         $workLogController->addTimeEntry();
@@ -184,9 +182,23 @@ switch (true) {
         $workLogController->deleteTimeEntry();
         break;
 
-    // ===== API FUNCIONÁRIOS - HORAS =====
-    case $route === '/api/employees/hours-summary':
-        $employeeController->hours_summary();
+    // ===== API PROJETOS =====
+    case $route === '/api/projects/list':
+        $workLogController->getProjectsList();
+        break;
+    case $route === '/api/projects/active':
+        $projectController->getActiveProjects();
+        break;
+    case preg_match('/^\/api\/projects\/(\d+)$/', $route, $matches):
+        $projectController->getProjectDetails((int) $matches[1]);
+        break;
+
+    // ===== API ADMIN TIME TRACKING =====
+    case $route === '/api/work_logs/admin_time_entry':
+        $workLogController->adminCreateTimeEntry();
+        break;
+    case $route === '/api/employee-hours':
+        $workLogController->getEmployeeHours();
         break;
 
     // ===== FUNCIONÁRIOS - CRUD =====
@@ -207,32 +219,14 @@ switch (true) {
         break;
 
     // ===== API FUNCIONÁRIOS - HORAS =====
+    case $route === '/api/employees/hours-summary':
+        $employeeController->hours_summary();
+        break;
     case preg_match('/^\/api\/employees\/hours\/(\d+)$/', $route, $matches):
         $employeeController->getEmployeeHours((int) $matches[1]);
         break;
-    case $route === '/api/employees/hours-summary':
-        $employeeController->getEmployeeHoursSummary();
-        break;
     case $route === '/api/employees/ranking':
         $employeeController->getRanking();
-        break;
-
-    // ===== API WORK LOGS - SISTEMA NOVO =====
-    case preg_match('/^\/api\/work_logs\/time_entries\/(\d+)$/', $route, $matches):
-        $workLogController->time_entries((int) $matches[1]);
-        break;
-
-    // ===== API PROJETOS =====
-    case $route === '/api/projects/active':
-        $projectController->getActiveProjects();
-        break;
-    case preg_match('/^\/api\/projects\/(\d+)$/', $route, $matches):
-        $projectController->getProjectDetails((int) $matches[1]);
-        break;
-
-    // ===== API DELETAR REGISTROS DE PONTO =====
-    case $route === '/api/time_entries/delete':
-        $workLogController->deleteTimeEntry();
         break;
 
     // ===== CLIENTES =====

@@ -1,5 +1,5 @@
 <?php
-// system/public/index.php — Front controller CORRIGIDO
+// system/public/index.php — Front controller CORRIGIDO COMPLETO
 
 // 1) Inicia sessão
 if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -52,17 +52,35 @@ if ($route === '') {
     $route = '/';
 }
 
+// DEBUG TEMPORÁRIO (remover após correção)
+error_log("DEBUG - Route: $route");
+error_log("DEBUG - User role: " . ($_SESSION['user']['role'] ?? 'not set'));
+error_log("DEBUG - Is employee: " . (isEmployee() ? 'yes' : 'no'));
+
 // Rotas públicas
 $publicRoutes = ['/', '/login', '/auth', '/register', '/store'];
-if (!in_array($route, $publicRoutes, true) && !isLoggedIn()) {
-    redirect('/login');
-}
 
-// Só employee e finance acessa seu dashboard e profile
-if (in_array($route, ['/employees/dashboard', '/employees/profile'], true)
-    && !isEmployee() && !isFinance()
-) {
-    redirect('/dashboard');
+// CORREÇÃO CRÍTICA: Roteamento baseado em roles
+if (!isLoggedIn()) {
+    // Se não está logado, só pode acessar rotas públicas
+    if (!in_array($route, $publicRoutes, true)) {
+        redirect('/login');
+    }
+} else {
+    // Se está logado, aplicar lógica de redirecionamento por role
+    $userRole = $_SESSION['user']['role'] ?? '';
+    
+    // Se funcionário tenta acessar dashboard geral, redirecionar para dashboard de funcionário
+    if ($route === '/dashboard' && $userRole === 'employee') {
+        redirect('/employees/dashboard');
+        exit;
+    }
+    
+    // Se admin/finance tenta acessar área de funcionário sem permissão
+    if (in_array($route, ['/employees/dashboard', '/employees/profile'], true) && !isEmployee() && !isFinance()) {
+        redirect('/dashboard');
+        exit;
+    }
 }
 
 // ─── AUTORIZAÇÃO PARA CRUD DE FUNCIONÁRIOS ───────────────────────────────
@@ -133,60 +151,29 @@ switch (true) {
         $employeeController->profile();
         break;
 
-    // ===== PROJETOS =====
-    case $route === '/projects':
-        $projectController->index();
-        break;
-    case $route === '/projects/store':
-        $projectController->store();
-        break;
-    case $route === '/projects/update':
-        $projectController->update();
-        break;
-    case $route === '/projects/delete':
-        $projectController->delete();
-        break;
-    case $route === '/projects/show':
-        $projectController->show();
-        break;
-    case $route === '/projects/checkEmployee':
-        $projectController->checkEmployee();
-        break;
-    case $route === '/projects/transactions':
-        $projectController->transactions();
-        break;
-
-    // ===== WORK LOGS - SISTEMA ANTIGO E NOVO =====
-    case $route === '/work_logs/index':
-        $workLogController->index();
-        break;
-    case $route === '/work_logs/store':
-        $workLogController->store();
-        break;
-    case $route === '/work_logs/store_time_entry':
-        $workLogController->store_time_entry();
-        break;
-    case $route === '/work_logs/project_totals':
-        $workLogController->project_totals();
-        break;
-
-    // ===== API WORK LOGS - SISTEMA NOVO =====
-    case $route === '/api/worklog/add-time-entry':
-        $workLogController->addTimeEntry();
-        break;
-    case $route === '/api/worklog/time-entries':
-        $workLogController->time_entries();
-        break;
-    case $route === '/api/worklog/delete-time-entry':
-        $workLogController->deleteTimeEntry();
-        break;
-
-    // ===== NOVAS ROTAS API CORRIGIDAS =====
-    case $route === '/api/worklog/employee-projects':
-        $workLogController->getEmployeeProjects();
-        break;
-    case $route === '/api/worklog/time-entries-by-day':
-        $workLogController->getTimeEntriesByDay();
+    // ===== DEBUG TEMPORÁRIO =====
+    case $route === '/debug':
+        ?>
+        <!DOCTYPE html>
+        <html><head><title>Debug</title></head><body>
+        <h1>Debug Info</h1>
+        <h2>Session:</h2><pre><?= print_r($_SESSION, true) ?></pre>
+        <h2>Route:</h2><p><?= $route ?></p>
+        <h2>Functions:</h2>
+        <ul>
+            <li>isLoggedIn(): <?= isLoggedIn() ? 'true' : 'false' ?></li>
+            <li>isEmployee(): <?= isEmployee() ? 'true' : 'false' ?></li>
+            <li>isFinance(): <?= isFinance() ? 'true' : 'false' ?></li>
+            <li>isAdmin(): <?= isAdmin() ? 'true' : 'false' ?></li>
+        </ul>
+        <h2>Links:</h2>
+        <ul>
+            <li><a href="<?= BASE_URL ?>/employees/dashboard">Dashboard Funcionário</a></li>
+            <li><a href="<?= BASE_URL ?>/employees/profile">Perfil Funcionário</a></li>
+            <li><a href="<?= BASE_URL ?>/dashboard">Dashboard Admin</a></li>
+        </ul>
+        </body></html>
+        <?php
         break;
 
     // ===== API PROJETOS =====
@@ -306,33 +293,33 @@ switch (true) {
     case $route === '/finance/delete':
         $financialController->delete();
         break;
-    case $route === '/finance/get':
-        $financialController->get();
+
+    // ===== PROJETOS =====
+    case $route === '/projects':
+        $projectController->index();
+        break;
+    case $route === '/projects/store':
+        $projectController->store();
+        break;
+    case $route === '/projects/update':
+        $projectController->update();
+        break;
+    case $route === '/projects/delete':
+        $projectController->delete();
+        break;
+    case $route === '/projects/get':
+        $projectController->get();
         break;
 
-    // ===== ANÁLISES =====
-    case $route === '/analytics':
-        $analyticsController->index();
+    // ===== WORK LOGS =====
+    case $route === '/work_logs':
+        $workLogController->index();
         break;
-    case $route === '/analytics/stats':
-        $analyticsController->stats();
+    case $route === '/work_logs/store':
+        $workLogController->store();
         break;
-
-    // ===== CALENDÁRIO =====
-    case $route === '/calendar':
-        $calendarController->index();
-        break;
-    case $route === '/calendar/events':
-        $calendarController->events();
-        break;
-    case $route === '/calendar/store':
-        $calendarController->store();
-        break;
-    case $route === '/calendar/update':
-        $calendarController->update();
-        break;
-    case $route === '/calendar/delete':
-        $calendarController->delete();
+    case $route === '/work_logs/store_time_entry':
+        $workLogController->storeTimeEntry();
         break;
 
     // ===== CARROS =====
@@ -348,15 +335,30 @@ switch (true) {
     case $route === '/cars/delete':
         $carController->delete();
         break;
-    case $route === '/cars/usage':
-        $carController->usage();
+
+    // ===== CALENDÁRIO =====
+    case $route === '/calendar':
+        $calendarController->index();
         break;
 
-    // ===== ROTA PADRÃO (404) =====
+    // ===== ANALYTICS =====
+    case $route === '/analytics':
+        $analyticsController->index();
+        break;
+    case $route === '/analytics/stats':
+        $analyticsController->stats();
+        break;
+
+    // ===== API WORK LOGS =====
+    case preg_match('/^\/api\/work_logs\/time_entries\/(\d+)$/', $route, $matches):
+        $workLogController->getTimeEntriesByProject((int) $matches[1]);
+        break;
+
+    // ===== ROTA PADRÃO =====
     default:
         http_response_code(404);
-        echo "<h1>404 - Página não encontrada</h1>";
-        echo "<p>A rota <strong>{$route}</strong> não foi encontrada.</p>";
-        echo "<a href='" . BASE_URL . "/dashboard'>Voltar ao Dashboard</a>";
+        echo '<h1>404 - Página não encontrada</h1>';
+        echo '<p>Rota: ' . htmlspecialchars($route) . '</p>';
+        echo '<p><a href="' . BASE_URL . '">Voltar ao início</a></p>';
         break;
 }

@@ -84,49 +84,26 @@ class EmployeeController
         require __DIR__ . '/../views/employees/index.php';
     }
 
-    public function dashboard_employee()
-        {
-            if (session_status() !== PHP_SESSION_ACTIVE) session_start();
-            if (! isEmployee()) {
-                header('Location: ' . BASE_URL . '/dashboard');
-                exit;
-            }
-
-            $userId   = (int)($_SESSION['user']['id'] ?? 0);
-            $empModel = new Employee();
-            $emp      = $empModel->findByUserId($userId);
-            $empId    = $emp['id'] ?? 0;
-
-            // Buscar projetos diretamente com SQL
-            global $pdo;
-            $projects = [];
-            try {
-                $stmt = $pdo->prepare("
-                    SELECT DISTINCT 
-                        p.*,
-                        c.name as client_name
-                    FROM projects p
-                    LEFT JOIN client c ON p.client_id = c.id
-                    LEFT JOIN project_resources pr ON p.id = pr.project_id 
-                    WHERE pr.resource_id = ? 
-                        AND pr.resource_type = 'employee'
-                        AND p.status IN ('in_progress', 'pending')
-                    ORDER BY p.created_at DESC
-                ");
-                $stmt->execute([$empId]);
-                $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            } catch (Exception $e) {
-                error_log("Erro ao buscar projetos: " . $e->getMessage());
-                $projects = [];
-            }
-
-            require __DIR__ . '/../views/employees/dashboard_employee.php';
-        }
-
+    /** Perfil do funcionário */
     public function profile()
     {
+        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+        
+        // CORREÇÃO: Verificar se é funcionário ou finance
+        if (!isEmployee() && !isFinance()) {
+            error_log("Profile access denied - User role: " . ($_SESSION['user']['role'] ?? 'not set'));
+            redirect('/dashboard');
+            return;
+        }
+
         // Busca dados do funcionário logado
         $email = $_SESSION['user']['email'] ?? '';
+        
+        if (empty($email)) {
+            error_log("Profile error - No email in session");
+            redirect('/employees/dashboard');
+            return;
+        }
         
         try {
             global $pdo;
@@ -138,12 +115,16 @@ class EmployeeController
                 WHERE u.email = ?
             ");
             $stmt->execute([$email]);
-            $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+            $emp = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            if (!$employee) {
+            if (!$emp) {
+                error_log("Profile error - Employee not found for email: $email");
+                // Se não encontrou dados, redirecionar para dashboard de funcionário
                 redirect('/employees/dashboard');
                 return;
             }
+            
+            error_log("Profile loaded successfully for employee ID: " . $emp['id']);
             
         } catch (Exception $e) {
             error_log("Erro ao carregar perfil: " . $e->getMessage());
@@ -155,43 +136,310 @@ class EmployeeController
         require __DIR__ . '/../views/employees/profile_employee.php';
     }
 
+    // MÉTODO dashboard_employee() TAMBÉM CORRIGIDO
+    public function dashboard_employee()
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+        
+        // CORREÇÃO: Verificar se é funcionário OU financeiro
+        if (!isEmployee() && !isFinance()) {
+            error_log("Dashboard access denied - User role: " . ($_SESSION['user']['role'] ?? 'not set'));
+            redirect('/dashboard');
+            exit;
+        }
+
+        $userId = (int)($_SESSION['user']['id'] ?? 0);
+        $empModel = new Employee();
+        $emp = $empModel->findByUserId($userId);
+        $empId = $emp['id'] ?? 0;
+        
+        error_log("Dashboard employee - UserID: $userId, EmpID: $empId");
+
+        // CORREÇÃO: Buscar projetos com múltiplas tentativas
+        global $pdo;
+        $projects = [];
+        
+        try {
+            // Primeira tentativa: project_resources (nova estrutura)
+            $stmt = $pdo->prepare("
+                SELECT DISTINCT 
+                    p.*,
+                    c.name as client_name
+                FROM projects p
+                LEFT JOIN client c ON p.client_id = c.id
+                LEFT JOIN project_resources pr ON p.id = pr.project_id 
+                WHERE pr.resource_id = ? 
+                    AND pr.resource_type = 'employee'
+                    AND p.status IN ('in_progress', 'pending')
+                ORDER BY p.created_at DESC
+            ");
+            $stmt->execute([$empId]);
+            $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Se não encontrou projetos, tentar segunda abordagem
+            if (empty($projects)) {
+                // Segunda tentativa: campo JSON employees
+                $stmt = $pdo->prepare("
+                    SELECT DISTINCT 
+                        p.*,
+                        c.name as client_name
+                    FROM projects p
+                    LEFT JOIN client c ON p.client_id = c.id
+                    WHERE JSON_CONTAINS(p.employees, ?, '$')
+                        AND p.status IN ('in_progress', 'pending')
+                    ORDER BY p.created_at DESC
+                ");
+                $stmt->execute([json_encode(['id' => $empId])]);
+                $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            // Se ainda não encontrou, tentar terceira abordagem (busca por ID simples)
+            if (empty($projects)) {
+                // Terceira tentativa: busca simples por ID no JSON
+                $stmt = $pdo->prepare("
+                    SELECT DISTINCT 
+                        p.*,
+                        c.name as client_name
+                    FROM projects p
+                    LEFT JOIN client c ON p.client_id = c.id
+                    WHERE p.employees LIKE ?
+                        AND p.status IN ('in_progress', 'pending')
+                    ORDER BY p.created_at DESC
+                ");
+                $stmt->execute(['%"id":' . $empId . '%']);
+                $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            error_log("Dashboard Employee - Projetos encontrados: " . count($projects));
+            
+        } catch (Exception $e) {
+            error_log("Erro ao buscar projetos do funcionário: " . $e->getMessage());
+            $projects = [];
+        }
+
+        // Garantir que $projects é sempre um array
+        if (!is_array($projects)) {
+            $projects = [];
+        }
+
+        // Incluir a view com a variável $projects disponível
+        require __DIR__ . '/../views/employees/dashboard_employee.php';
+    }
+
+    /** API: Obter detalhes do funcionário */
+    public function getEmployeeDetails()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        
+        $employeeId = (int)($_GET['id'] ?? 0);
+        if (!$employeeId) {
+            echo json_encode(['success' => false, 'message' => 'ID do funcionário é obrigatório']);
+            exit;
+        }
+
+        try {
+            global $pdo;
+            $stmt = $pdo->prepare("
+                SELECT 
+                    e.*,
+                    u.email,
+                    u.role,
+                    r.name as role_name
+                FROM employees e
+                LEFT JOIN users u ON e.user_id = u.id
+                LEFT JOIN roles r ON e.role_id = r.id
+                WHERE e.id = ?
+            ");
+            $stmt->execute([$employeeId]);
+            $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$employee) {
+                echo json_encode(['success' => false, 'message' => 'Funcionário não encontrado']);
+                exit;
+            }
+
+            echo json_encode(['success' => true, 'employee' => $employee]);
+
+        } catch (Exception $e) {
+            error_log("EmployeeController::getEmployeeDetails error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Erro interno do servidor']);
+        }
+        exit;
+    }
+
+    /** API: Obter funcionário por ID */
+    public function get()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        
+        $employeeId = (int)($_GET['id'] ?? 0);
+        if (!$employeeId) {
+            echo json_encode(['success' => false, 'message' => 'ID é obrigatório']);
+            exit;
+        }
+
+        try {
+            global $pdo;
+            $stmt = $pdo->prepare("
+                SELECT 
+                    e.*,
+                    u.email,
+                    u.role,
+                    r.name as role_name
+                FROM employees e
+                LEFT JOIN users u ON e.user_id = u.id
+                LEFT JOIN roles r ON e.role_id = r.id
+                WHERE e.id = ?
+            ");
+            $stmt->execute([$employeeId]);
+            $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$employee) {
+                echo json_encode(['success' => false, 'message' => 'Funcionário não encontrado']);
+                exit;
+            }
+
+            echo json_encode(['success' => true, 'employee' => $employee]);
+
+        } catch (Exception $e) {
+            error_log("EmployeeController::get error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Erro interno do servidor']);
+        }
+        exit;
+    }
+
+    /** API: Ranking de funcionários por horas */
+    public function getRanking()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        
+        try {
+            global $pdo;
+            
+            // Busca horas dos funcionários
+            $stmt = $pdo->query("
+                SELECT 
+                    e.id,
+                    e.name,
+                    e.last_name,
+                    e.function as position,
+                    COALESCE(SUM(te.total_hours), 0) as total_hours
+                FROM employees e
+                LEFT JOIN time_entries te ON e.id = te.employee_id
+                WHERE e.active = 1
+                GROUP BY e.id, e.name, e.last_name, e.function
+                ORDER BY total_hours DESC
+            ");
+            
+            $ranking = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Formata os dados
+            $ranking = array_map(function($emp) {
+                return [
+                    'id' => (int)$emp['id'],
+                    'name' => trim($emp['name'] . ' ' . $emp['last_name']),
+                    'position' => $emp['position'] ?: 'Não definido',
+                    'total_hours' => number_format((float)$emp['total_hours'], 2, '.', '')
+                ];
+            }, $ranking);
+
+            echo json_encode($ranking);
+
+        } catch (Exception $e) {
+            error_log("EmployeeController::getRanking error: " . $e->getMessage());
+            echo json_encode([]);
+        }
+        exit;
+    }
+
+    /** API: Resumo de horas dos funcionários */
     public function hours_summary()
     {
         header('Content-Type: application/json; charset=UTF-8');
         
-        if (!isEmployee()) {
+        try {
+            global $pdo;
+            
+            // Estatísticas gerais
+            $totalHoursStmt = $pdo->query("SELECT COALESCE(SUM(total_hours), 0) FROM time_entries");
+            $totalHours = (float)$totalHoursStmt->fetchColumn();
+
+            $activeEmployeesStmt = $pdo->query("SELECT COUNT(*) FROM employees WHERE active = 1");
+            $activeEmployees = (int)$activeEmployeesStmt->fetchColumn();
+
+            $averageHours = $activeEmployees > 0 ? $totalHours / $activeEmployees : 0;
+
+            // Horas do mês atual
+            $monthHoursStmt = $pdo->query("
+                SELECT COALESCE(SUM(total_hours), 0) 
+                FROM time_entries 
+                WHERE YEAR(date) = YEAR(CURDATE()) 
+                AND MONTH(date) = MONTH(CURDATE())
+            ");
+            $monthHours = (float)$monthHoursStmt->fetchColumn();
+
+            // Horas do mês anterior
+            $lastMonthHoursStmt = $pdo->query("
+                SELECT COALESCE(SUM(total_hours), 0) 
+                FROM time_entries 
+                WHERE date >= DATE_SUB(DATE_SUB(CURDATE(), INTERVAL DAY(CURDATE())-1 DAY), INTERVAL 1 MONTH)
+                AND date < DATE_SUB(CURDATE(), INTERVAL DAY(CURDATE())-1 DAY)
+            ");
+            $lastMonthHours = (float)$lastMonthHoursStmt->fetchColumn();
+
+            $monthChange = $lastMonthHours > 0 ? (($monthHours - $lastMonthHours) / $lastMonthHours) * 100 : 0;
+
+            echo json_encode([
+                'total_hours' => number_format($totalHours, 2, '.', ''),
+                'active_employees' => $activeEmployees,
+                'average_hours' => number_format($averageHours, 2, '.', ''),
+                'month_hours' => number_format($monthHours, 2, '.', ''),
+                'month_change' => number_format($monthChange, 1, '.', '')
+            ]);
+
+        } catch (Exception $e) {
+            error_log("EmployeeController::hours_summary error: " . $e->getMessage());
+            echo json_encode([
+                'total_hours' => '0.00',
+                'active_employees' => 0,
+                'average_hours' => '0.00',
+                'month_hours' => '0.00',
+                'month_change' => '0.0'
+            ]);
+        }
+        exit;
+    }
+
+    /** API: Resumo de horas individual do funcionário */
+    public function getEmployeeHoursSummary()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        
+        $employeeId = (int)($_GET['id'] ?? 0);
+        if (!$employeeId) {
             echo json_encode(['total' => '0.00', 'today' => '0.00', 'week' => '0.00']);
             exit;
         }
 
         try {
             global $pdo;
-            $userId = $_SESSION['user']['id'];
-            
-            $empStmt = $pdo->prepare("SELECT id FROM employees WHERE user_id = ?");
-            $empStmt->execute([$userId]);
-            $emp = $empStmt->fetch(PDO::FETCH_ASSOC);
-            
-            if (!$emp) {
-                echo json_encode(['total' => '0.00', 'today' => '0.00', 'week' => '0.00']);
-                exit;
-            }
-            
-            $employeeId = $emp['id'];
-            
-            $totalStmt = $pdo->prepare("SELECT COALESCE(SUM(total_hours), 0) as total FROM time_entries WHERE employee_id = ?");
-            $totalStmt->execute([$employeeId]);
-            $totalHours = (float)$totalStmt->fetchColumn();
             
             $today = date('Y-m-d');
-            $todayStmt = $pdo->prepare("SELECT COALESCE(SUM(total_hours), 0) as today FROM time_entries WHERE employee_id = ? AND date = ?");
-            $todayStmt->execute([$employeeId, $today]);
-            $todayHours = (float)$todayStmt->fetchColumn();
-            
             $startOfWeek = date('Y-m-d', strtotime('monday this week'));
             $endOfWeek = date('Y-m-d', strtotime('sunday this week'));
-            
-            $weekStmt = $pdo->prepare("SELECT COALESCE(SUM(total_hours), 0) as week FROM time_entries WHERE employee_id = ? AND date BETWEEN ? AND ?");
+
+            // Total geral
+            $totalStmt = $pdo->prepare("SELECT COALESCE(SUM(total_hours), 0) FROM time_entries WHERE employee_id = ?");
+            $totalStmt->execute([$employeeId]);
+            $totalHours = (float)$totalStmt->fetchColumn();
+
+            // Hoje
+            $todayStmt = $pdo->prepare("SELECT COALESCE(SUM(total_hours), 0) FROM time_entries WHERE employee_id = ? AND date = ?");
+            $todayStmt->execute([$employeeId, $today]);
+            $todayHours = (float)$todayStmt->fetchColumn();
+
+            // Esta semana
+            $weekStmt = $pdo->prepare("SELECT COALESCE(SUM(total_hours), 0) FROM time_entries WHERE employee_id = ? AND date BETWEEN ? AND ?");
             $weekStmt->execute([$employeeId, $startOfWeek, $endOfWeek]);
             $weekHours = (float)$weekStmt->fetchColumn();
 
@@ -207,344 +455,35 @@ class EmployeeController
         exit;
     }
 
-    /** Cria novo funcionário */
-    public function store()
+    /** Formatar display de entrada de tempo */
+    private function formatTimeEntryDisplay(array $entries, string $date): string
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Método não permitido']);
-            exit;
+        if (empty($entries)) {
+            return 'Sem registros';
         }
 
-        $data = [
-            'name' => trim($_POST['name'] ?? ''),
-            'last_name' => trim($_POST['last_name'] ?? ''),
-            'email' => trim($_POST['email'] ?? ''),
-            'phone' => trim($_POST['phone'] ?? ''),
-            'function' => trim($_POST['position'] ?? ''), // Mapeia position para function
-            'active' => isset($_POST['active']) ? 1 : 0,
-        ];
-
-        $password = trim($_POST['password'] ?? '');
-        
-        if (!$data['name'] || !$data['last_name'] || !$data['email'] || !$password) {
-            echo json_encode(['success' => false, 'message' => 'Campos obrigatórios não preenchidos']);
-            exit;
+        $display = [];
+        foreach ($entries as $entry) {
+            $time = $entry['time'] ?? '';
+            $type = $entry['type'] ?? '';
+            $typeLabel = $type === 'entry' ? 'Entrada' : 'Saída';
+            $display[] = "{$time} ({$typeLabel})";
         }
 
-        // Verifica se e-mail já existe
-        if ($this->userModel->findByEmail($data['email'])) {
-            echo json_encode(['success' => false, 'message' => 'E-mail já está em uso']);
-            exit;
-        }
-
-        try {
-            global $pdo;
-            $pdo->beginTransaction();
-
-            // ===== CORREÇÃO: Passa parâmetros individuais para create() =====
-            $userCreated = $this->userModel->create(
-                $data['name'] . ' ' . $data['last_name'], // nome completo
-                $data['email'],                           // email
-                password_hash($password, PASSWORD_DEFAULT), // senha hash
-                'employee'                                // role
-            );
-            
-            if (!$userCreated) {
-                throw new Exception('Erro ao criar usuário');
-            }
-
-            // Pega o ID do usuário criado
-            $userId = $pdo->lastInsertId();
-
-            // Cria funcionário
-            $data['user_id'] = $userId;
-            // Campos obrigatórios da tabela employees
-            $data['sex'] = 'male'; // Padrão
-            $data['birth_date'] = date('Y-m-d'); // Padrão hoje
-            $data['start_date'] = date('Y-m-d'); // Padrão hoje
-            $data['role_id'] = 1; // Padrão employee
-            
-            // Chama o método create do Employee (que espera array + files)
-            Employee::create($data, $_FILES ?? []);
-
-            $pdo->commit();
-            echo json_encode(['success' => true, 'message' => 'Funcionário criado com sucesso']);
-
-        } catch (Exception $e) {
-            $pdo->rollback();
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
-        }
-        exit;
+        return implode(', ', $display);
     }
 
-    /** Atualiza funcionário - VERSÃO CORRIGIDA */
-    public function update()
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Método não permitido']);
-            exit;
-        }
-
-        $employeeId = (int)($_POST['employee_id'] ?? 0);
-        if (!$employeeId) {
-            echo json_encode(['success' => false, 'message' => 'ID do funcionário não informado']);
-            exit;
-        }
-
-        $data = [
-            'name' => trim($_POST['name'] ?? ''),
-            'last_name' => trim($_POST['last_name'] ?? ''),
-            'function' => trim($_POST['function'] ?? ''),
-            'address' => trim($_POST['address'] ?? ''),
-            'zip_code' => trim($_POST['zip_code'] ?? ''),
-            'city' => trim($_POST['city'] ?? ''),
-            'sex' => trim($_POST['sex'] ?? 'male'),
-            'birth_date' => trim($_POST['birth_date'] ?? ''),
-            'nationality' => trim($_POST['nationality'] ?? ''),
-            'permission_type' => trim($_POST['permission_type'] ?? ''),
-            'ahv_number' => trim($_POST['ahv_number'] ?? ''),
-            'phone' => trim($_POST['phone'] ?? ''),
-            'religion' => trim($_POST['religion'] ?? ''),
-            'marital_status' => trim($_POST['marital_status'] ?? 'single'),
-            'start_date' => trim($_POST['start_date'] ?? ''),
-            'about' => trim($_POST['about'] ?? ''),
-            'active' => isset($_POST['active']) ? 1 : 0,
-            'role_id' => (int)($_POST['role_id'] ?? 1)
-        ];
-
-        // Dados do usuário
-        $email = trim($_POST['email'] ?? '');
-        $password = trim($_POST['password'] ?? '');
-
-        if (!$data['name'] || !$data['last_name'] || !$email) {
-            echo json_encode(['success' => false, 'message' => 'Campos obrigatórios não preenchidos']);
-            exit;
-        }
-
-        try {
-            global $pdo;
-            $pdo->beginTransaction();
-
-            // Busca funcionário atual
-            $stmt = $pdo->prepare("SELECT user_id FROM employees WHERE id = ?");
-            $stmt->execute([$employeeId]);
-            $employee = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if (!$employee) {
-                throw new Exception('Funcionário não encontrado');
-            }
-
-            $userId = $employee['user_id'];
-
-            // Atualiza tabela employees
-            $employeeFields = [
-                'name', 'last_name', 'function', 'address', 'zip_code', 'city',
-                'sex', 'birth_date', 'nationality', 'permission_type', 'ahv_number',
-                'phone', 'religion', 'marital_status', 'start_date', 'about', 'active', 'role_id'
-            ];
-
-            $setClause = implode(' = ?, ', $employeeFields) . ' = ?';
-            $values = array_values(array_intersect_key($data, array_flip($employeeFields)));
-            $values[] = $employeeId;
-
-            $updateEmployeeSQL = "UPDATE employees SET {$setClause} WHERE id = ?";
-            $stmt = $pdo->prepare($updateEmployeeSQL);
-            
-            if (!$stmt->execute($values)) {
-                throw new Exception('Erro ao atualizar dados do funcionário');
-            }
-
-            // Atualiza tabela users se necessário
-            if ($userId) {
-                if ($password) {
-                    // Com senha
-                    $stmt = $pdo->prepare("
-                        UPDATE users 
-                        SET name = ?, email = ?, password = ? 
-                        WHERE id = ?
-                    ");
-                    $userSuccess = $stmt->execute([
-                        $data['name'] . ' ' . $data['last_name'],
-                        $email,
-                        password_hash($password, PASSWORD_DEFAULT),
-                        $userId
-                    ]);
-                } else {
-                    // Sem senha
-                    $stmt = $pdo->prepare("
-                        UPDATE users 
-                        SET name = ?, email = ? 
-                        WHERE id = ?
-                    ");
-                    $userSuccess = $stmt->execute([
-                        $data['name'] . ' ' . $data['last_name'],
-                        $email,
-                        $userId
-                    ]);
-                }
-
-                if (!$userSuccess) {
-                    throw new Exception('Erro ao atualizar dados do usuário');
-                }
-            }
-
-            $pdo->commit();
-            echo json_encode(['success' => true, 'message' => 'Funcionário atualizado com sucesso']);
-
-        } catch (Exception $e) {
-            $pdo->rollback();
-            error_log("EmployeeController::update error: " . $e->getMessage());
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
-        }
-        exit;
-    }
-
-    /** Deleta funcionário */
-    public function delete()
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'GET') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Método não permitido']);
-            exit;
-        }
-
-        $employeeId = (int)($_POST['employee_id'] ?? $_GET['id'] ?? 0);
-        if (!$employeeId) {
-            echo json_encode(['success' => false, 'message' => 'ID do funcionário não informado']);
-            exit;
-        }
-
-        try {
-            global $pdo;
-            $pdo->beginTransaction();
-
-            // Busca user_id antes de deletar
-            $stmt = $pdo->prepare("SELECT user_id FROM employees WHERE id = ?");
-            $stmt->execute([$employeeId]);
-            $employee = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$employee) {
-                throw new Exception('Funcionário não encontrado');
-            }
-
-            // Deleta funcionário
-            $stmt = $pdo->prepare("DELETE FROM employees WHERE id = ?");
-            if (!$stmt->execute([$employeeId])) {
-                throw new Exception('Erro ao deletar funcionário');
-            }
-
-            // Deleta usuário associado se existir
-            if ($employee['user_id']) {
-                $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
-                $stmt->execute([$employee['user_id']]);
-            }
-
-            $pdo->commit();
-            
-            // Redireciona para lista se foi via GET
-            if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-                header('Location: ' . BASE_URL . '/employees');
-                exit;
-            }
-            
-            echo json_encode(['success' => true, 'message' => 'Funcionário excluído com sucesso']);
-
-        } catch (Exception $e) {
-            $pdo->rollback();
-            error_log("EmployeeController::delete error: " . $e->getMessage());
-            
-            if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-                header('Location: ' . BASE_URL . '/employees?error=' . urlencode($e->getMessage()));
-                exit;
-            }
-            
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
-        }
-        exit;
-    }
-
-    /** Busca dados de um funcionário para o modal de detalhes */
-    public function get()
-{"success":false,"message":"Erro interno"}
-
-    /** API: Detalhes completos de um funcionário específico */
-    public function getEmployeeDetails()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
-        
-        $employeeId = (int)($_GET['id'] ?? 0);
-        if (!$employeeId) {
-            echo json_encode(['error' => 'ID do funcionário é obrigatório']);
-            exit;
-        }
-
-        try {
-            global $pdo;
-            
-            $stmt = $pdo->prepare("
-                SELECT 
-                    e.*,
-                    u.email,
-                    u.role,
-                    u.id as user_id
-                FROM employees e
-                LEFT JOIN users u ON e.user_id = u.id
-                WHERE e.id = ?
-            ");
-            $stmt->execute([$employeeId]);
-            $employee = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            if (!$employee) {
-                echo json_encode(['error' => 'Funcionário não encontrado']);
-                exit;
-            }
-
-            echo json_encode($employee);
-
-        } catch (Exception $e) {
-            error_log("EmployeeController::getEmployeeDetails error: " . $e->getMessage());
-            echo json_encode(['error' => 'Erro interno do servidor']);
-        }
-        exit;
-    }
-
-    /** API: Resumo de horas de um funcionário específico */
-    public function getEmployeeHoursSummary()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
-        
-        $employeeId = (int)($_GET['id'] ?? 0);
-        if (!$employeeId) {
-            echo json_encode(['total' => '0.00', 'today' => '0.00', 'week' => '0.00']);
-            exit;
-        }
-
-        try {
-            $summary = $this->calculateEmployeeSummary($employeeId);
-            echo json_encode($summary);
-
-        } catch (Exception $e) {
-            error_log("EmployeeController::getEmployeeHoursSummary error: " . $e->getMessage());
-            echo json_encode(['total' => '0.00', 'today' => '0.00', 'week' => '0.00']);
-        }
-        exit;
-    }
-
-    /** API: Registros detalhados de horas de um funcionário */
+    /** API: Buscar horas de um funcionário específico */
     public function getEmployeeHours()
     {
         header('Content-Type: application/json; charset=UTF-8');
         
         $employeeId = (int)($_GET['id'] ?? 0);
-        $filter = $_GET['filter'] ?? 'all';
-        
         if (!$employeeId) {
             echo json_encode([
                 'entries' => [],
                 'total_hours' => '0.00',
-                'error' => 'ID do funcionário é obrigatório'
+                'error' => 'ID do funcionário não fornecido'
             ]);
             exit;
         }
@@ -552,26 +491,30 @@ class EmployeeController
         try {
             global $pdo;
             
-            // Define filtro de data
-            $whereClause = $this->buildDateFilter($filter);
-            
-            // Busca registros do sistema NOVO (time_entries)
+            // Busca entradas do sistema novo
             $stmt = $pdo->prepare("
                 SELECT 
-                    te.*,
+                    te.date,
+                    te.time_records,
+                    te.total_hours,
                     p.name as project_name
                 FROM time_entries te
                 LEFT JOIN projects p ON te.project_id = p.id
-                WHERE te.employee_id = ? {$whereClause}
+                WHERE te.employee_id = ?
                 ORDER BY te.date DESC
             ");
             $stmt->execute([$employeeId]);
             $timeEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Processa entradas do sistema novo por data/projeto
             $groupedEntries = [];
+
+            // Processa entradas do sistema novo
             foreach ($timeEntries as $entry) {
-                $key = $entry['date'] . '_' . ($entry['project_id'] ?? 0);
+                $records = json_decode($entry['time_records'], true);
+                $entries = $records['entries'] ?? [];
+                
+                $key = $entry['date'] . '_' . ($entry['project_name'] ?? 'no_project');
+                
                 if (!isset($groupedEntries[$key])) {
                     $groupedEntries[$key] = [
                         'date' => $entry['date'],
@@ -652,7 +595,7 @@ class EmployeeController
                 'ahv_number' => trim($_POST['ahv_number'] ?? ''),
                 'phone' => trim($_POST['phone'] ?? ''),
                 'religion' => trim($_POST['religion'] ?? ''),
-                'marital_status' => $_POST['marital_status'] ?? 'single',
+                'marital_status' => $_POST['marital_status'] ?? 'single',  // FIXED: Changed : to =>
                 'start_date' => $_POST['start_date'] ?? date('Y-m-d'),
                 'about' => trim($_POST['about'] ?? ''),
                 'active' => 1
@@ -737,7 +680,7 @@ class EmployeeController
                 exit;
             }
             
-            // Preparar dados para atualização (sem obrigar campos de hora)
+            // Preparar dados para atualização
             $updateData = [
                 'name' => trim($_POST['name'] ?? $employee['name']),
                 'last_name' => trim($_POST['last_name'] ?? $employee['last_name']),
@@ -752,60 +695,19 @@ class EmployeeController
                 'role' => $_POST['role'] ?? $employee['role']
             ];
             
-            // Validações básicas
-            if (empty($updateData['name'])) {
-                echo json_encode(['success' => false, 'message' => 'Nome é obrigatório']);
-                exit;
-            }
-            
-            if (empty($updateData['email']) || !filter_var($updateData['email'], FILTER_VALIDATE_EMAIL)) {
-                echo json_encode(['success' => false, 'message' => 'E-mail válido é obrigatório']);
-                exit;
-            }
-            
-            // Verificar se email já existe para outro funcionário
-            global $pdo;
-            $stmt = $pdo->prepare("SELECT id FROM employees WHERE email = ? AND id != ?");
-            $stmt->execute([$updateData['email'], $employeeId]);
-            if ($stmt->fetch()) {
-                echo json_encode(['success' => false, 'message' => 'Este e-mail já está em uso']);
-                exit;
-            }
-            
             // Atualizar funcionário
-            $stmt = $pdo->prepare("
-                UPDATE employees SET 
-                    name = ?, last_name = ?, email = ?, phone = ?, position = ?,
-                    birth_date = ?, nationality = ?, passport = ?, gender = ?, 
-                    marital_status = ?, role = ?, updated_at = NOW()
-                WHERE id = ?
-            ");
-            
-            $success = $stmt->execute([
-                $updateData['name'],
-                $updateData['last_name'], 
-                $updateData['email'],
-                $updateData['phone'],
-                $updateData['position'],
-                $updateData['birth_date'] ?: null,
-                $updateData['nationality'],
-                $updateData['passport'],
-                $updateData['gender'],
-                $updateData['marital_status'],
-                $updateData['role'],
-                $employeeId
-            ]);
+            $success = $this->employeeModel->update($employeeId, $updateData);
             
             if (!$success) {
-                echo json_encode(['success' => false, 'message' => 'Erro ao atualizar funcionário']);
-                exit;
+                throw new Exception('Erro ao atualizar funcionário');
             }
             
             // Atualizar senha se fornecida
-            if (!empty($_POST['password'])) {
-                $hashedPassword = password_hash($_POST['password'], PASSWORD_DEFAULT);
+            $newPassword = trim($_POST['password'] ?? '');
+            if (!empty($newPassword)) {
+                $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
                 
-                // Buscar user_id do funcionário
+                global $pdo;
                 $stmt = $pdo->prepare("SELECT user_id FROM employees WHERE id = ?");
                 $stmt->execute([$employeeId]);
                 $userId = $stmt->fetchColumn();
@@ -875,6 +777,244 @@ class EmployeeController
         exit;
     }
 
+    /** Cria novo funcionário */
+    public function store()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Método não permitido']);
+            exit;
+        }
+
+        $data = [
+            'name' => trim($_POST['name'] ?? ''),
+            'last_name' => trim($_POST['last_name'] ?? ''),
+            'email' => trim($_POST['email'] ?? ''),
+            'phone' => trim($_POST['phone'] ?? ''),
+            'function' => trim($_POST['position'] ?? ''), // Mapeia position para function
+            'active' => isset($_POST['active']) ? 1 : 0,
+        ];
+
+        $password = trim($_POST['password'] ?? '');
+        
+        if (!$data['name'] || !$data['last_name'] || !$data['email'] || !$password) {
+            echo json_encode(['success' => false, 'message' => 'Campos obrigatórios não preenchidos']);
+            exit;
+        }
+
+        // Verifica se e-mail já existe
+        if ($this->userModel->findByEmail($data['email'])) {
+            echo json_encode(['success' => false, 'message' => 'E-mail já está em uso']);
+            exit;
+        }
+
+        try {
+            global $pdo;
+            $pdo->beginTransaction();
+
+            // Cria usuário
+            $userCreated = $this->userModel->create(
+                $data['name'] . ' ' . $data['last_name'], // nome completo
+                $data['email'],                           // email
+                password_hash($password, PASSWORD_DEFAULT), // senha hash
+                'employee'                                // role
+            );
+            
+            if (!$userCreated) {
+                throw new Exception('Erro ao criar usuário');
+            }
+
+            // Pega o ID do usuário criado
+            $userId = $pdo->lastInsertId();
+
+            // Cria funcionário
+            $data['user_id'] = $userId;
+            // Campos obrigatórios da tabela employees
+            $data['sex'] = 'male'; // Padrão
+            $data['birth_date'] = date('Y-m-d'); // Padrão hoje
+            $data['start_date'] = date('Y-m-d'); // Padrão hoje
+            $data['role_id'] = 1; // Padrão employee
+            
+            // Chama o método create do Employee (que espera array + files)
+            Employee::create($data, $_FILES ?? []);
+
+            $pdo->commit();
+            echo json_encode(['success' => true, 'message' => 'Funcionário criado com sucesso']);
+
+        } catch (Exception $e) {
+            $pdo->rollback();
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    /** Atualiza funcionário */
+    public function update()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Método não permitido']);
+            exit;
+        }
+
+        // CORRIGIDO: Aceita tanto 'id' quanto 'employee_id'
+        $employeeId = (int)($_POST['employee_id'] ?? $_POST['id'] ?? 0);
+        if (!$employeeId) {
+            echo json_encode(['success' => false, 'message' => 'ID do funcionário não informado']);
+            exit;
+        }
+
+        $data = [
+            'name' => trim($_POST['name'] ?? ''),
+            'last_name' => trim($_POST['last_name'] ?? ''),
+            'function' => trim($_POST['function'] ?? ''),
+            'address' => trim($_POST['address'] ?? ''),
+            'zip_code' => trim($_POST['zip_code'] ?? ''),
+            'city' => trim($_POST['city'] ?? ''),
+            'sex' => trim($_POST['sex'] ?? 'male'),
+            'birth_date' => trim($_POST['birth_date'] ?? ''),
+            'nationality' => trim($_POST['nationality'] ?? ''),
+            'permission_type' => trim($_POST['permission_type'] ?? ''),
+            'ahv_number' => trim($_POST['ahv_number'] ?? ''),
+            'phone' => trim($_POST['phone'] ?? ''),
+            'religion' => trim($_POST['religion'] ?? ''),
+            'marital_status' => trim($_POST['marital_status'] ?? 'single'),
+            'start_date' => trim($_POST['start_date'] ?? ''),
+            'about' => trim($_POST['about'] ?? ''),
+            'active' => isset($_POST['active']) ? 1 : 0,
+            'role_id' => (int)($_POST['role_id'] ?? 1)
+        ];
+
+        // Dados do usuário
+        $email = trim($_POST['email'] ?? '');
+        $password = trim($_POST['password'] ?? '');
+
+        if (!$data['name'] || !$data['last_name'] || !$email) {
+            echo json_encode(['success' => false, 'message' => 'Campos obrigatórios não preenchidos']);
+            exit;
+        }
+
+        try {
+            global $pdo;
+            $pdo->beginTransaction();
+
+            // Busca funcionário atual
+            $stmt = $pdo->prepare("SELECT user_id FROM employees WHERE id = ?");
+            $stmt->execute([$employeeId]);
+            $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$employee) {
+                throw new Exception('Funcionário não encontrado');
+            }
+
+            // Atualiza funcionário usando método estático
+            Employee::update($employeeId, $data, $_FILES ?? []);
+
+            // Atualiza usuário se existir
+            if ($employee['user_id']) {
+                $userSuccess = false;
+                
+                if (!empty($password)) {
+                    // Com senha
+                    $stmt = $pdo->prepare("
+                        UPDATE users 
+                        SET name = ?, email = ?, password = ? 
+                        WHERE id = ?
+                    ");
+                    $userSuccess = $stmt->execute([
+                        $data['name'] . ' ' . $data['last_name'],
+                        $email,
+                        password_hash($password, PASSWORD_DEFAULT),
+                        $employee['user_id']
+                    ]);
+                } else {
+                    // Sem senha
+                    $stmt = $pdo->prepare("
+                        UPDATE users 
+                        SET name = ?, email = ? 
+                        WHERE id = ?
+                    ");
+                    $userSuccess = $stmt->execute([
+                        $data['name'] . ' ' . $data['last_name'],
+                        $email,
+                        $employee['user_id']
+                    ]);
+                }
+
+                if (!$userSuccess) {
+                    throw new Exception('Erro ao atualizar dados do usuário');
+                }
+            }
+
+            $pdo->commit();
+            echo json_encode(['success' => true, 'message' => 'Funcionário atualizado com sucesso']);
+
+        } catch (Exception $e) {
+            $pdo->rollback();
+            error_log("EmployeeController::update error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
+    /** Deleta funcionário */
+    public function delete()
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST' && $_SERVER['REQUEST_METHOD'] !== 'GET') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'message' => 'Método não permitido']);
+            exit;
+        }
+
+        $employeeId = (int)($_POST['employee_id'] ?? $_GET['id'] ?? 0);
+        if (!$employeeId) {
+            echo json_encode(['success' => false, 'message' => 'ID do funcionário não informado']);
+            exit;
+        }
+
+        try {
+            global $pdo;
+            $pdo->beginTransaction();
+
+            // Busca user_id antes de deletar
+            $stmt = $pdo->prepare("SELECT user_id FROM employees WHERE id = ?");
+            $stmt->execute([$employeeId]);
+            $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$employee) {
+                throw new Exception('Funcionário não encontrado');
+            }
+
+            // Deleta funcionário
+            $stmt = $pdo->prepare("DELETE FROM employees WHERE id = ?");
+            if (!$stmt->execute([$employeeId])) {
+                throw new Exception('Erro ao deletar funcionário');
+            }
+
+            // Deleta usuário associado se existir
+            if ($employee['user_id']) {
+                $stmt = $pdo->prepare("DELETE FROM users WHERE id = ?");
+                $stmt->execute([$employee['user_id']]);
+            }
+
+            $pdo->commit();
+            
+            // Redireciona para lista se foi via GET
+            if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+                header('Location: ' . BASE_URL . '/employees');
+                exit;
+            }
+            
+            echo json_encode(['success' => true, 'message' => 'Funcionário deletado com sucesso']);
+
+        } catch (Exception $e) {
+            $pdo->rollback();
+            error_log("EmployeeController::delete error: " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+        exit;
+    }
+
     /** Calcula resumo individual do funcionário */
     private function calculateEmployeeSummary(int $employeeId): array
     {
@@ -892,162 +1032,20 @@ class EmployeeController
             $stmt = $pdo->prepare("SELECT COALESCE(SUM(total_hours), 0) FROM time_entries WHERE employee_id = ?");
             $stmt->execute([$employeeId]);
             $totalHours += (float)$stmt->fetchColumn();
-            
-            // Sistema antigo
-            $stmt = $pdo->prepare("SELECT COALESCE(SUM(hours), 0) FROM project_work_logs WHERE employee_id = ?");
-            $stmt->execute([$employeeId]);
-            $totalHours += (float)$stmt->fetchColumn();
-
-            // Horas hoje
-            $todayHours = 0;
-            
-            $stmt = $pdo->prepare("SELECT COALESCE(SUM(total_hours), 0) FROM time_entries WHERE employee_id = ? AND date = ?");
-            $stmt->execute([$employeeId, $today]);
-            $todayHours += (float)$stmt->fetchColumn();
-            
-            $stmt = $pdo->prepare("SELECT COALESCE(SUM(hours), 0) FROM project_work_logs WHERE employee_id = ? AND date = ?");
-            $stmt->execute([$employeeId, $today]);
-            $todayHours += (float)$stmt->fetchColumn();
-
-            // Horas da semana
-            $weekHours = 0;
-            
-            $stmt = $pdo->prepare("SELECT COALESCE(SUM(total_hours), 0) FROM time_entries WHERE employee_id = ? AND date BETWEEN ? AND ?");
-            $stmt->execute([$employeeId, $startOfWeek, $endOfWeek]);
-            $weekHours += (float)$stmt->fetchColumn();
-            
-            $stmt = $pdo->prepare("SELECT COALESCE(SUM(hours), 0) FROM project_work_logs WHERE employee_id = ? AND date BETWEEN ? AND ?");
-            $stmt->execute([$employeeId, $startOfWeek, $endOfWeek]);
-            $weekHours += (float)$stmt->fetchColumn();
 
             return [
-                'total' => number_format($totalHours, 2, '.', ''),
-                'today' => number_format($todayHours, 2, '.', ''),
-                'week' => number_format($weekHours, 2, '.', ''),
+                'total_hours' => $totalHours,
+                'today_hours' => 0, // Implementar se necessário
+                'week_hours' => 0   // Implementar se necessário
             ];
-            
+
         } catch (Exception $e) {
+            error_log("calculateEmployeeSummary error: " . $e->getMessage());
             return [
-                'total' => '0.00',
-                'today' => '0.00', 
-                'week' => '0.00'
+                'total_hours' => 0,
+                'today_hours' => 0,
+                'week_hours' => 0
             ];
         }
-    }
-
-    /** Constrói filtro de data baseado no parâmetro */
-    private function buildDateFilter(string $filter): string
-    {
-        switch ($filter) {
-            case 'all':
-                return "AND date >= '2023-01-01'";
-            case 'week':
-                return "AND date >= '" . date('Y-m-d', strtotime('monday this week')) . "' AND date <= '" . date('Y-m-d', strtotime('sunday this week')) . "'";
-            case 'month':
-                return "AND MONTH(date) = MONTH(CURRENT_DATE()) AND YEAR(date) = YEAR(CURRENT_DATE())";
-            case 'period':
-                return "";
-            default:
-                return "AND date = CURRENT_DATE()";
-        }
-    }
-
-    /** Formata exibição do registro de ponto */
-    private function formatTimeEntryDisplay(array $entries, string $date): string
-    {
-        if (empty($entries)) {
-            return 'Registro vazio';
-        }
-
-        usort($entries, function($a, $b) {
-            return strcmp($a['time'] ?? '', $b['time'] ?? '');
-        });
-        
-        $pairs = [];
-        $currentEntry = null;
-        
-        foreach ($entries as $entry) {
-            if (($entry['type'] ?? '') === 'entry') {
-                if ($currentEntry) {
-                    $pairs[] = "entrada {$currentEntry} saída ?";
-                }
-                $currentEntry = $entry['time'] ?? '';
-            } elseif (($entry['type'] ?? '') === 'exit') {
-                if ($currentEntry) {
-                    $pairs[] = "entrada {$currentEntry} saída {$entry['time']}";
-                    $currentEntry = null;
-                } else {
-                    $pairs[] = "entrada ? saída {$entry['time']}";
-                }
-            }
-        }
-        
-        if ($currentEntry) {
-            $pairs[] = "entrada {$currentEntry} saída ?";
-        }
-        
-        if (empty($pairs)) {
-            return 'Registro sem pares válidos';
-        }
-        
-        $dateFormatted = date('d/m/Y', strtotime($date));
-        return implode(' - ', $pairs) . " {$dateFormatted}";
-    }
-
-    /** API: Ranking de funcionários por horas */
-    public function getRanking()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
-
-        try {
-            global $pdo;
-            
-            $stmt = $pdo->query("
-                SELECT e.*, u.email
-                FROM employees e
-                LEFT JOIN users u ON e.user_id = u.id
-                WHERE e.active = 1
-                ORDER BY e.name, e.last_name
-            ");
-            $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            $ranking = [];
-
-            foreach ($employees as $emp) {
-                $empId = $emp['id'];
-                $totalHours = 0;
-
-                // Sistema novo
-                $newSystemHours = $this->timeEntryModel->getTotalHoursByEmployee($empId);
-                
-                // Sistema antigo  
-                $oldSystemHours = $this->workLogModel->getTotalHoursByEmployee($empId);
-
-                $totalHours = $oldSystemHours + $newSystemHours;
-
-                if ($totalHours > 0) {
-                    $ranking[] = [
-                        'id' => $empId,
-                        'name' => trim($emp['name'] . ' ' . $emp['last_name']),
-                        'position' => $emp['function'] ?? 'Não definido',
-                        'total_hours' => $totalHours,
-                        'old_system_hours' => $oldSystemHours,
-                        'new_system_hours' => $newSystemHours,
-                    ];
-                }
-            }
-
-            // Ordena por total de horas (decrescente)
-            usort($ranking, function ($a, $b) {
-                return $b['total_hours'] <=> $a['total_hours'];
-            });
-
-            echo json_encode($ranking);
-
-        } catch (Exception $e) {
-            error_log("EmployeeController::getRanking error: " . $e->getMessage());
-            echo json_encode([]);
-        }
-        exit;
     }
 }

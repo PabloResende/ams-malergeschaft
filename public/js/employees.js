@@ -1,4 +1,4 @@
-// public/js/employees.js - CORRIGIDO PARA COMPATIBILIDADE
+// public/js/employees.js - VERSÃO CORRIGIDA COMPLETA
 
 console.log('🔧 employees.js carregado');
 
@@ -17,7 +17,7 @@ const closeEmployeeModal = document.getElementById('closeEmployeeModal');
 const cancelEmployeeModal = document.getElementById('cancelEmployeeModal');
 const closeDetailsBtns = document.querySelectorAll('.closeEmployeeDetailsModal');
 
-// Cards dos funcionários - CORRIGIDO: usando data-id
+// Cards dos funcionários - usando data-id
 const employeeCards = document.querySelectorAll('.employee-card[data-id]');
 
 // Elementos do modal de horas
@@ -50,7 +50,6 @@ function setupEventListeners() {
   // ========== CLIQUES NOS CARDS DE FUNCIONÁRIOS ==========
   employeeCards.forEach(card => {
     card.addEventListener('click', async () => {
-      // CORRIGIDO: usando data-id
       const empId = card.getAttribute('data-id');
       console.log('👤 Card clicado, ID do funcionário:', empId);
       
@@ -157,7 +156,7 @@ async function openEmployeeModal(employeeId) {
     await loadEmployeeProjects(employeeId);
     
     // Ativar primeira tab
-    switchToTab('panel-general-details');
+    switchToTab('general-details');
     
     console.log('✅ Modal de detalhes carregado com sucesso');
     
@@ -231,7 +230,7 @@ function switchToTab(tabId, clickedBtn = null) {
   }
 }
 
-// ========== CARREGAR DADOS DO FUNCIONÁRIO ==========
+// ========== CARREGAR DADOS DO FUNCIONÁRIO - CORRIGIDO ==========
 async function loadEmployeeDetails(employeeId) {
   console.log('📥 Carregando detalhes do funcionário:', employeeId);
   
@@ -242,31 +241,39 @@ async function loadEmployeeDetails(employeeId) {
       throw new Error(`HTTP ${response.status}`);
     }
     
-    const employee = await response.json();
-    console.log('📊 Dados do funcionário carregados:', employee);
+    const result = await response.json();
+    console.log('📊 Dados recebidos:', result);
     
-    // Preencher campos do formulário de detalhes
-    const fieldsMapping = {
-      'detailsEmployeeId': 'id',
-      'detailsEmployeeName': 'name',
-      'detailsEmployeeLastName': 'last_name',
-      'detailsEmployeeFunction': 'function',
-      'detailsEmployeeAddress': 'address',
-      // Adicionar outros campos conforme necessário
-    };
-    
-    Object.entries(fieldsMapping).forEach(([elementId, dataKey]) => {
-      const element = document.getElementById(elementId);
-      if (element && employee[dataKey] !== undefined) {
-        element.value = employee[dataKey] || '';
-      }
-    });
+    // CORREÇÃO: A API retorna { success: true, data: {...} }
+    const employee = result.success ? result.data : result;
     
     // Atualizar título do modal
-    const modalTitle = document.querySelector('#employeeDetailsModal h2');
+    const modalTitle = document.querySelector('#employeeDetailsModal .text-xl');
     if (modalTitle && employee.name) {
-      modalTitle.textContent = `${employee.name} ${employee.last_name || ''}`.trim();
+      modalTitle.textContent = `Detalhes - ${employee.name} ${employee.last_name || ''}`.trim();
     }
+    
+    // Preencher campos básicos
+    const fields = {
+      'detailsEmployeeName': employee.name || '',
+      'detailsEmployeeLastName': employee.last_name || '',
+      'detailsEmployeeFunction': employee.function || '',
+      'detailsEmployeeEmail': employee.email || '',
+      'detailsEmployeeAddress': employee.address || '',
+      'detailsEmployeePhone': employee.phone || '',
+      'detailsEmployeeCity': employee.city || '',
+      'detailsEmployeeZipCode': employee.zip_code || '',
+      'detailsEmployeeBirthDate': employee.birth_date || '',
+      'detailsEmployeeNationality': employee.nationality || '',
+      'detailsEmployeeStartDate': employee.start_date || ''
+    };
+    
+    Object.entries(fields).forEach(([fieldId, value]) => {
+      const field = document.getElementById(fieldId);
+      if (field) {
+        field.value = value;
+      }
+    });
     
   } catch (error) {
     console.error('❌ Erro ao carregar detalhes:', error);
@@ -350,21 +357,22 @@ function applyFilter(filter, clickedBtn) {
   }
 }
 
-// ========== CARREGAR REGISTROS DE HORAS ==========
+// ========== CARREGAR REGISTROS DE HORAS - CORRIGIDO ==========
 async function loadEmployeeHours(employeeId, filter = 'today') {
   const hoursList = document.getElementById('employeeHoursList');
-  const totalHours = document.getElementById('employeeModalTotalHours');
+  const totalHoursDisplay = document.getElementById('employeeModalTotalHours');
   
   if (!hoursList || !employeeId) {
-    console.log('⏭️ Pulando carregamento de horas (elementos não encontrados)');
+    console.log('⏭️ Elementos necessários não encontrados');
     return;
   }
   
-  console.log(`📥 Carregando horas para funcionário ${employeeId}, filtro: ${filter}`);
+  console.log(`📥 Carregando horas - Funcionário: ${employeeId}, Filtro: ${filter}`);
   
   try {
     hoursList.innerHTML = '<div class="p-4 text-center text-gray-500">Carregando...</div>';
     
+    // CORREÇÃO: Usar a API correta time-entries-by-day
     const response = await fetch(`${baseUrl}/api/worklog/time-entries-by-day?employee_id=${employeeId}&filter=${filter}`);
     
     if (!response.ok) {
@@ -372,63 +380,55 @@ async function loadEmployeeHours(employeeId, filter = 'today') {
     }
     
     const dayEntries = await response.json();
-    console.log(`📊 ${dayEntries.length} dias com registros carregados`);
+    console.log('📊 Dados recebidos:', dayEntries);
     
-    if (dayEntries.length === 0) {
+    // Verificar se há dados
+    if (!dayEntries || dayEntries.length === 0) {
       hoursList.innerHTML = '<div class="p-4 text-center text-gray-500">Nenhum registro encontrado</div>';
-      if (totalHours) totalHours.textContent = '0.00h';
+      if (totalHoursDisplay) totalHoursDisplay.textContent = '0.00h';
       return;
     }
     
     // Calcular total geral
-    const grandTotal = dayEntries.reduce((sum, day) => sum + day.total_hours, 0);
-    if (totalHours) totalHours.textContent = `${grandTotal.toFixed(2)}h`;
+    const grandTotal = dayEntries.reduce((sum, day) => sum + (day.total_hours || 0), 0);
+    if (totalHoursDisplay) {
+      totalHoursDisplay.textContent = `${grandTotal.toFixed(2)}h`;
+    }
     
-    // Renderizar registros por dia
+    // Gerar HTML dos registros
     let html = '';
     dayEntries.forEach(day => {
-      const formattedDate = new Date(day.date).toLocaleDateString('pt-BR');
+      const formattedDate = new Date(day.date + 'T00:00:00').toLocaleDateString('pt-BR');
       
-      html += `
-        <div class="p-4 border-b border-gray-100">
-          <div class="flex justify-between items-center mb-2">
-            <h6 class="font-semibold text-gray-900">${formattedDate}</h6>
-            <span class="text-sm font-medium text-blue-600">${day.total_hours.toFixed(2)}h</span>
-          </div>
-          <div class="space-y-1">
-      `;
+      // Separar entradas e saídas e organizar em pares
+      const entradas = day.entries.filter(e => e.entry_type === 'entry').map(e => e.time).sort();
+      const saidas = day.entries.filter(e => e.entry_type === 'exit').map(e => e.time).sort();
       
-      // Agrupar entradas e saídas em períodos
-      const periods = [];
-      let currentPeriod = null;
+      // Montar string de exibição no formato desejado
+      let periods = [];
+      const maxPairs = Math.min(entradas.length, saidas.length);
       
-      day.entries.forEach(entry => {
-        if (entry.entry_type === 'entry') {
-          currentPeriod = { entry: entry.time, exit: null, project: entry.project_name };
-        } else if (entry.entry_type === 'exit' && currentPeriod) {
-          currentPeriod.exit = entry.time;
-          periods.push(currentPeriod);
-          currentPeriod = null;
-        }
-      });
-      
-      if (periods.length === 0) {
-        html += '<div class="text-sm text-gray-500">Registros incompletos</div>';
-      } else {
-        periods.forEach((period, index) => {
-          html += `
-            <div class="flex items-center justify-between text-sm">
-              <div class="flex flex-col">
-                <span class="text-gray-600">Período ${index + 1}:</span>
-                <span class="text-xs text-gray-500">${period.project || 'Projeto não identificado'}</span>
-              </div>
-              <span class="font-medium">${period.entry} - ${period.exit || 'Em aberto'}</span>
-            </div>
-          `;
-        });
+      for (let i = 0; i < maxPairs; i++) {
+        periods.push(`entrada ${entradas[i]} saída ${saidas[i]}`);
       }
       
-      html += '</div></div>';
+      // Adicionar entrada sem saída, se houver
+      if (entradas.length > saidas.length) {
+        periods.push(`entrada ${entradas[entradas.length - 1]} saída ?`);
+      }
+      
+      const displayString = periods.length > 0 
+        ? `${periods.join(' - ')} - ${formattedDate}`
+        : `Registro incompleto - ${formattedDate}`;
+      
+      html += `
+        <div class="border-b border-gray-100 pb-3 mb-3">
+          <div class="flex justify-between items-start">
+            <span class="font-medium text-gray-900 flex-1">${displayString}</span>
+            <span class="text-sm font-medium text-blue-600 ml-2">${(day.total_hours || 0).toFixed(2)}h</span>
+          </div>
+        </div>
+      `;
     });
     
     hoursList.innerHTML = html;
@@ -436,36 +436,7 @@ async function loadEmployeeHours(employeeId, filter = 'today') {
   } catch (error) {
     console.error('❌ Erro ao carregar horas:', error);
     hoursList.innerHTML = '<div class="p-4 text-center text-red-500">Erro ao carregar registros</div>';
-  }
-}
-
-// ========== CONFIGURAR FORMULÁRIOS ==========
-function setupForms() {
-  // Formulário de registro de ponto
-  if (submitTimeTracking) {
-    submitTimeTracking.addEventListener('click', async (e) => {
-      e.preventDefault();
-      await handleTimeEntry();
-    });
-  }
-
-  // Formulário de salvar alterações
-  const saveBtn = document.getElementById('saveEmployeeChanges');
-  if (saveBtn) {
-    saveBtn.addEventListener('click', async (e) => {
-      e.preventDefault();
-      await saveEmployeeChanges();
-    });
-  }
-
-  // Formulário de excluir
-  const deleteBtn = document.getElementById('deleteEmployeeBtn');
-  if (deleteBtn) {
-    deleteBtn.addEventListener('click', async () => {
-      if (confirm('Tem certeza que deseja excluir este funcionário?')) {
-        await deleteEmployee(currentEmployeeId);
-      }
-    });
+    if (totalHoursDisplay) totalHoursDisplay.textContent = '0.00h';
   }
 }
 
@@ -563,15 +534,11 @@ async function saveEmployeeChanges() {
     
     if (result.success) {
       showNotification('Funcionário atualizado com sucesso!', 'success');
-      console.log('✅ Funcionário atualizado com sucesso');
-      
-      // Atualizar card na interface
-      updateEmployeeCard(currentEmployeeId, formData);
     } else {
       showNotification(result.message || 'Erro ao atualizar funcionário', 'error');
     }
   } catch (error) {
-    console.error('❌ Erro ao salvar:', error);
+    console.error('❌ Erro ao salvar alterações:', error);
     showNotification('Erro ao salvar alterações', 'error');
   }
 }
@@ -586,9 +553,9 @@ async function deleteEmployee(employeeId) {
     const response = await fetch(`${baseUrl}/employees/delete`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
-      body: `id=${employeeId}`
+      body: JSON.stringify({ employee_id: employeeId })
     });
     
     if (!response.ok) {
@@ -599,85 +566,65 @@ async function deleteEmployee(employeeId) {
     
     if (result.success) {
       showNotification('Funcionário excluído com sucesso!', 'success');
-      console.log('✅ Funcionário excluído com sucesso');
-      
-      // Fechar modal
       closeDetailsModal();
-      
-      // Remover card da interface
-      const employeeCard = document.querySelector(`[data-id="${employeeId}"]`);
-      if (employeeCard) {
-        employeeCard.remove();
-      }
+      // Recarregar página após exclusão
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } else {
       showNotification(result.message || 'Erro ao excluir funcionário', 'error');
     }
   } catch (error) {
-    console.error('❌ Erro ao excluir:', error);
+    console.error('❌ Erro ao excluir funcionário:', error);
     showNotification('Erro ao excluir funcionário', 'error');
   }
 }
 
-// ========== UTILITÁRIOS ==========
-function updateEmployeeCard(employeeId, formData) {
-  const card = document.querySelector(`[data-id="${employeeId}"]`);
-  if (card) {
-    const nameElement = card.querySelector('h2');
-    const functionElement = card.querySelector('p strong');
-    
-    if (nameElement) {
-      nameElement.textContent = `${formData.get('name')} ${formData.get('last_name')}`.trim();
-    }
-    if (functionElement) {
-      functionElement.textContent = formData.get('function') || 'Não definida';
-    }
+// ========== CONFIGURAR FORMULÁRIOS ==========
+function setupForms() {
+  // Formulário de registro de ponto
+  if (submitTimeTracking) {
+    submitTimeTracking.addEventListener('click', async (e) => {
+      e.preventDefault();
+      await handleTimeEntry();
+    });
+  }
+
+  // Formulário de salvar alterações
+  const saveBtn = document.getElementById('saveEmployeeChanges');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      await saveEmployeeChanges();
+    });
+  }
+
+  // Formulário de excluir
+  const deleteBtn = document.getElementById('deleteEmployeeBtn');
+  if (deleteBtn) {
+    deleteBtn.addEventListener('click', async () => {
+      if (confirm('Tem certeza que deseja excluir este funcionário?')) {
+        await deleteEmployee(currentEmployeeId);
+      }
+    });
   }
 }
 
+// ========== NOTIFICAÇÕES ==========
 function showNotification(message, type = 'info') {
-  // Remove notificação existente
-  const existing = document.querySelector('.notification');
-  if (existing) {
-    existing.remove();
-  }
-  
-  // Cria nova notificação
+  // Criar elemento de notificação
   const notification = document.createElement('div');
-  notification.className = `notification fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 ${
+  notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
     type === 'success' ? 'bg-green-500 text-white' :
     type === 'error' ? 'bg-red-500 text-white' :
     'bg-blue-500 text-white'
   }`;
-  
-  notification.innerHTML = `
-    <div class="flex items-center space-x-2">
-      <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
-      <span>${message}</span>
-    </div>
-  `;
+  notification.textContent = message;
   
   document.body.appendChild(notification);
   
-  // Auto remover após 3 segundos
+  // Remover após 3 segundos
   setTimeout(() => {
-    if (notification.parentNode) {
-      notification.remove();
-    }
+    notification.remove();
   }, 3000);
 }
-
-// ========== EXPORTAR FUNCÕES GLOBAIS ==========
-window.employeeSystem = {
-  openEmployeeModal,
-  loadEmployeeHours,
-  loadEmployeeProjects,
-  saveEmployeeChanges,
-  deleteEmployee,
-  showNotification,
-  applyFilter,
-  openCreateModal,
-  closeCreateModal,
-  closeDetailsModal
-};
-
-console.log('✅ Sistema de funcionários carregado com sucesso');

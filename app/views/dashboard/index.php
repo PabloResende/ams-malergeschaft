@@ -1,5 +1,5 @@
 <?php
-// app/views/dashboard/index.php - COMPLETO COM FILTROS FUNCIONANDO
+// app/views/dashboard/index.php - COMPLETO COM CORREÇÕES
 
 require_once __DIR__.'/../layout/header.php';
 require_once __DIR__.'/../../models/WorkLogModel.php';
@@ -20,7 +20,7 @@ function pctChange(float $cur, float $prev): float
     return round((($cur - $prev) / $prev) * 100, 1);
 }
 
-// FUNÇÃO PARA CALCULAR HORAS COM FILTROS (NOVA)
+// FUNÇÃO PARA CALCULAR HORAS COM FILTROS (CORRIGIDA)
 function getHoursWithFilter(\PDO $pdo, string $whereClause): float
 {
     // Horas do sistema antigo (project_work_logs)
@@ -52,32 +52,32 @@ function getHoursWithFilter(\PDO $pdo, string $whereClause): float
     return $oldSystemHours + $newSystemHours;
 }
 
-// ——— 1) Projetos ———
+// ——— 1) Projetos - CORRIGIDO ———
+// Contagem atual (independente da data de criação)
 $stmt = $pdo->query("
   SELECT
-    SUM(status = 'in_progress') AS active,
-    SUM(status = 'completed')   AS completed
+    SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS active,
+    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed
   FROM projects
-  WHERE MONTH(created_at) = MONTH(CURRENT_DATE())
-    AND YEAR(created_at)  = YEAR(CURRENT_DATE())
 ");
 $M = $stmt->fetch(PDO::FETCH_ASSOC);
 $curActive = (int) ($M['active'] ?? 0);
 $curCompleted = (int) ($M['completed'] ?? 0);
 
+// Contagem do mês anterior (projetos criados no mês anterior)
 $stmt = $pdo->query("
   SELECT
-    SUM(status = 'in_progress') AS active,
-    SUM(status = 'completed')   AS completed
+    SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS active,
+    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed
   FROM projects
   WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
-    AND YEAR(created_at)  = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
+    AND YEAR(created_at) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
 ");
 $L = $stmt->fetch(PDO::FETCH_ASSOC);
 $prevActive = (int) ($L['active'] ?? 0);
 $prevCompleted = (int) ($L['completed'] ?? 0);
 
-// ——— HORAS COM SISTEMA COMBINADO (CORRIGIDO) ———
+// ——— 2) Horas COM SISTEMA COMBINADO (CORRIGIDO) ———
 // Horas MÊS ATUAL
 $curHours = getHoursWithFilter($pdo, 'MONTH(date) = MONTH(CURRENT_DATE()) AND YEAR(date) = YEAR(CURRENT_DATE())');
 
@@ -89,43 +89,43 @@ $pctActive = pctChange($curActive, $prevActive);
 $pctCompleted = pctChange($curCompleted, $prevCompleted);
 $pctHours = pctChange($curHours, $prevHours);
 
-// ——— RANKING DE FUNCIONÁRIOS COM SISTEMA COMBINADO ———
+// ——— 3) RANKING DE FUNCIONÁRIOS COM SISTEMA COMBINADO (CORRIGIDO) ———
 $workLogModel = new WorkLogModel();
 $timeEntryModel = new TimeEntryModel();
 $employeeModel = new Employee();
 
 $employees = (new Employee())->all();
+$allEmployees = $employees; // CORREÇÃO: Adicionar esta linha
 
 $employeeHours = [];
 
-foreach ($allEmployees as $emp) {
-    if (!empty($allEmployees) && is_array($allEmployees)) {
-        foreach ($allEmployees as $emp) {
-            if ($emp['active']) {
-                $empId = $emp['id'];
+// CORREÇÃO: Simplificar o foreach e remover duplicação
+if (!empty($allEmployees) && is_array($allEmployees)) {
+    foreach ($allEmployees as $emp) {
+        if ($emp['active']) {
+            $empId = $emp['id'];
 
-                // Sistema antigo
-                $oldSystemHours = $workLogModel->getTotalHoursByEmployee($empId);
+            // Sistema antigo
+            $oldSystemHours = $workLogModel->getTotalHoursByEmployee($empId);
 
-                // Sistema novo
+            // Sistema novo
+            $newSystemHours = 0;
+            try {
+                $newSystemHours = $timeEntryModel->getTotalHoursByEmployee($empId);
+            } catch (Exception $e) {
                 $newSystemHours = 0;
-                try {
-                    $newSystemHours = $timeEntryModel->getTotalHoursByEmployee($empId);
-                } catch (Exception $e) {
-                    $newSystemHours = 0;
-                }
+            }
 
-                $totalHours = $oldSystemHours + $newSystemHours;
+            $totalHours = $oldSystemHours + $newSystemHours;
 
-                if ($totalHours > 0) {
-                    $employeeHours[] = [
+            if ($totalHours > 0) {
+                $employeeHours[] = [
                     'id' => $empId,
                     'name' => trim($emp['name'].' '.$emp['last_name']),
                     'total_hours' => $totalHours,
                     'old_system_hours' => $oldSystemHours,
                     'new_system_hours' => $newSystemHours,
                 ];
-                }
             }
         }
     }
@@ -136,7 +136,7 @@ usort($employeeHours, function ($a, $b) {
     return $b['total_hours'] <=> $a['total_hours'];
 });
 
-// ——— Outros dados do dashboard (mantidos) ———
+// ——— 4) Outros dados do dashboard (mantidos) ———
 $stmt = $pdo->query("
   SELECT p.*, c.name AS client_name
   FROM projects p
@@ -222,7 +222,7 @@ $teamCount = (int) $pdo->query('SELECT COUNT(*) FROM employees WHERE active=1')-
 
     <div class="bg-white p-4 rounded-lg shadow flex flex-col items-center">
       <h3 class="text-lg font-semibold mb-2 text-center">
-        <?= htmlspecialchars($langText['total_hours_month'] ?? 'Horas este Mês', ENT_QUOTES); ?>
+        <?= htmlspecialchars($langText['total_hours_month'] ?? 'Total de Horas no Mês', ENT_QUOTES); ?>
       </h3>
       <p class="text-3xl font-bold"><?= number_format($curHours, 1, ',', '.'); ?>h</p>
       <p class="mt-1 text-sm <?= $pctHours >= 0 ? 'text-green-500' : 'text-red-500'; ?> text-center">
@@ -299,12 +299,17 @@ $teamCount = (int) $pdo->query('SELECT COUNT(*) FROM employees WHERE active=1')-
     </div>
   </div>
 
-  <!-- === TABELA COMPLETA === -->
+  <!-- === RANKING DE FUNCIONÁRIOS === -->
   <?php if (!empty($employeeHours)): ?>
   <div class="mb-12">
-    <h2 class="text-2xl font-bold mb-6">
-      <?= htmlspecialchars($langText['complete_hours_table'] ?? 'Tabela Completa de Horas', ENT_QUOTES); ?>
-    </h2>
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold">
+        <?= htmlspecialchars($langText['employee_hours_ranking'] ?? 'Ranking de Horas - Funcionários', ENT_QUOTES); ?>
+      </h2>
+      <a href="<?= BASE_URL; ?>/employees" class="text-blue-500 hover:text-blue-700">
+        <?= htmlspecialchars($langText['manage_employees'] ?? 'Gerenciar Funcionários', ENT_QUOTES); ?>
+      </a>
+    </div>
     
     <div class="bg-white rounded-lg shadow overflow-hidden">
       <div class="overflow-x-auto">

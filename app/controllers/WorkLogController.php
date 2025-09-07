@@ -157,6 +157,102 @@ class WorkLogController
         exit;
     }
 
+    public function getTimeEntriesByDay()
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        
+        $employeeId = (int)($_GET['employee_id'] ?? 0);
+        $projectId = (int)($_GET['project_id'] ?? 0);
+        $filter = $_GET['filter'] ?? 'today';
+        
+        if (!$employeeId) {
+            echo json_encode([]);
+            exit;
+        }
+        
+        try {
+            global $pdo;
+            
+            // Determinar período baseado no filtro
+            $whereClause = "te.employee_id = ?";
+            $params = [$employeeId];
+            
+            if ($projectId) {
+                $whereClause .= " AND te.project_id = ?";
+                $params[] = $projectId;
+            }
+            
+            switch ($filter) {
+                case 'today':
+                    $whereClause .= " AND DATE(te.date) = CURDATE()";
+                    break;
+                case 'week':
+                    $whereClause .= " AND YEARWEEK(te.date, 1) = YEARWEEK(CURDATE(), 1)";
+                    break;
+                case 'month':
+                    $whereClause .= " AND YEAR(te.date) = YEAR(CURDATE()) AND MONTH(te.date) = MONTH(CURDATE())";
+                    break;
+                case 'all':
+                default:
+                    // Sem filtro adicional
+                    break;
+            }
+            
+            // Buscar registros da tabela time_entries
+            $stmt = $pdo->prepare("
+                SELECT 
+                    te.date,
+                    te.time_records,
+                    te.total_hours,
+                    p.name as project_name
+                FROM time_entries te
+                LEFT JOIN projects p ON te.project_id = p.id
+                WHERE $whereClause
+                ORDER BY te.date DESC
+            ");
+            
+            $stmt->execute($params);
+            $timeEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Organizar por data
+            $groupedByDate = [];
+            
+            foreach ($timeEntries as $timeEntry) {
+                $date = $timeEntry['date'];
+                
+                if (!isset($groupedByDate[$date])) {
+                    $groupedByDate[$date] = [
+                        'date' => $date,
+                        'entries' => [],
+                        'total_hours' => 0
+                    ];
+                }
+                
+                // Decodificar registros de tempo
+                $records = json_decode($timeEntry['time_records'], true);
+                $entryRecords = $records['entries'] ?? [];
+                
+                // Adicionar cada entrada/saída individual
+                foreach ($entryRecords as $record) {
+                    $groupedByDate[$date]['entries'][] = [
+                        'time' => $record['time'] ?? '',
+                        'entry_type' => $record['type'] ?? '',
+                        'project_name' => $timeEntry['project_name']
+                    ];
+                }
+                
+                $groupedByDate[$date]['total_hours'] += (float)$timeEntry['total_hours'];
+            }
+            
+            echo json_encode(array_values($groupedByDate));
+            
+        } catch (Exception $e) {
+            error_log("Error getting time entries by day: " . $e->getMessage());
+            echo json_encode([]);
+        }
+        exit;
+    }
+
     public function getEmployeeProjects()
     {
         header('Content-Type: application/json; charset=UTF-8');
@@ -188,111 +284,6 @@ class WorkLogController
             
         } catch (Exception $e) {
             error_log("Error getting employee projects: " . $e->getMessage());
-            echo json_encode([]);
-        }
-        exit;
-    }
-
-    // Novo método para listar registros de ponto organizados por dia
-    public function getTimeEntriesByDay()
-    {
-        header('Content-Type: application/json; charset=UTF-8');
-        
-        $employeeId = (int)($_GET['employee_id'] ?? 0);
-        $projectId = (int)($_GET['project_id'] ?? 0);
-        $filter = $_GET['filter'] ?? 'today';
-        
-        if (!$employeeId) {
-            echo json_encode([]);
-            exit;
-        }
-        
-        try {
-            global $pdo;
-            
-            // Determinar período baseado no filtro
-            $whereClause = "wl.employee_id = ?";
-            $params = [$employeeId];
-            
-            if ($projectId) {
-                $whereClause .= " AND wl.project_id = ?";
-                $params[] = $projectId;
-            }
-            
-            switch ($filter) {
-                case 'today':
-                    $whereClause .= " AND DATE(wl.date) = CURDATE()";
-                    break;
-                case 'week':
-                    $whereClause .= " AND YEARWEEK(wl.date) = YEARWEEK(NOW())";
-                    break;
-                case 'month':
-                    $whereClause .= " AND YEAR(wl.date) = YEAR(NOW()) AND MONTH(wl.date) = MONTH(NOW())";
-                    break;
-                case 'all':
-                default:
-                    // Sem filtro adicional
-                    break;
-            }
-            
-            $stmt = $pdo->prepare("
-                SELECT 
-                    DATE(wl.date) as work_date,
-                    wl.time,
-                    wl.entry_type,
-                    p.name as project_name,
-                    wl.id as entry_id
-                FROM work_logs wl
-                LEFT JOIN projects p ON wl.project_id = p.id
-                WHERE $whereClause
-                ORDER BY work_date DESC, wl.time ASC
-            ");
-            
-            $stmt->execute($params);
-            $entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Organizar por dia
-            $groupedByDate = [];
-            foreach ($entries as $entry) {
-                $date = $entry['work_date'];
-                if (!isset($groupedByDate[$date])) {
-                    $groupedByDate[$date] = [
-                        'date' => $date,
-                        'entries' => [],
-                        'total_hours' => 0
-                    ];
-                }
-                $groupedByDate[$date]['entries'][] = $entry;
-            }
-            
-            // Calcular horas totais para cada dia
-            foreach ($groupedByDate as &$day) {
-                $entries = $day['entries'];
-                $totalMinutes = 0;
-                
-                // Agrupa entradas e saídas em pares
-                $entryTime = null;
-                
-                foreach ($entries as $entry) {
-                    if ($entry['entry_type'] === 'entry') {
-                        $entryTime = $entry['time'];
-                    } elseif ($entry['entry_type'] === 'exit' && $entryTime) {
-                        // Calcula diferença entre entrada e saída
-                        $start = new DateTime($entryTime);
-                        $end = new DateTime($entry['time']);
-                        $diff = $end->diff($start);
-                        $totalMinutes += ($diff->h * 60) + $diff->i;
-                        $entryTime = null;
-                    }
-                }
-                
-                $day['total_hours'] = round($totalMinutes / 60, 2);
-            }
-            
-            echo json_encode(array_values($groupedByDate));
-            
-        } catch (Exception $e) {
-            error_log("Error getting time entries: " . $e->getMessage());
             echo json_encode([]);
         }
         exit;

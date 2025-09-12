@@ -175,19 +175,18 @@ window.timeTracking = {
     return null;
   },
 
-  async loadProjectDetails(projectId) {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/projects/${projectId}`);
+  // Atualizar a função loadProjectDetails (se estiver usando)
+async loadProjectDetails(projectId) {
+  try {
+    const response = await fetch(`${baseUrl}/api/projects/${projectId}`);
+    const result = await response.json();
+    
+    if (result.success && result.project) {
+      const project = result.project;
       
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      
-      const project = await response.json();
-      
-      // Atualizar informações gerais do projeto
+      // Atualiza informações do projeto incluindo horas totais
       const generalInfo = document.getElementById("projectGeneralInfo");
-      if (generalInfo && project) {
+      if (generalInfo) {
         generalInfo.innerHTML = `
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -199,23 +198,34 @@ window.timeTracking = {
                 <strong>Cliente:</strong> ${project.client_name || 'Não definido'}
               </p>
               <p class="text-sm text-gray-600">
-                <strong>Status:</strong> ${this.getStatusText(project.status)}
+                <strong>Status:</strong> ${project.status}
               </p>
               <p class="text-sm text-gray-600">
-                <strong>Período:</strong> ${this.formatDate(project.start_date)} - ${this.formatDate(project.end_date)}
+                <strong>Total de Horas:</strong> ${project.total_hours_calculated}h
               </p>
             </div>
           </div>
+          
+          ${project.employees_hours && project.employees_hours.length > 0 ? `
+            <div class="mt-4">
+              <h6 class="font-medium text-gray-800 mb-2">Horas por Funcionário:</h6>
+              <div class="space-y-1">
+                ${project.employees_hours.map(emp => `
+                  <div class="flex justify-between text-sm">
+                    <span>${emp.name} ${emp.last_name}</span>
+                    <span>${parseFloat(emp.hours_worked).toFixed(1)}h</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
         `;
       }
-    } catch (error) {
-      console.error('Erro ao carregar detalhes do projeto:', error);
-      const generalInfo = document.getElementById("projectGeneralInfo");
-      if (generalInfo) {
-        generalInfo.innerHTML = '<div class="text-red-500">Erro ao carregar informações do projeto</div>';
-      }
     }
-  },
+  } catch (error) {
+    console.error('Erro ao carregar detalhes do projeto:', error);
+  }
+},
 
   async loadTimeEntries(projectId, filter = null) {
     const currentFilter = filter || this.currentFilter;

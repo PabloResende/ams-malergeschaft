@@ -344,29 +344,71 @@ async function loadEmployeeTimeEntries(employeeId) {
   console.log(`Carregando registros de horas do funcionário ${employeeId}`);
   
   const hoursList = document.getElementById('employeeHoursList');
+  const totalHoursElement = document.getElementById('employeeModalTotalHours');
+  
   if (!hoursList) return;
   
   try {
     hoursList.innerHTML = '<div class="p-4 text-center text-gray-500">Carregando registros...</div>';
     
-    // CORREÇÃO: Usar a rota correta que existe
     const response = await fetch(`${baseUrl}/api/employees/${employeeId}/hours`);
     const result = await response.json();
     
+    console.log('Dados de horas recebidos:', result);
+    
     if (result.entries && result.entries.length > 0) {
-      hoursList.innerHTML = result.entries.map(entry => `
+      // Agrupa por data E projeto
+      const groupedByDateAndProject = {};
+      
+      result.entries.forEach(entry => {
+        const key = `${entry.date}_${entry.project_name}`;
+        
+        if (!groupedByDateAndProject[key]) {
+          groupedByDateAndProject[key] = {
+            date: entry.date,
+            project_name: entry.project_name,
+            formatted_display: entry.formatted_display,
+            total_hours: 0
+          };
+        }
+        
+        groupedByDateAndProject[key].total_hours += parseFloat(entry.total_hours || 0);
+      });
+      
+      // Converte para array e ordena por data
+      const sortedEntries = Object.values(groupedByDateAndProject)
+        .sort((a, b) => b.date.localeCompare(a.date));
+      
+      hoursList.innerHTML = sortedEntries.map(entry => `
         <div class="p-4 border-b border-gray-200">
-          <div class="flex justify-between items-center">
-            <div>
-              <div class="font-medium">${formatDate(entry.date)}</div>
-              <div class="text-sm text-gray-600">${entry.project_name || 'Projeto não definido'}</div>
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <div class="text-sm font-medium text-gray-900 mb-1">
+                ${entry.formatted_display} - ${formatDate(entry.date)}
+              </div>
+              <div class="text-xs text-gray-500">
+                ${entry.project_name || 'Projeto não definido'}
+              </div>
             </div>
-            <div class="font-medium">${parseFloat(entry.total_hours || 0).toFixed(1)}h</div>
+            <div class="text-sm font-medium ${entry.total_hours > 0 ? 'text-gray-900' : 'text-orange-500'}">
+              ${entry.total_hours.toFixed(1)}h
+            </div>
           </div>
         </div>
       `).join('');
+      
+      // Atualiza o total geral
+      if (totalHoursElement) {
+        const grandTotal = parseFloat(result.total_hours || 0);
+        totalHoursElement.textContent = `${grandTotal.toFixed(1)}h`;
+      }
+      
     } else {
       hoursList.innerHTML = '<div class="p-4 text-center text-gray-500">Nenhum registro encontrado</div>';
+      
+      if (totalHoursElement) {
+        totalHoursElement.textContent = '0.0h';
+      }
     }
   } catch (error) {
     console.error('Erro ao carregar horas:', error);
@@ -535,12 +577,14 @@ async function handleDeleteEmployee(e) {
   }
 }
 
-// ========== UTILITÁRIOS ==========
 function formatDate(dateString) {
   if (!dateString) return 'Data inválida';
   
   try {
-    const date = new Date(dateString);
+    // CORREÇÃO: Força interpretação como data local
+    const dateParts = dateString.split('-');
+    const date = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+    
     return date.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: '2-digit',

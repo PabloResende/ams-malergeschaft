@@ -327,24 +327,26 @@ class ProjectController
         exit;
     }
 
-    // ✅ NOVO MÉTODO: API para obter detalhes do projeto
-    public function getProjectDetails(int $projectId)
+    // ADICIONAR/CORRIGIR o método getProjectDetails
+    public function getProjectDetails($projectId = null)
     {
         header('Content-Type: application/json; charset=UTF-8');
         
+        $projectId = $projectId ?? (int)($_GET['id'] ?? 0);
+        
         if (!$projectId) {
-            echo json_encode(['error' => 'ID do projeto é obrigatório']);
+            echo json_encode(['error' => 'ID do projeto não fornecido']);
             exit;
         }
-
+        
         try {
             global $pdo;
             
-            // Buscar projeto
+            // Busca dados do projeto
             $stmt = $pdo->prepare("
-                SELECT p.*, c.name as client_name 
-                FROM projects p 
-                LEFT JOIN client c ON p.client_id = c.id 
+                SELECT p.*, c.name as client_name
+                FROM projects p
+                LEFT JOIN client c ON p.client_id = c.id
                 WHERE p.id = ?
             ");
             $stmt->execute([$projectId]);
@@ -354,22 +356,57 @@ class ProjectController
                 echo json_encode(['error' => 'Projeto não encontrado']);
                 exit;
             }
-
-            // ✅ Buscar funcionários usando project_resources
+            
+            // NOVO: Calcula total de horas do sistema novo (entrada/saída)
             $stmt = $pdo->prepare("
-                SELECT e.id, e.name, e.last_name
-                FROM employees e
-                INNER JOIN project_resources pr ON e.id = pr.resource_id
-                WHERE pr.project_id = ? AND pr.resource_type = 'employee'
-                ORDER BY e.name
+                SELECT COALESCE(SUM(total_hours), 0) as new_system_hours
+                FROM time_entries 
+                WHERE project_id = ?
             ");
             $stmt->execute([$projectId]);
-            $project['employees'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            echo json_encode($project);
-
+            $newSystemHours = (float)$stmt->fetchColumn();
+            
+            // Total de horas do sistema antigo (horas diretas)
+            $stmt = $pdo->prepare("
+                SELECT COALESCE(SUM(hours), 0) as old_system_hours
+                FROM work_logs 
+                WHERE project_id = ?
+            ");
+            $stmt->execute([$projectId]);
+            $oldSystemHours = (float)$stmt->fetchColumn();
+            
+            // Soma total
+            $totalProjectHours = $newSystemHours + $oldSystemHours;
+            
+            // Busca funcionários que trabalharam no projeto
+            $stmt = $pdo->prepare("
+                SELECT DISTINCT
+                    e.id,
+                    e.name,
+                    e.last_name,
+                    COALESCE(SUM(te.total_hours), 0) as hours_worked
+                FROM time_entries te
+                LEFT JOIN employees e ON te.employee_id = e.id
+                WHERE te.project_id = ?
+                GROUP BY e.id, e.name, e.last_name
+                ORDER BY hours_worked DESC
+            ");
+            $stmt->execute([$projectId]);
+            $employeesHours = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Adiciona horas totais ao projeto
+            $project['total_hours_calculated'] = number_format($totalProjectHours, 2, '.', '');
+            $project['employees_hours'] = $employeesHours;
+            
+            error_log("Project $projectId - Total hours: $totalProjectHours");
+            
+            echo json_encode([
+                'success' => true,
+                'project' => $project
+            ]);
+            
         } catch (Exception $e) {
-            error_log("Erro no getProjectDetails: " . $e->getMessage());
+            error_log("ProjectController::getProjectDetails error: " . $e->getMessage());
             echo json_encode(['error' => 'Erro interno do servidor']);
         }
         exit;

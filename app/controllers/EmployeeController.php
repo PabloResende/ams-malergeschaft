@@ -463,7 +463,7 @@ class EmployeeController
     }
 
     /** API: Buscar horas de um funcionário específico */
-    public function getEmployeeHours($employeeId = null)
+   public function getEmployeeHours($employeeId = null)
     {
         header('Content-Type: application/json; charset=UTF-8');
         
@@ -480,7 +480,7 @@ class EmployeeController
         try {
             global $pdo;
             
-            // Busca entradas do sistema novo (entrada/saída)
+            // Busca registros de ponto do funcionário
             $stmt = $pdo->prepare("
                 SELECT 
                     te.date,
@@ -494,89 +494,58 @@ class EmployeeController
             ");
             $stmt->execute([$employeeId]);
             $timeEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            error_log("getEmployeeHours - Found " . count($timeEntries) . " entries for employee $employeeId");
 
-            // Busca também do sistema antigo (work_logs)
-            $stmt = $pdo->prepare("
-                SELECT 
-                    wl.date,
-                    wl.hours as total_hours,
-                    p.name as project_name,
-                    'old_system' as type
-                FROM work_logs wl
-                LEFT JOIN projects p ON wl.project_id = p.id
-                WHERE wl.employee_id = ?
-                ORDER BY wl.date DESC
-            ");
-            $stmt->execute([$employeeId]);
-            $workLogs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $allEntries = [];
+            $totalHours = 0;
 
-            $groupedEntries = [];
-
-            // Processa entradas do sistema novo
             foreach ($timeEntries as $entry) {
+                // Decodifica os registros JSON
                 $records = json_decode($entry['time_records'], true);
                 $entries = $records['entries'] ?? [];
                 
-                $key = $entry['date'] . '_' . ($entry['project_name'] ?? 'no_project');
+                if (empty($entries)) continue;
                 
-                if (!isset($groupedEntries[$key])) {
-                    $groupedEntries[$key] = [
-                        'date' => $entry['date'],
-                        'project_name' => $entry['project_name'] ?? 'Projeto não definido',
-                        'entries' => [],
-                        'total_hours' => 0,
-                        'type' => 'new_system'
-                    ];
+                // Agrupa entradas e saídas
+                $entradas = [];
+                $saidas = [];
+                
+                foreach ($entries as $record) {
+                    if ($record['type'] === 'entry') {
+                        $entradas[] = $record['time'];
+                    } elseif ($record['type'] === 'exit') {
+                        $saidas[] = $record['time'];
+                    }
                 }
                 
-                foreach ($entries as $timeRecord) {
-                    $groupedEntries[$key]['entries'][] = [
-                        'time' => $timeRecord['time'] ?? '',
-                        'type' => $timeRecord['type'] ?? ''
-                    ];
+                // Cria o formato de exibição: "entrada X saida X - entrada Y saida Y"
+                $displayPairs = [];
+                $maxPairs = max(count($entradas), count($saidas));
+                
+                for ($i = 0; $i < $maxPairs; $i++) {
+                    $entTime = isset($entradas[$i]) ? $entradas[$i] : '?';
+                    $saiTime = isset($saidas[$i]) ? $saidas[$i] : '?';
+                    $displayPairs[] = "entrada {$entTime} saída {$saiTime}";
                 }
                 
-                $groupedEntries[$key]['total_hours'] += (float)($entry['total_hours'] ?? 0);
-            }
-
-            // Processa entradas do sistema antigo
-            foreach ($workLogs as $log) {
-                $key = $log['date'] . '_' . ($log['project_name'] ?? 'no_project') . '_old';
+                $formatted_display = implode(' - ', $displayPairs);
                 
-                $groupedEntries[$key] = [
-                    'date' => $log['date'],
-                    'project_name' => $log['project_name'] ?? 'Projeto não definido',
-                    'entries' => [['time' => 'Sistema Antigo', 'type' => 'direct']],
-                    'total_hours' => (float)($log['total_hours'] ?? 0),
-                    'type' => 'old_system'
+                $allEntries[] = [
+                    'date' => $entry['date'],
+                    'project_name' => $entry['project_name'] ?? 'Projeto não definido',
+                    'total_hours' => (float)($entry['total_hours'] ?? 0),
+                    'formatted_display' => $formatted_display
                 ];
+                
+                $totalHours += (float)($entry['total_hours'] ?? 0);
             }
 
-            // Formata entradas para exibição
-            foreach ($groupedEntries as &$group) {
-                if ($group['type'] === 'new_system') {
-                    $group['formatted_display'] = $this->formatTimeEntryDisplay($group['entries'], $group['date']);
-                } else {
-                    $group['formatted_display'] = 'Horas diretas: ' . number_format($group['total_hours'], 2) . 'h';
-                }
-            }
-
-            // Converte para array e ordena por data
-            $allEntries = array_values($groupedEntries);
-            usort($allEntries, function($a, $b) {
-                return strcmp($b['date'], $a['date']);
-            });
-
-            // Calcula total geral
-            $totalHours = 0;
-            foreach ($allEntries as $entry) {
-                $totalHours += $entry['total_hours'];
-            }
+            error_log("getEmployeeHours - Total hours: $totalHours");
 
             echo json_encode([
                 'entries' => $allEntries,
-                'total_hours' => number_format($totalHours, 2, '.', ''),
-                'employee_name' => 'Funcionário'
+                'total_hours' => number_format($totalHours, 2, '.', '')
             ]);
 
         } catch (Exception $e) {
@@ -584,7 +553,7 @@ class EmployeeController
             echo json_encode([
                 'entries' => [],
                 'total_hours' => '0.00',
-                'error' => 'Erro interno do servidor'
+                'error' => 'Erro interno do servidor: ' . $e->getMessage()
             ]);
         }
         exit;

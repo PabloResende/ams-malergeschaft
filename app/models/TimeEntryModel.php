@@ -102,7 +102,7 @@ class TimeEntryModel
             return strcmp($timeA, $timeB);
         });
         
-        // Separa entradas e saídas
+        // Separa entradas e saídas em ordem cronológica
         $entradas = [];
         $saidas = [];
         
@@ -119,16 +119,21 @@ class TimeEntryModel
             }
         }
         
-        // Calcula horas apenas para pares completos
+        // Calcula horas apenas para pares completos (entrada + saída)
         $totalMinutes = 0;
         $pairsCount = min(count($entradas), count($saidas));
         
         for ($i = 0; $i < $pairsCount; $i++) {
-            $start = strtotime("1970-01-01 " . $entradas[$i]);
-            $end = strtotime("1970-01-01 " . $saidas[$i]);
+            $startTime = strtotime("1970-01-01 " . $entradas[$i]);
+            $endTime = strtotime("1970-01-01 " . $saidas[$i]);
             
-            if ($end > $start) {
-                $totalMinutes += ($end - $start) / 60;
+            // Se saída for antes da entrada (passou da meia-noite), adiciona 1 dia
+            if ($endTime < $startTime) {
+                $endTime += 24 * 60 * 60; // +24 horas
+            }
+            
+            if ($endTime > $startTime) {
+                $totalMinutes += ($endTime - $startTime) / 60;
             }
         }
         

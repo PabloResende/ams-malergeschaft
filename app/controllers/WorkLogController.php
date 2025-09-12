@@ -115,6 +115,11 @@ class WorkLogController
     {
         header('Content-Type: application/json; charset=UTF-8');
         
+        // Log para debug
+        error_log("WorkLogController::adminCreateTimeEntry chamado");
+        error_log("REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
+        error_log("POST data: " . print_r($_POST, true));
+        
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo json_encode(['success' => false, 'message' => 'Método não permitido']);
@@ -122,39 +127,139 @@ class WorkLogController
         }
         
         // Verifica se é admin
-        if (!isAdmin()) {
+        if (!isset($_SESSION['user']) || $_SESSION['user']['role'] !== 'admin') {
             http_response_code(403);
-            echo json_encode(['success' => false, 'message' => 'Acesso negado']);
+            echo json_encode(['success' => false, 'message' => 'Acesso negado. Apenas admins podem registrar ponto de funcionários.']);
             exit;
         }
         
+        // Coleta dados do POST
         $employeeId = (int)($_POST['employee_id'] ?? 0);
-        $projectId = (int)($_POST['project_id'] ?? 1); // Projeto padrão
+        $projectId = (int)($_POST['project_id'] ?? 0);
         $date = $_POST['date'] ?? date('Y-m-d');
         $time = $_POST['time'] ?? date('H:i');
         $entryType = $_POST['entry_type'] ?? 'entry';
         
-        if (!$employeeId || !$date || !$time) {
-            echo json_encode(['success' => false, 'message' => 'Dados obrigatórios faltando']);
+        // Log dos dados recebidos
+        error_log("Dados recebidos - Employee: $employeeId, Project: $projectId, Date: $date, Time: $time, Type: $entryType");
+        
+        // Validações
+        if (!$employeeId) {
+            echo json_encode(['success' => false, 'message' => 'ID do funcionário é obrigatório']);
+            exit;
+        }
+        
+        if (!$projectId) {
+            echo json_encode(['success' => false, 'message' => 'ID do projeto é obrigatório']);
+            exit;
+        }
+        
+        if (!$date) {
+            echo json_encode(['success' => false, 'message' => 'Data é obrigatória']);
+            exit;
+        }
+        
+        if (!$time) {
+            echo json_encode(['success' => false, 'message' => 'Horário é obrigatório']);
+            exit;
+        }
+        
+        if (!in_array($entryType, ['entry', 'exit'])) {
+            echo json_encode(['success' => false, 'message' => 'Tipo deve ser "entry" ou "exit"']);
             exit;
         }
         
         try {
+            // Verifica se o funcionário existe
+            global $pdo;
+            $stmt = $pdo->prepare("SELECT id, name FROM employees WHERE id = ?");
+            $stmt->execute([$employeeId]);
+            $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$employee) {
+                echo json_encode(['success' => false, 'message' => 'Funcionário não encontrado']);
+                exit;
+            }
+            
+            // Verifica se o projeto existe
+            $stmt = $pdo->prepare("SELECT id, name FROM projects WHERE id = ?");
+            $stmt->execute([$projectId]);
+            $project = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$project) {
+                echo json_encode(['success' => false, 'message' => 'Projeto não encontrado']);
+                exit;
+            }
+            
+            // Log antes de tentar registrar
+            error_log("Tentando registrar ponto para {$employee['name']} no projeto {$project['name']}");
+            
+            // Registra o ponto usando o TimeEntryModel
             $success = $this->timeEntryModel->addTimeEntry($employeeId, $projectId, $date, $entryType, $time);
             
             if ($success) {
                 // Atualiza totais do projeto
                 $this->updateProjectTotalHours($projectId);
-                echo json_encode(['success' => true, 'message' => 'Registro criado com sucesso']);
+                
+                error_log("Ponto registrado com sucesso");
+                echo json_encode([
+                    'success' => true, 
+                    'message' => "Ponto registrado com sucesso para {$employee['name']}"
+                ]);
             } else {
-                throw new Exception('Erro ao salvar registro');
+                throw new Exception('Erro ao salvar registro no banco de dados');
             }
             
         } catch (Exception $e) {
             error_log("WorkLogController::adminCreateTimeEntry error: " . $e->getMessage());
-            echo json_encode(['success' => false, 'message' => 'Erro interno: ' . $e->getMessage()]);
+            http_response_code(500);
+            echo json_encode([
+                'success' => false, 
+                'message' => 'Erro interno: ' . $e->getMessage()
+            ]);
         }
         exit;
+    }
+
+    /** NOVO: Método auxiliar para atualizar total de horas do projeto */
+    private function updateProjectTotalHours($projectId)
+    {
+        try {
+            global $pdo;
+            
+            // Calcula total de horas do sistema novo (entrada/saída)
+            $stmt = $pdo->prepare("
+                SELECT COALESCE(SUM(total_hours), 0) as new_system_hours
+                FROM time_entries 
+                WHERE project_id = ?
+            ");
+            $stmt->execute([$projectId]);
+            $newSystemHours = (float)$stmt->fetchColumn();
+            
+            // Calcula total de horas do sistema antigo (horas diretas)
+            $stmt = $pdo->prepare("
+                SELECT COALESCE(SUM(hours), 0) as old_system_hours
+                FROM work_logs 
+                WHERE project_id = ?
+            ");
+            $stmt->execute([$projectId]);
+            $oldSystemHours = (float)$stmt->fetchColumn();
+            
+            $totalHours = $newSystemHours + $oldSystemHours;
+            
+            // Atualiza projeto
+            $stmt = $pdo->prepare("
+                UPDATE projects 
+                SET total_hours = ? 
+                WHERE id = ?
+            ");
+            $stmt->execute([$totalHours, $projectId]);
+            
+            error_log("Total de horas do projeto $projectId atualizado para $totalHours");
+            
+        } catch (Exception $e) {
+            error_log("WorkLogController::updateProjectTotalHours error: " . $e->getMessage());
+        }
     }
 
     public function getTimeEntriesByDay()
@@ -592,47 +697,6 @@ class WorkLogController
             echo json_encode(['success' => false, 'message' => 'Erro interno']);
         }
         exit;
-    }
-
-    /** Atualiza total de horas do projeto */
-    private function updateProjectTotalHours($projectId)
-    {
-        if (!$projectId) return;
-        
-        try {
-            global $pdo;
-            
-            // Calcula total de horas do sistema novo
-            $stmt = $pdo->prepare("
-                SELECT COALESCE(SUM(total_hours), 0) as total
-                FROM time_entries 
-                WHERE project_id = ?
-            ");
-            $stmt->execute([$projectId]);
-            $newSystemHours = (float)$stmt->fetchColumn();
-            
-            // Calcula total de horas do sistema antigo
-            $stmt = $pdo->prepare("
-                SELECT COALESCE(SUM(hours), 0) as total
-                FROM project_work_logs 
-                WHERE project_id = ?
-            ");
-            $stmt->execute([$projectId]);
-            $oldSystemHours = (float)$stmt->fetchColumn();
-            
-            $totalHours = $newSystemHours + $oldSystemHours;
-            
-            // Atualiza projeto
-            $stmt = $pdo->prepare("
-                UPDATE projects 
-                SET total_hours = ? 
-                WHERE id = ?
-            ");
-            $stmt->execute([$totalHours, $projectId]);
-            
-        } catch (Exception $e) {
-            error_log("WorkLogController::updateProjectTotalHours error: " . $e->getMessage());
-        }
     }
 
     /** API: Lista projetos ativos */

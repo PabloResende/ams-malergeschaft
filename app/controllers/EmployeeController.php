@@ -411,74 +411,63 @@ class EmployeeController
     }
 
     /** API: Resumo de horas individual do funcionário */
-    public function getEmployeeHoursSummary()
+    public function getEmployeeHoursSummary($employeeId = null)
     {
         header('Content-Type: application/json; charset=UTF-8');
         
-        $employeeId = (int)($_GET['id'] ?? 0);
+        $employeeId = $employeeId ?? (int)($_GET['employee_id'] ?? 0);
+        
         if (!$employeeId) {
-            echo json_encode(['total' => '0.00', 'today' => '0.00', 'week' => '0.00']);
+            echo json_encode(['total' => '0.00']);
             exit;
         }
-
+        
         try {
             global $pdo;
             
-            $today = date('Y-m-d');
-            $startOfWeek = date('Y-m-d', strtotime('monday this week'));
-            $endOfWeek = date('Y-m-d', strtotime('sunday this week'));
-
-            // Total geral
-            $totalStmt = $pdo->prepare("SELECT COALESCE(SUM(total_hours), 0) FROM time_entries WHERE employee_id = ?");
-            $totalStmt->execute([$employeeId]);
-            $totalHours = (float)$totalStmt->fetchColumn();
-
-            // Hoje
-            $todayStmt = $pdo->prepare("SELECT COALESCE(SUM(total_hours), 0) FROM time_entries WHERE employee_id = ? AND date = ?");
-            $todayStmt->execute([$employeeId, $today]);
-            $todayHours = (float)$todayStmt->fetchColumn();
-
-            // Esta semana
-            $weekStmt = $pdo->prepare("SELECT COALESCE(SUM(total_hours), 0) FROM time_entries WHERE employee_id = ? AND date BETWEEN ? AND ?");
-            $weekStmt->execute([$employeeId, $startOfWeek, $endOfWeek]);
-            $weekHours = (float)$weekStmt->fetchColumn();
-
+            // Total de horas do sistema novo (entrada/saída)
+            $stmt = $pdo->prepare("
+                SELECT COALESCE(SUM(total_hours), 0) as new_system_total
+                FROM time_entries 
+                WHERE employee_id = ?
+            ");
+            $stmt->execute([$employeeId]);
+            $newSystemTotal = (float)$stmt->fetchColumn();
+            
+            // Total de horas do sistema antigo (horas diretas)
+            $stmt = $pdo->prepare("
+                SELECT COALESCE(SUM(hours), 0) as old_system_total
+                FROM work_logs 
+                WHERE employee_id = ?
+            ");
+            $stmt->execute([$employeeId]);
+            $oldSystemTotal = (float)$stmt->fetchColumn();
+            
+            $grandTotal = $newSystemTotal + $oldSystemTotal;
+            
             echo json_encode([
-                'total' => number_format($totalHours, 2, '.', ''),
-                'today' => number_format($todayHours, 2, '.', ''),
-                'week' => number_format($weekHours, 2, '.', ''),
+                'total' => number_format($grandTotal, 2, '.', ''),
+                'new_system' => number_format($newSystemTotal, 2, '.', ''),
+                'old_system' => number_format($oldSystemTotal, 2, '.', ''),
+                'employee_id' => $employeeId
             ]);
             
         } catch (Exception $e) {
-            echo json_encode(['total' => '0.00', 'today' => '0.00', 'week' => '0.00']);
+            error_log("EmployeeController::getEmployeeHoursSummary error: " . $e->getMessage());
+            echo json_encode([
+                'total' => '0.00',
+                'error' => 'Erro interno'
+            ]);
         }
         exit;
     }
 
-    /** Formatar display de entrada de tempo */
-    private function formatTimeEntryDisplay(array $entries, string $date): string
-    {
-        if (empty($entries)) {
-            return 'Sem registros';
-        }
-
-        $display = [];
-        foreach ($entries as $entry) {
-            $time = $entry['time'] ?? '';
-            $type = $entry['type'] ?? '';
-            $typeLabel = $type === 'entry' ? 'Entrada' : 'Saída';
-            $display[] = "{$time} ({$typeLabel})";
-        }
-
-        return implode(', ', $display);
-    }
-
     /** API: Buscar horas de um funcionário específico */
-    public function getEmployeeHours()
+    public function getEmployeeHours($employeeId = null)
     {
         header('Content-Type: application/json; charset=UTF-8');
         
-        $employeeId = (int)($_GET['id'] ?? 0);
+        $employeeId = $employeeId ?? (int)($_GET['id'] ?? 0);
         if (!$employeeId) {
             echo json_encode([
                 'entries' => [],
@@ -491,7 +480,7 @@ class EmployeeController
         try {
             global $pdo;
             
-            // Busca entradas do sistema novo
+            // Busca entradas do sistema novo (entrada/saída)
             $stmt = $pdo->prepare("
                 SELECT 
                     te.date,
@@ -505,6 +494,21 @@ class EmployeeController
             ");
             $stmt->execute([$employeeId]);
             $timeEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Busca também do sistema antigo (work_logs)
+            $stmt = $pdo->prepare("
+                SELECT 
+                    wl.date,
+                    wl.hours as total_hours,
+                    p.name as project_name,
+                    'old_system' as type
+                FROM work_logs wl
+                LEFT JOIN projects p ON wl.project_id = p.id
+                WHERE wl.employee_id = ?
+                ORDER BY wl.date DESC
+            ");
+            $stmt->execute([$employeeId]);
+            $workLogs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             $groupedEntries = [];
 
@@ -520,21 +524,41 @@ class EmployeeController
                         'date' => $entry['date'],
                         'project_name' => $entry['project_name'] ?? 'Projeto não definido',
                         'entries' => [],
-                        'total_hours' => 0
+                        'total_hours' => 0,
+                        'type' => 'new_system'
                     ];
                 }
                 
-                $groupedEntries[$key]['entries'][] = [
-                    'time' => $entry['time'],
-                    'type' => $entry['type']
-                ];
+                foreach ($entries as $timeRecord) {
+                    $groupedEntries[$key]['entries'][] = [
+                        'time' => $timeRecord['time'] ?? '',
+                        'type' => $timeRecord['type'] ?? ''
+                    ];
+                }
                 
                 $groupedEntries[$key]['total_hours'] += (float)($entry['total_hours'] ?? 0);
             }
 
-            // Formata entradas do sistema novo
+            // Processa entradas do sistema antigo
+            foreach ($workLogs as $log) {
+                $key = $log['date'] . '_' . ($log['project_name'] ?? 'no_project') . '_old';
+                
+                $groupedEntries[$key] = [
+                    'date' => $log['date'],
+                    'project_name' => $log['project_name'] ?? 'Projeto não definido',
+                    'entries' => [['time' => 'Sistema Antigo', 'type' => 'direct']],
+                    'total_hours' => (float)($log['total_hours'] ?? 0),
+                    'type' => 'old_system'
+                ];
+            }
+
+            // Formata entradas para exibição
             foreach ($groupedEntries as &$group) {
-                $group['formatted_display'] = $this->formatTimeEntryDisplay($group['entries'], $group['date']);
+                if ($group['type'] === 'new_system') {
+                    $group['formatted_display'] = $this->formatTimeEntryDisplay($group['entries'], $group['date']);
+                } else {
+                    $group['formatted_display'] = 'Horas diretas: ' . number_format($group['total_hours'], 2) . 'h';
+                }
             }
 
             // Converte para array e ordena por data
@@ -564,6 +588,26 @@ class EmployeeController
             ]);
         }
         exit;
+    }
+
+    /** Formatar display de entrada de tempo */
+    private function formatTimeEntryDisplay(array $entries, string $date): string
+    {
+        if (empty($entries)) {
+            return 'Sem registros';
+        }
+
+        $display = [];
+        foreach ($entries as $entry) {
+            $time = $entry['time'] ?? '';
+            $type = $entry['type'] ?? '';
+            $typeLabel = $type === 'entry' ? 'Entrada' : 'Saída';
+            if ($time && $type) {
+                $display[] = "{$time} ({$typeLabel})";
+            }
+        }
+
+        return empty($display) ? 'Sem registros válidos' : implode(', ', $display);
     }
 
     /** API: Criar novo funcionário */
@@ -673,8 +717,12 @@ class EmployeeController
                 exit;
             }
             
-            // Buscar funcionário existente
-            $employee = $this->employeeModel->getById($employeeId);
+            // CORREÇÃO: Usar método que existe
+            global $pdo;
+            $stmt = $pdo->prepare("SELECT * FROM employees WHERE id = ?");
+            $stmt->execute([$employeeId]);
+            $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+            
             if (!$employee) {
                 echo json_encode(['success' => false, 'message' => 'Funcionário não encontrado']);
                 exit;
@@ -684,38 +732,36 @@ class EmployeeController
             $updateData = [
                 'name' => trim($_POST['name'] ?? $employee['name']),
                 'last_name' => trim($_POST['last_name'] ?? $employee['last_name']),
-                'email' => trim($_POST['email'] ?? $employee['email']),
-                'phone' => trim($_POST['phone'] ?? $employee['phone']),
-                'position' => trim($_POST['position'] ?? $employee['position']),
+                'function' => trim($_POST['function'] ?? $employee['function']),
+                'address' => trim($_POST['address'] ?? $employee['address']),
+                'zip_code' => trim($_POST['zip_code'] ?? $employee['zip_code']),
+                'city' => trim($_POST['city'] ?? $employee['city']),
+                'sex' => $_POST['sex'] ?? $employee['sex'],
                 'birth_date' => $_POST['birth_date'] ?? $employee['birth_date'],
                 'nationality' => trim($_POST['nationality'] ?? $employee['nationality']),
-                'passport' => trim($_POST['passport'] ?? $employee['passport']),
-                'gender' => $_POST['gender'] ?? $employee['gender'],
+                'permission_type' => trim($_POST['permission_type'] ?? $employee['permission_type']),
+                'ahv_number' => trim($_POST['ahv_number'] ?? $employee['ahv_number']),
+                'phone' => trim($_POST['phone'] ?? $employee['phone']),
+                'religion' => trim($_POST['religion'] ?? $employee['religion']),
                 'marital_status' => $_POST['marital_status'] ?? $employee['marital_status'],
-                'role' => $_POST['role'] ?? $employee['role']
+                'start_date' => $_POST['start_date'] ?? $employee['start_date'],
+                'about' => trim($_POST['about'] ?? $employee['about'])
             ];
             
             // Atualizar funcionário
-            $success = $this->employeeModel->update($employeeId, $updateData);
+            $fields = [];
+            $values = [];
+            foreach ($updateData as $field => $value) {
+                $fields[] = "$field = ?";
+                $values[] = $value;
+            }
+            $values[] = $employeeId;
+            
+            $stmt = $pdo->prepare("UPDATE employees SET " . implode(', ', $fields) . " WHERE id = ?");
+            $success = $stmt->execute($values);
             
             if (!$success) {
                 throw new Exception('Erro ao atualizar funcionário');
-            }
-            
-            // Atualizar senha se fornecida
-            $newPassword = trim($_POST['password'] ?? '');
-            if (!empty($newPassword)) {
-                $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-                
-                global $pdo;
-                $stmt = $pdo->prepare("SELECT user_id FROM employees WHERE id = ?");
-                $stmt->execute([$employeeId]);
-                $userId = $stmt->fetchColumn();
-                
-                if ($userId) {
-                    $stmt = $pdo->prepare("UPDATE users SET password = ? WHERE id = ?");
-                    $stmt->execute([$hashedPassword, $userId]);
-                }
             }
             
             echo json_encode([

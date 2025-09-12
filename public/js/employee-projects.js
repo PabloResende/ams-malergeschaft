@@ -1,51 +1,34 @@
-// public/js/employees.js - ARQUIVO COMPLETO CORRIGIDO
-
-(() => {
+// public/js/employee-projects.js - VERSÃO CORRIGIDA COMPLETA
+(function() {
   'use strict';
 
-  const modal = document.getElementById('employeeModal');
-  const cards = document.querySelectorAll('.employee-card');
-  const addBtn = document.getElementById('addEmployeeBtn');
-  const form = document.getElementById('employeeDetailsForm');
-  const closeBtn = document.querySelector('.close-modal');
-  const transBody = document.getElementById('empTransBody');
-  
-  // Elementos do formulário
-  const userIdInput     = form.querySelector('#detailsLoginUserId');
-  const idInput         = form.querySelector('#detailsEmployeeId');
-  const nameInput       = form.querySelector('#detailsEmployeeName');
-  const lastNameInput   = form.querySelector('#detailsEmployeeLastName');
-  const funcInput       = form.querySelector('#detailsEmployeeFunction');
-  const addressInput    = form.querySelector('#detailsEmployeeAddress');
-  const zipInput        = form.querySelector('#detailsEmployeeZipCode');
-  const cityInput       = form.querySelector('#detailsEmployeeCity');
-  const birthInput      = form.querySelector('#detailsEmployeeBirthDate');
-  const natInput        = form.querySelector('#detailsEmployeeNationality');
-  const permTypeInput   = form.querySelector('#detailsEmployeePermissionType');
-  const ahvInput        = form.querySelector('#detailsEmployeeAhvNumber');
-  const phoneInput      = form.querySelector('#detailsEmployeePhone');
-  const religionInput   = form.querySelector('#detailsEmployeeReligion');
-  const startInput      = form.querySelector('#detailsEmployeeStartDate');
-  const sexInput        = form.querySelector('#detailsEmployeeSex');
-  const maritalInput    = form.querySelector('#detailsEmployeeMaritalStatus');
-  const aboutInput      = form.querySelector('#detailsEmployeeAbout');
-  const roleSelect      = form.querySelector('#detailsEmployeeRoleId');
-  const loginEmailInput = form.querySelector('#detailsLoginEmail');
-  const loginPassInput  = form.querySelector('#detailsLoginPassword');
+  console.log('🔧 employee-projects.js carregado e inicializado');
 
-  // Elementos para aba de horas
+  // Variáveis globais
+  const cards = document.querySelectorAll('.employee-card');
+  const modal = document.getElementById('employeeModal');
+  const closeModalBtn = document.getElementById('closeModal');
+  const employeeForm = document.getElementById('employeeForm');
+  
+  // Elementos específicos para aba de horas
   const timeTrackingForm = document.getElementById('timeTrackingForm');
   const timeTrackingEmployeeId = document.getElementById('timeTrackingEmployeeId');
+  const timeTrackingProject = document.getElementById('timeTrackingProject');
   const timeTrackingDate = document.getElementById('timeTrackingDate');
+  const timeTrackingTime = document.getElementById('timeTrackingTime');
+  const timeTrackingType = document.getElementById('timeTrackingType');
   const employeeHoursList = document.getElementById('employeeHoursList');
   const employeeModalTotalHours = document.getElementById('employeeModalTotalHours');
   
   let currentEmployeeId = null;
 
+  // Utility function
   function ucfirst(str){
     return str.charAt(0).toUpperCase() + str.slice(1);
   }
 
+  // ========== MODAL DE FUNCIONÁRIO ==========
+  
   // Abre modal de detalhes ao clicar no card
   cards.forEach(card=>{
     card.addEventListener('click', ()=>{
@@ -60,165 +43,72 @@
         .then(data=>{
           // Verifica se a resposta tem success e data
           const emp = data.success ? data.data : data;
+          if (!emp) throw new Error('Dados do funcionário não encontrados');
           
-          // — Popula campos ocultos e gerais —
-          userIdInput.value     = emp.user_id || '';
-          idInput.value         = emp.id || '';
-          nameInput.value       = emp.name || '';
-          lastNameInput.value   = emp.last_name || '';
-          funcInput.value       = emp.function || emp.position || '';
-          addressInput.value    = emp.address || '';
-          zipInput.value        = emp.zip_code || '';
-          cityInput.value       = emp.city || '';
-          birthInput.value      = emp.birth_date || '';
-          natInput.value        = emp.nationality || '';
-          permTypeInput.value   = emp.permission_type || '';
-          ahvInput.value        = emp.ahv_number || '';
-          phoneInput.value      = emp.phone || '';
-          religionInput.value   = emp.religion || '';
-          startInput.value      = emp.start_date || '';
-          sexInput.value        = emp.sex || '';
-          maritalInput.value    = emp.marital_status || '';
-          aboutInput.value      = emp.about || '';
-          roleSelect.value      = emp.role_id || '';
-
-          // — Documentos —
-          [
-            'passport','permission_photo_front','permission_photo_back',
-            'health_card_front','health_card_back','bank_card_front',
-            'bank_card_back','marriage_certificate'
-          ].forEach(field=>{
-            const view = document.getElementById(`view${ucfirst(field)}`);
-            const link = document.getElementById(`link${ucfirst(field)}`);
-            if (!view || !link) return;
-            if (emp[field]) {
-              const url = `${window.baseUrl}/${emp[field]}`;
-              view.src           = url;
-              view.style.display = 'block';
-              link.href          = url;
-              link.textContent   = emp[field].split('/').pop();
-              link.style.display = 'block';
-            } else {
-              view.style.display = 'none';
-              link.style.display = 'none';
-            }
-          });
-
-          // — Transações —
-          transBody.innerHTML = '';
-          if (emp.transactions && emp.transactions.length) {
-            emp.transactions.forEach(tx=>{
-              const tr = document.createElement('tr');
-              tr.innerHTML = `
-                <td class="p-2">${tx.date}</td>
-                <td class="p-2">${tx.type}</td>
-                <td class="p-2 text-right">${tx.amount}</td>
-              `;
-              transBody.appendChild(tr);
-            });
-          } else {
-            transBody.innerHTML = `
-              <tr>
-                <td colspan="3" class="p-4 text-center text-gray-500">
-                  ${langText['no_transactions'] ?? 'No transactions'}
-                </td>
-              </tr>
-            `;
+          // Preenche dados gerais
+          document.getElementById('modalEmployeeName').textContent = emp.name || 'N/A';
+          document.getElementById('modalEmployeeEmail').textContent = emp.email || 'N/A';
+          document.getElementById('modalEmployeeFunction').textContent = emp.function || 'N/A';
+          document.getElementById('modalEmployeePhone').textContent = emp.phone || 'N/A';
+          document.getElementById('modalEmployeeAddress').textContent = emp.address || 'N/A';
+          
+          // Preenche campos do formulário para edição
+          const form = document.getElementById('employeeForm');
+          if (form) {
+            form.querySelector('[name="id"]').value = emp.id || '';
+            form.querySelector('[name="name"]').value = emp.name || '';
+            form.querySelector('[name="last_name"]').value = emp.last_name || '';
+            form.querySelector('[name="function"]').value = emp.function || '';
+            form.querySelector('[name="email"]').value = emp.email || '';
+            form.querySelector('[name="phone"]').value = emp.phone || '';
+            form.querySelector('[name="address"]').value = emp.address || '';
+            form.querySelector('[name="zip_code"]').value = emp.zip_code || '';
+            form.querySelector('[name="city"]').value = emp.city || '';
+            form.querySelector('[name="sex"]').value = emp.sex || 'male';
+            form.querySelector('[name="birth_date"]').value = emp.birth_date || '';
+            form.querySelector('[name="nationality"]').value = emp.nationality || '';
+            form.querySelector('[name="marital_status"]').value = emp.marital_status || 'single';
+            form.querySelector('[name="role"]').value = emp.role || 'employee';
           }
-
-          // — Login data —
-          loginEmailInput.value = emp.email || '';
-
+          
+          // Configura formulário de ponto se estivermos na aba de horas
+          if (timeTrackingEmployeeId) {
+            timeTrackingEmployeeId.value = emp.id;
+          }
+          
+          // Mostra modal
           modal.classList.remove('hidden');
           modal.classList.add('flex');
-          document.body.style.overflow = 'hidden';
         })
-        .catch(err=>{
-          console.error('Erro ao carregar funcionário:', err);
+        .catch(error => {
+          console.error('Erro ao carregar dados do funcionário:', error);
           alert('Erro ao carregar dados do funcionário');
         });
     });
   });
 
-  // Adicionar funcionário (limpa o form)
-  addBtn?.addEventListener('click',()=>{
-    currentEmployeeId = null;
-    form.reset();
-    
-    // Limpar documentos (imagens e links)
-    [
-      'passport','permission_photo_front','permission_photo_back',
-      'health_card_front','health_card_back','bank_card_front',
-      'bank_card_back','marriage_certificate'
-    ].forEach(field=>{
-      const view = document.getElementById(`view${ucfirst(field)}`);
-      const link = document.getElementById(`link${ucfirst(field)}`);
-      if (view) view.style.display = 'none';
-      if (link) link.style.display = 'none';
-    });
-
-    transBody.innerHTML = `
-      <tr>
-        <td colspan="3" class="p-4 text-center text-gray-500">
-          ${langText['no_transactions'] ?? 'No transactions'}
-        </td>
-      </tr>
-    `;
-    
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    document.body.style.overflow = 'hidden';
-  });
-
   // Fechar modal
-  closeBtn?.addEventListener('click', closeModal);
-  modal?.addEventListener('click', (e)=>{
-    if (e.target === modal) closeModal();
-  });
-
-  function closeModal(){
-    modal?.classList.add('hidden');
-    modal?.classList.remove('flex');
-    document.body.style.overflow = '';
+  if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', () => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      currentEmployeeId = null;
+    });
   }
 
-  // Submit do formulário
-  form?.addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    
-    const isUpdate = currentEmployeeId !== null;
-    const formData = new FormData(form);
-    
-    const url = isUpdate 
-      ? `${window.baseUrl}/employees/update`
-      : `${window.baseUrl}/employees/store`;
-
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        body: formData
-      });
-
-      const result = await response.json();
-      
-      if (response.ok && result.success) {
-        showNotification(
-          isUpdate ? 'Funcionário atualizado com sucesso!' : 'Funcionário criado com sucesso!',
-          'success'
-        );
-        setTimeout(() => {
-          location.reload();
-        }, 1500);
-      } else {
-        showNotification(result.message || 'Erro ao salvar funcionário', 'error');
+  // Fechar modal clicando fora
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        currentEmployeeId = null;
       }
-    } catch (error) {
-      console.error('Erro:', error);
-      showNotification('Erro de conexão', 'error');
-    }
-  });
+    });
+  }
 
-  // Tabs
+  // ========== SISTEMA DE TABS ==========
+  
   document.addEventListener('click', (e)=>{
     if (e.target.matches('[data-tab]')) {
       const targetTab = e.target.dataset.tab;
@@ -244,10 +134,10 @@
         targetPanel.classList.remove('hidden');
       }
 
-      // Se for a aba de horas, carrega dados específicos
+      // CORREÇÃO: Se for a aba de horas, carrega dados específicos
       if (targetTab === 'hours-details' && currentEmployeeId) {
-        loadProjects();
-        loadEmployeeHours(currentEmployeeId);
+        loadProjectsForAdmin(); // Carrega projetos para o admin
+        loadEmployeeHours(currentEmployeeId); // Carrega horas do funcionário
         
         // Configura o ID do funcionário no formulário
         if (timeTrackingEmployeeId) {
@@ -259,20 +149,178 @@
           const today = new Date().toISOString().split('T')[0];
           timeTrackingDate.value = today;
         }
+        
+        // Define horário atual
+        if (timeTrackingTime) {
+          const now = new Date();
+          const currentTime = now.toTimeString().substring(0, 5);
+          timeTrackingTime.value = currentTime;
+        }
       }
     }
   });
 
-  // Carregar horas por funcionário (versão original corrigida)
+  // ========== SISTEMA DE PONTO - ADMIN ==========
+
+  // CORREÇÃO: Função específica para carregar projetos no contexto admin
+  async function loadProjectsForAdmin() {
+    if (!timeTrackingProject) return;
+
+    try {
+      console.log('🔄 Carregando projetos para admin...');
+      
+      const response = await fetch(`${window.baseUrl}/api/projects/active`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
+      const projects = await response.json();
+      console.log('📋 Projetos carregados:', projects);
+
+      // Limpa e repopula o select
+      timeTrackingProject.innerHTML = '<option value="">Selecione um projeto...</option>';
+      
+      if (projects && projects.length > 0) {
+        projects.forEach(project => {
+          const option = document.createElement('option');
+          option.value = project.id;
+          option.textContent = project.name;
+          timeTrackingProject.appendChild(option);
+        });
+        console.log('✅ Projetos carregados com sucesso no select');
+      } else {
+        timeTrackingProject.innerHTML = '<option value="">Nenhum projeto disponível</option>';
+        console.log('⚠️ Nenhum projeto encontrado');
+      }
+    } catch (error) {
+      console.error('❌ Erro ao carregar projetos:', error);
+      timeTrackingProject.innerHTML = '<option value="">Erro ao carregar projetos</option>';
+    }
+  }
+
+  // CORREÇÃO: Função específica para registro de ponto pelo admin
+  async function handleAdminTimeEntrySubmit(e) {
+    e.preventDefault();
+    
+    console.log('📝 Iniciando registro de ponto pelo admin...');
+    
+    // Coleta dados do formulário
+    const employeeId = timeTrackingEmployeeId?.value;
+    const projectId = timeTrackingProject?.value;
+    const date = timeTrackingDate?.value;
+    const time = timeTrackingTime?.value;
+    const entryType = timeTrackingType?.value;
+
+    // Validações
+    if (!employeeId) {
+      showNotification("ID do funcionário não encontrado", "error");
+      return;
+    }
+    
+    if (!projectId) {
+      showNotification("Por favor, selecione um projeto", "error");
+      return;
+    }
+    
+    if (!date) {
+      showNotification("Por favor, informe a data", "error");
+      return;
+    }
+    
+    if (!time) {
+      showNotification("Por favor, informe o horário", "error");
+      return;
+    }
+    
+    if (!entryType) {
+      showNotification("Por favor, selecione o tipo (entrada/saída)", "error");
+      return;
+    }
+
+    try {
+      console.log('📤 Enviando dados:', { employeeId, projectId, date, time, entryType });
+      
+      // CORREÇÃO: Usa endpoint correto para admin
+      const response = await fetch(`${window.baseUrl}/api/work_logs/admin_time_entry`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          employee_id: employeeId,
+          project_id: projectId,
+          date: date,
+          time: time,
+          entry_type: entryType
+        })
+      });
+
+      const result = await response.json();
+      console.log('📥 Resposta do servidor:', result);
+      
+      if (result.success) {
+        showNotification("Ponto registrado com sucesso!", "success");
+        
+        // Limpa apenas o horário (mantém outros campos)
+        if (timeTrackingTime) {
+          const now = new Date();
+          timeTrackingTime.value = now.toTimeString().substring(0, 5);
+        }
+        
+        // Recarrega os dados de horas
+        if (currentEmployeeId) {
+          loadEmployeeHours(currentEmployeeId);
+          loadEmployeeData(); // Atualiza totais na tabela principal
+        }
+      } else {
+        showNotification(result.message || "Erro ao registrar ponto", "error");
+      }
+    } catch (error) {
+      console.error("❌ Erro ao registrar ponto:", error);
+      showNotification("Erro interno do servidor", "error");
+    }
+  }
+
+  // CORREÇÃO: Event listener específico para o formulário de ponto admin
+  if (timeTrackingForm) {
+    // Remove event listeners anteriores para evitar duplicação
+    timeTrackingForm.removeEventListener('submit', handleAdminTimeEntrySubmit);
+    
+    // Adiciona o event listener correto
+    timeTrackingForm.addEventListener('submit', handleAdminTimeEntrySubmit);
+    console.log('🎯 Event listener do formulário de ponto configurado');
+  }
+
+  // ========== CARREGAR HORAS DO FUNCIONÁRIO ==========
+  
+  // Função para atualizar filtros ativos
+  function updateActiveFilter(activeId) {
+    ['adminFilterall', 'adminFilterweek', 'adminFiltermonth', 'adminFilterperiod'].forEach(filterId => {
+      const btn = document.getElementById(filterId);
+      if (btn) {
+        if (filterId === activeId) {
+          btn.classList.remove('bg-gray-100', 'text-gray-700');
+          btn.classList.add('bg-blue-100', 'text-blue-700');
+        } else {
+          btn.classList.remove('bg-blue-100', 'text-blue-700');
+          btn.classList.add('bg-gray-100', 'text-gray-700');
+        }
+      }
+    });
+  }
+
+  // Função para carregar horas por funcionário
   async function loadEmployeeHours(employeeId, filter = 'all') {
     if (!employeeHoursList) return;
 
     try {
+      console.log(`🔄 Carregando horas do funcionário ${employeeId} com filtro ${filter}...`);
+      
       // Mostra loading
       employeeHoursList.innerHTML = `
         <div class="p-8 text-center">
           <div class="text-sm text-gray-500">
-            ${langText.loading_hours || 'Carregando registros de horas...'}
+            ${window.langText?.loading_hours || 'Carregando registros de horas...'}
           </div>
         </div>
       `;
@@ -284,6 +332,7 @@
       }
 
       const result = await response.json();
+      console.log('📊 Dados de horas recebidos:', result);
 
       if (result.error) {
         throw new Error(result.error);
@@ -318,48 +367,65 @@
       } else {
         employeeHoursList.innerHTML = `
           <div class="p-8 text-center">
-            <p class="text-sm text-gray-500">
-              ${langText.no_hours_registered || 'Nenhum registro de horas encontrado'}
-            </p>
+            <div class="text-sm text-gray-500">
+              ${window.langText?.no_hours_registered || 'Nenhum registro de horas encontrado'}
+            </div>
           </div>
         `;
       }
     } catch (error) {
-      console.error('Erro ao carregar horas:', error);
+      console.error('❌ Erro ao carregar horas:', error);
       employeeHoursList.innerHTML = `
-        <div class="p-4 text-center text-red-500">
-          ${langText.error_loading_hours || 'Erro ao carregar registros de horas'}
+        <div class="p-8 text-center">
+          <div class="text-sm text-red-500">
+            ${window.langText?.error_loading_hours || 'Erro ao carregar registros de horas'}
+          </div>
         </div>
       `;
     }
   }
 
-  // Função para atualizar filtro ativo
-  function updateActiveFilter(activeId) {
-    // Remover estado ativo de todos os filtros
-    ['adminFilterall', 'adminFilterweek', 'adminFiltermonth', 'adminFilterperiod'].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) {
-        btn.classList.remove('bg-blue-100', 'text-blue-700');
-        btn.classList.add('bg-gray-100', 'text-gray-700');
-      }
-    });
+  // Event listeners para os filtros de horas
+  ['adminFilterall', 'adminFilterweek', 'adminFiltermonth', 'adminFilterperiod'].forEach(filterId => {
+    const btn = document.getElementById(filterId);
+    if (btn) {
+      btn.addEventListener('click', () => {
+        const filterMap = {
+          'adminFilterall': 'today',
+          'adminFilterweek': 'week', 
+          'adminFiltermonth': 'month',
+          'adminFilterperiod': 'all'
+        };
+        
+        const filter = filterMap[filterId] || 'all';
+        updateActiveFilter(filterId);
+        
+        if (currentEmployeeId) {
+          loadEmployeeHours(currentEmployeeId, filter);
+        }
+      });
+    }
+  });
+
+  // ========== UTILITÁRIOS ==========
+  
+  // Função para formatar data
+  function formatDate(dateString) {
+    if (!dateString) return 'Data inválida';
     
-    // Ativar o filtro clicado
-    const activeBtn = document.getElementById(activeId);
-    if (activeBtn) {
-      activeBtn.classList.remove('bg-gray-100', 'text-gray-700');
-      activeBtn.classList.add('bg-blue-100', 'text-blue-700');
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit', 
+        year: 'numeric'
+      });
+    } catch (error) {
+      return dateString;
     }
   }
 
-  // Funções utilitárias
-  function formatDate(dateString) {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR');
-  }
-
+  // Função para mostrar notificações
   function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
@@ -375,15 +441,54 @@
     }, 3000);
   }
 
-  // ========== CORREÇÕES PARA REGISTRO DE HORAS E TEMPO DE SERVIÇO ==========
+  // ========== CRUD DE FUNCIONÁRIOS ==========
+  
+  // Submissão do formulário de funcionário
+  if (employeeForm) {
+    employeeForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
 
+      const formData = new FormData(this);
+      const isUpdate = formData.get('id') && formData.get('id') !== '';
+      
+      const url = isUpdate 
+        ? `${window.baseUrl}/employees/update`
+        : `${window.baseUrl}/employees/store`;
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+          showNotification(
+            isUpdate ? 'Funcionário atualizado com sucesso!' : 'Funcionário criado com sucesso!',
+            'success'
+          );
+          setTimeout(() => {
+            location.reload();
+          }, 1500);
+        } else {
+          showNotification(result.message || 'Erro ao salvar funcionário', 'error');
+        }
+      } catch (error) {
+        console.error('Erro:', error);
+        showNotification('Erro de conexão', 'error');
+      }
+    });
+  }
+
+  // ========== FUNÇÕES PARA COMPATIBILIDADE ==========
+  
   // Função para carregar dados dos funcionários (total de horas e tempo de serviço)
   async function loadEmployeeData() {
     console.log("📊 Carregando dados dos funcionários...");
     
     // Carrega total de horas para cada funcionário
     const employeeRows = document.querySelectorAll(".employee-total-hours");
-    const serviceTimeElements = document.querySelectorAll(".employee-service-time");
     
     for (const element of employeeRows) {
       const employeeId = element.getAttribute("data-employee-id");
@@ -393,13 +498,6 @@
           const data = await response.json();
           
           element.textContent = `${parseFloat(data.total || 0).toFixed(1)}h`;
-          
-          // Calcula tempo de serviço
-          const serviceElement = document.querySelector(`.employee-service-time[data-employee-id="${employeeId}"]`);
-          if (serviceElement) {
-            const serviceTime = await calculateServiceTime(employeeId);
-            serviceElement.textContent = serviceTime;
-          }
         } catch (error) {
           console.error(`Erro ao carregar horas do funcionário ${employeeId}:`, error);
           element.textContent = "0.0h";
@@ -408,134 +506,7 @@
     }
   }
 
-  // Função para calcular tempo de serviço
-  async function calculateServiceTime(employeeId) {
-    try {
-      const response = await fetch(`${window.baseUrl}/api/employees/${employeeId}/details`);
-      const data = await response.json();
-      
-      if (data.start_date) {
-        const startDate = new Date(data.start_date);
-        const today = new Date();
-        
-        const diffTime = Math.abs(today - startDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
-        const years = Math.floor(diffDays / 365);
-        const months = Math.floor((diffDays % 365) / 30);
-        
-        if (years > 0) {
-          return `${years}a ${months}m`;
-        } else if (months > 0) {
-          return `${months} meses`;
-        } else {
-          return `${diffDays} dias`;
-        }
-      }
-      
-      return "N/A";
-    } catch (error) {
-      console.error("Erro ao calcular tempo de serviço:", error);
-      return "N/A";
-    }
-  }
-
-  // Função para carregar projetos no formulário de registro de ponto
-  async function loadProjects() {
-    const select = document.getElementById("timeTrackingProject");
-    if (!select) return;
-
-    try {
-      const response = await fetch(`${window.baseUrl}/api/projects/active`);
-      const projects = await response.json();
-
-      select.innerHTML = '<option value="">Selecione um projeto...</option>';
-      
-      projects.forEach(project => {
-        const option = document.createElement('option');
-        option.value = project.id;
-        option.textContent = project.name;
-        select.appendChild(option);
-      });
-    } catch (error) {
-      console.error("Erro ao carregar projetos:", error);
-    }
-  }
-
-  // Função corrigida para lidar com registro de ponto
-  async function handleTimeEntrySubmit(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(e.target);
-    const data = {
-      employee_id: formData.get('employee_id'),
-      project_id: formData.get('project_id'),
-      date: formData.get('date'),
-      time: formData.get('time'),
-      type: formData.get('type')
-    };
-
-    // Validações
-    if (!data.employee_id || !data.project_id || !data.date || !data.time || !data.type) {
-      alert("Por favor, preencha todos os campos");
-      return;
-    }
-
-    try {
-      const response = await fetch(`${window.baseUrl}/api/worklog/add-time-entry`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        showNotification("Ponto registrado com sucesso!", "success");
-        e.target.reset();
-        
-        // Define data atual novamente
-        const today = new Date().toISOString().split('T')[0];
-        const dateField = document.getElementById("timeTrackingDate");
-        if (dateField) dateField.value = today;
-        
-        // Recarrega os dados de horas
-        if (currentEmployeeId) {
-          loadEmployeeHours(currentEmployeeId);
-          loadEmployeeData(); // Atualiza totais na tabela principal
-        }
-      } else {
-        showNotification(result.message || "Erro ao registrar ponto", "error");
-      }
-    } catch (error) {
-      console.error("Erro ao registrar ponto:", error);
-      showNotification("Erro interno do servidor", "error");
-    }
-  }
-
-  // Event listeners para o formulário de registro de ponto
-  if (timeTrackingForm) {
-    timeTrackingForm.addEventListener('submit', handleTimeEntrySubmit);
-  }
-
-  // Event listeners para os filtros de horas
-  ['adminFilterall', 'adminFilterweek', 'adminFiltermonth', 'adminFilterperiod'].forEach(filterId => {
-    const btn = document.getElementById(filterId);
-    if (btn) {
-      btn.addEventListener('click', () => {
-        const filter = filterId.replace('adminFilter', '').toLowerCase();
-        updateActiveFilter(filterId);
-        
-        if (currentEmployeeId) {
-          loadEmployeeHours(currentEmployeeId, filter);
-        }
-      });
-    }
-  });
-
-  // Funções para criar/atualizar/excluir funcionários
+  // Funções window para compatibilidade externa
   window.createEmployee = async function(formData) {
     try {
       const response = await fetch(`${window.baseUrl}/api/employees/create`, {
@@ -615,15 +586,17 @@
     }
   };
 
+  // ========== INICIALIZAÇÃO ==========
+  
   // Inicializa dados dos funcionários quando a página carrega
   document.addEventListener('DOMContentLoaded', () => {
     loadEmployeeData();
+    console.log('✅ employee-projects.js inicializado completamente');
   });
 
-  // Para compatibilidade, expõe as funções que podem ser chamadas externamente
+  // Expõe funções para uso externo
   window.loadEmployeeData = loadEmployeeData;
-  window.calculateServiceTime = calculateServiceTime;
-  window.loadProjects = loadProjects;
   window.loadEmployeeHours = loadEmployeeHours;
+  window.loadProjectsForAdmin = loadProjectsForAdmin;
 
 })();

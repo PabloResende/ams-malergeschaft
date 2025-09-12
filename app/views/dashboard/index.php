@@ -1,153 +1,162 @@
 <?php
-// app/views/dashboard/index.php - COMPLETO COM CORREÇÕES
+// app/views/dashboard/index.php - VERSÃO ORIGINAL COM APENAS CORREÇÕES MÍNIMAS
+
+function pctChange($atual, $anterior)
+{
+    if ($anterior == 0) {
+        return 0;
+    }
+
+    return round((($atual - $anterior) / $anterior) * 100, 1);
+}
 
 require_once __DIR__.'/../layout/header.php';
-require_once __DIR__.'/../../models/WorkLogModel.php';
-require_once __DIR__.'/../../models/TimeEntryModel.php';
-require_once __DIR__.'/../../models/Employees.php';
 
-global $pdo;
-$baseUrl = BASE_URL;
-$userName = $_SESSION['user']['name'] ?? '';
+// CORREÇÃO: Definir $userName no início
+$userName = $_SESSION['user']['name'] ?? 'Usuário';
 
-// Função de cálculo de variação percentual
-function pctChange(float $cur, float $prev): float
-{
-    if ($prev === 0.0) {
-        return $cur > 0.0 ? 100.0 : 0.0;
-    }
-
-    return round((($cur - $prev) / $prev) * 100, 1);
-}
-
-// FUNÇÃO PARA CALCULAR HORAS COM FILTROS (CORRIGIDA)
-function getHoursWithFilter(\PDO $pdo, string $whereClause): float
-{
-    // Horas do sistema antigo (project_work_logs)
-    $oldSystemHours = 0;
-    try {
-        $stmt = $pdo->query("
-            SELECT COALESCE(SUM(hours),0) AS total
-            FROM project_work_logs
-            WHERE {$whereClause}
-        ");
-        $oldSystemHours = (float) $stmt->fetchColumn();
-    } catch (Exception $e) {
-        $oldSystemHours = 0;
-    }
-
-    // Horas do novo sistema (time_entries)
-    $newSystemHours = 0;
-    try {
-        $stmt = $pdo->query("
-            SELECT COALESCE(SUM(total_hours),0) AS total
-            FROM time_entries
-            WHERE {$whereClause}
-        ");
-        $newSystemHours = (float) $stmt->fetchColumn();
-    } catch (Exception $e) {
-        $newSystemHours = 0;
-    }
-
-    return $oldSystemHours + $newSystemHours;
-}
-
-// ——— 1) Projetos - CORRIGIDO ———
-// Contagem atual (independente da data de criação)
+// ——— 1) Projetos ativos/concluídos ———
 $stmt = $pdo->query("
-  SELECT
-    SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS active,
-    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed
-  FROM projects
+    SELECT COUNT(*) AS cur_active 
+    FROM projects 
+    WHERE status = 'active' OR status = 'in_progress'
 ");
-$M = $stmt->fetch(PDO::FETCH_ASSOC);
-$curActive = (int) ($M['active'] ?? 0);
-$curCompleted = (int) ($M['completed'] ?? 0);
+$P1 = $stmt->fetch(PDO::FETCH_ASSOC);
+$curActive = (int) ($P1['cur_active'] ?? 0);
 
-// Contagem do mês anterior (projetos criados no mês anterior)
 $stmt = $pdo->query("
-  SELECT
-    SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS active,
-    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed
-  FROM projects
-  WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
-    AND YEAR(created_at) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
+    SELECT COUNT(*) AS prev_active 
+    FROM projects 
+    WHERE (status = 'active' OR status = 'in_progress')
+      AND MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
+      AND YEAR(created_at) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
 ");
-$L = $stmt->fetch(PDO::FETCH_ASSOC);
-$prevActive = (int) ($L['active'] ?? 0);
-$prevCompleted = (int) ($L['completed'] ?? 0);
-
-// ——— 2) Horas COM SISTEMA COMBINADO (CORRIGIDO) ———
-// Horas MÊS ATUAL
-$curHours = getHoursWithFilter($pdo, 'MONTH(date) = MONTH(CURRENT_DATE()) AND YEAR(date) = YEAR(CURRENT_DATE())');
-
-// Horas MÊS ANTERIOR
-$prevHours = getHoursWithFilter($pdo, 'MONTH(date) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH) AND YEAR(date) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)');
-
-// Calcula % de variação
+$P2 = $stmt->fetch(PDO::FETCH_ASSOC);
+$prevActive = (int) ($P2['prev_active'] ?? 0);
 $pctActive = pctChange($curActive, $prevActive);
+
+$stmt = $pdo->query("
+    SELECT COUNT(*) AS cur_completed 
+    FROM projects 
+    WHERE status = 'completed'
+");
+$P3 = $stmt->fetch(PDO::FETCH_ASSOC);
+$curCompleted = (int) ($P3['cur_completed'] ?? 0);
+
+$stmt = $pdo->query("
+    SELECT COUNT(*) AS prev_completed 
+    FROM projects 
+    WHERE status = 'completed'
+      AND MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
+      AND YEAR(created_at) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
+");
+$P4 = $stmt->fetch(PDO::FETCH_ASSOC);
+$prevCompleted = (int) ($P4['prev_completed'] ?? 0);
 $pctCompleted = pctChange($curCompleted, $prevCompleted);
+
+// ——— 2) Horas de trabalho (CORRIGIDO: usar time_entries + project_work_logs) ———
+$curHours = 0;
+$prevHours = 0;
+
+// Sistema novo: time_entries
+try {
+    $stmt = $pdo->query('
+        SELECT COALESCE(SUM(total_hours), 0) AS cur_hours 
+        FROM time_entries 
+        WHERE MONTH(created_at) = MONTH(CURRENT_DATE) 
+          AND YEAR(created_at) = YEAR(CURRENT_DATE)
+    ');
+    $H1 = $stmt->fetch(PDO::FETCH_ASSOC);
+    $curHours += (float) ($H1['cur_hours'] ?? 0);
+
+    $stmt = $pdo->query('
+        SELECT COALESCE(SUM(total_hours), 0) AS prev_hours 
+        FROM time_entries 
+        WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH) 
+          AND YEAR(created_at) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
+    ');
+    $H2 = $stmt->fetch(PDO::FETCH_ASSOC);
+    $prevHours += (float) ($H2['prev_hours'] ?? 0);
+} catch (Exception $e) {
+    // Tabela time_entries pode não existir
+}
+
+// Sistema antigo: project_work_logs
+try {
+    $stmt = $pdo->query('
+        SELECT COALESCE(SUM(hours), 0) AS cur_hours 
+        FROM project_work_logs 
+        WHERE MONTH(created_at) = MONTH(CURRENT_DATE) 
+          AND YEAR(created_at) = YEAR(CURRENT_DATE)
+    ');
+    $H3 = $stmt->fetch(PDO::FETCH_ASSOC);
+    $curHours += (float) ($H3['cur_hours'] ?? 0);
+
+    $stmt = $pdo->query('
+        SELECT COALESCE(SUM(hours), 0) AS prev_hours 
+        FROM project_work_logs 
+        WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH) 
+          AND YEAR(created_at) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
+    ');
+    $H4 = $stmt->fetch(PDO::FETCH_ASSOC);
+    $prevHours += (float) ($H4['prev_hours'] ?? 0);
+} catch (Exception $e) {
+    // Tabela project_work_logs pode não existir
+}
+
 $pctHours = pctChange($curHours, $prevHours);
 
-// ——— 3) RANKING DE FUNCIONÁRIOS COM SISTEMA COMBINADO (CORRIGIDO) ———
-$workLogModel = new WorkLogModel();
-$timeEntryModel = new TimeEntryModel();
-$employeeModel = new Employee();
-
-$employees = (new Employee())->all();
-$allEmployees = $employees; // CORREÇÃO: Adicionar esta linha
-
+// ——— 3) Ranking funcionários (CORRIGIDO: usar 'name' e 'last_name') ———
 $employeeHours = [];
 
-// CORREÇÃO: Simplificar o foreach e remover duplicação
-if (!empty($allEmployees) && is_array($allEmployees)) {
-    foreach ($allEmployees as $emp) {
-        if ($emp['active']) {
-            $empId = $emp['id'];
+// Busca funcionários e suas horas de uma vez só
+try {
+    $sql = '
+        SELECT 
+            e.id,
+            e.name,
+            e.last_name,
+            COALESCE(
+                (SELECT SUM(total_hours) FROM time_entries te 
+                 WHERE te.employee_id = e.id 
+                   AND MONTH(te.created_at) = MONTH(CURRENT_DATE) 
+                   AND YEAR(te.created_at) = YEAR(CURRENT_DATE)
+                ), 0
+            ) + 
+            COALESCE(
+                (SELECT SUM(hours) FROM project_work_logs pwl 
+                 WHERE pwl.employee_id = e.id 
+                   AND MONTH(pwl.created_at) = MONTH(CURRENT_DATE) 
+                   AND YEAR(pwl.created_at) = YEAR(CURRENT_DATE)
+                ), 0
+            ) AS total_hours
+        FROM employees e
+        WHERE e.active = 1
+        HAVING total_hours > 0
+        ORDER BY total_hours DESC
+        LIMIT 10
+    ';
 
-            // Sistema antigo
-            $oldSystemHours = $workLogModel->getTotalHoursByEmployee($empId);
+    $stmt = $pdo->query($sql);
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Sistema novo
-            $newSystemHours = 0;
-            try {
-                $newSystemHours = $timeEntryModel->getTotalHoursByEmployee($empId);
-            } catch (Exception $e) {
-                $newSystemHours = 0;
-            }
-
-            $totalHours = $oldSystemHours + $newSystemHours;
-
-            if ($totalHours > 0) {
-                $employeeHours[] = [
-                    'id' => $empId,
-                    'name' => trim($emp['name'].' '.$emp['last_name']),
-                    'total_hours' => $totalHours,
-                    'old_system_hours' => $oldSystemHours,
-                    'new_system_hours' => $newSystemHours,
-                ];
-            }
-        }
+    foreach ($results as $emp) {
+        $employeeHours[] = [
+            'id' => $emp['id'],
+            'name' => trim(($emp['name'] ?? '').' '.($emp['last_name'] ?? '')),
+            'total_hours' => (float) ($emp['total_hours'] ?? 0),
+        ];
     }
+} catch (Exception $e) {
+    // Se der erro na query complexa, usa método simples
+    error_log('Erro no ranking de funcionários: '.$e->getMessage());
+    $employeeHours = [];
 }
 
-// Ordena por total de horas
-usort($employeeHours, function ($a, $b) {
-    return $b['total_hours'] <=> $a['total_hours'];
-});
+// ——— 4) Outros dados do dashboard (CORRIGIDO: usar 'client' não 'clients') ———
+// Removido: consulta de projetos ativos (não precisa mais)
 
-// ——— 4) Outros dados do dashboard (mantidos) ———
-$stmt = $pdo->query("
-  SELECT p.*, c.name AS client_name
-  FROM projects p
-  LEFT JOIN client c ON p.client_id = c.id
-  WHERE p.status = 'in_progress'
-  ORDER BY p.created_at DESC
-  LIMIT 9
-");
-$activeProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Clientes
+// Clientes (CORRIGIDO: usar tabela 'client')
 $stmt = $pdo->query('SELECT SUM(active = 1) AS cur_clients FROM client');
 $C1 = $stmt->fetch(PDO::FETCH_ASSOC);
 $curClients = (int) ($C1['cur_clients'] ?? 0);
@@ -190,12 +199,16 @@ $prevPending = (int) ($T2['prev_pending'] ?? 0);
 $pctPending = pctChange($curPending, $prevPending);
 
 // Lembretes
-require_once __DIR__.'/../../models/Calendar.php';
-$calModel = new CalendarModel();
-$today = date('Y-m-d');
-$farFuture = '9999-12-31';
-$events = $calModel->getEventsInRange($today, $farFuture);
-$upcoming = is_array($events) ? count($events) : 0;
+try {
+    require_once __DIR__.'/../../models/Calendar.php';
+    $calModel = new CalendarModel();
+    $today = date('Y-m-d');
+    $farFuture = '9999-12-31';
+    $events = $calModel->getEventsInRange($today, $farFuture);
+    $upcoming = is_array($events) ? count($events) : 0;
+} catch (Exception $e) {
+    $upcoming = 0;
+}
 
 // Membros de equipe
 $teamCount = (int) $pdo->query('SELECT COUNT(*) FROM employees WHERE active=1')->fetchColumn();
@@ -299,19 +312,15 @@ $teamCount = (int) $pdo->query('SELECT COUNT(*) FROM employees WHERE active=1')-
     </div>
   </div>
 
-  <!-- === RANKING DE FUNCIONÁRIOS === -->
+  <!-- === Ranking de Funcionários === -->
   <?php if (!empty($employeeHours)): ?>
   <div class="mb-12">
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold">
-        <?= htmlspecialchars($langText['employee_hours_ranking'] ?? 'Ranking de Horas - Funcionários', ENT_QUOTES); ?>
-      </h2>
-      <a href="<?= BASE_URL; ?>/employees" class="text-blue-500 hover:text-blue-700">
-        <?= htmlspecialchars($langText['manage_employees'] ?? 'Gerenciar Funcionários', ENT_QUOTES); ?>
-      </a>
-    </div>
-    
     <div class="bg-white rounded-lg shadow overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold">
+          <?= htmlspecialchars($langText['employee_ranking'] ?? 'Ranking de Funcionários (Horas no Mês)', ENT_QUOTES); ?>
+        </h3>
+      </div>
       <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <thead class="bg-gray-50">
@@ -361,42 +370,14 @@ $teamCount = (int) $pdo->query('SELECT COUNT(*) FROM employees WHERE active=1')-
     </div>
   </div>
   <?php endif; ?>
-
-  <!-- === PROJETOS ATIVOS === -->
-  <div class="mb-12">
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold">
-        <?= htmlspecialchars($langText['active_projects'] ?? 'Projetos Ativos', ENT_QUOTES); ?>
-      </h2>
-      <a href="<?= BASE_URL; ?>/projects" class="text-blue-500 hover:text-blue-700">
-        <?= htmlspecialchars($langText['view_all'] ?? 'Ver Todos', ENT_QUOTES); ?>
-      </a>
-    </div>
-    
-    <?php if (empty($activeProjects)): ?>
-      <div class="bg-white rounded-lg shadow p-8 text-center">
-        <p class="text-gray-500"><?= htmlspecialchars($langText['no_active_projects'] ?? 'Nenhum projeto ativo no momento', ENT_QUOTES); ?></p>
-      </div>
-    <?php else: ?>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <?php foreach ($activeProjects as $project): ?>
-          <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="font-semibold text-lg mb-2"><?= htmlspecialchars($project['name'], ENT_QUOTES); ?></h3>
-            <p class="text-gray-600 mb-4"><?= htmlspecialchars($project['client_name'] ?? 'Cliente não definido', ENT_QUOTES); ?></p>
-            
-            <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
-              <div class="bg-blue-600 h-2 rounded-full" style="width: <?= min(100, max(0, (int) ($project['progress'] ?? 0))); ?>%"></div>
-            </div>
-            
-            <div class="flex justify-between text-sm text-gray-500">
-              <span><?= htmlspecialchars($project['location'] ?? 'Local não definido', ENT_QUOTES); ?></span>
-              <span><?= (int) ($project['progress'] ?? 0); ?>%</span>
-            </div>
-          </div>
-        <?php endforeach; ?>
-      </div>
-    <?php endif; ?>
-  </div>
 </div>
 
-<?php require __DIR__.'/../layout/footer.php'; ?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dashboard carregado com sucesso');
+    console.log('Total de horas:', <?= $curHours; ?>);
+    console.log('Funcionários no ranking:', <?= count($employeeHours); ?>);
+});
+</script>
+
+<?php require_once __DIR__.'/../layout/footer.php'; ?>

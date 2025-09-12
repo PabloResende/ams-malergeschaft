@@ -1,35 +1,35 @@
 <?php
 // app/views/employees/dashboard_employee.php - VERSÃO CORRIGIDA
 
-require __DIR__ . '/../layout/header_employee.php';
+require __DIR__.'/../layout/header_employee.php';
 
-require_once __DIR__ . '/../../../app/models/WorkLogModel.php';
-require_once __DIR__ . '/../../../app/models/Employees.php';
-require_once __DIR__ . '/../../../app/models/Project.php';
+require_once __DIR__.'/../../../app/models/WorkLogModel.php';
+require_once __DIR__.'/../../../app/models/Employees.php';
+require_once __DIR__.'/../../../app/models/Project.php';
 
-$wlModel   = new WorkLogModel();
-$userId    = (int)($_SESSION['user']['id'] ?? 0);
-$empModel  = new Employee();
-$emp       = $empModel->findByUserId($userId);
-$empId     = $emp['id'] ?? 0;
-$totalH    = $wlModel->getTotalHoursByEmployee($empId);
+$wlModel = new WorkLogModel();
+$userId = (int) ($_SESSION['user']['id'] ?? 0);
+$empModel = new Employee();
+$emp = $empModel->findByUserId($userId);
+$empId = $emp['id'] ?? 0;
+$totalH = $wlModel->getTotalHoursByEmployee($empId);
 
 // CORREÇÃO: Usar a variável $projects que vem do controller
 // Se não houver, buscar aqui como fallback
 if (!isset($projects) || empty($projects)) {
     $projModel = new ProjectModel();
-    $projects  = $projModel->getByEmployee($empId);
+    $projects = $projModel->getByEmployee($empId);
 }
 ?>
 <script>
-  window.baseUrl  = <?= json_encode(BASE_URL, JSON_UNESCAPED_SLASHES) ?>;
-  window.langText = <?= json_encode($langText, JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_QUOT|JSON_HEX_APOS) ?>;
+  window.baseUrl  = <?= json_encode(BASE_URL, JSON_UNESCAPED_SLASHES); ?>;
+  window.langText = <?= json_encode($langText, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_HEX_APOS); ?>;
 </script>
 
 <div class="pt-20 px-4 sm:px-8 sm:ml-56 pb-8">
   <!-- Título -->
   <h1 class="text-3xl font-bold mb-4">
-    <?= htmlspecialchars($langText['employee_dashboard'] ?? 'Seu Painel', ENT_QUOTES) ?>
+    <?= htmlspecialchars($langText['employee_dashboard'] ?? 'Seu Painel', ENT_QUOTES); ?>
   </h1>
 
   <!-- Boas-vindas -->
@@ -37,7 +37,7 @@ if (!isset($projects) || empty($projects)) {
     <?= sprintf(
          htmlspecialchars($langText['welcome_employee'] ?? 'Bem-vindo, %s!', ENT_QUOTES),
          htmlspecialchars($_SESSION['user']['name'], ENT_QUOTES)
-       ) ?>
+       ); ?>
   </p>
 
   <!-- Cards de Estatísticas -->
@@ -52,10 +52,10 @@ if (!isset($projects) || empty($projects)) {
         </div>
         <div class="ml-4">
           <p class="text-sm font-medium text-gray-600">
-            <?= htmlspecialchars($langText['total_hours'] ?? 'Total de Horas', ENT_QUOTES) ?>
+            <?= htmlspecialchars($langText['total_hours'] ?? 'Total de Horas', ENT_QUOTES); ?>
           </p>
           <p class="text-2xl font-semibold text-gray-900" id="totalHoursCard">
-            <?= number_format($totalH, 2) ?>h
+            <?= number_format($totalH, 2); ?>h
           </p>
         </div>
       </div>
@@ -96,7 +96,7 @@ if (!isset($projects) || empty($projects)) {
   <div class="bg-white rounded-lg shadow mb-8">
     <div class="px-6 py-4 border-b border-gray-200">
       <h2 class="text-xl font-semibold text-gray-900">
-        <?= htmlspecialchars($langText['my_projects'] ?? 'Meus Projetos', ENT_QUOTES) ?>
+        <?= htmlspecialchars($langText['my_projects'] ?? 'Meus Projetos', ENT_QUOTES); ?>
       </h2>
     </div>
     
@@ -108,48 +108,48 @@ if (!isset($projects) || empty($projects)) {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
             </svg>
             <p class="text-gray-500 text-lg">
-              <?= htmlspecialchars($langText['no_projects_allocated'] ?? 'Nenhum projeto alocado.', ENT_QUOTES) ?>
+              <?= htmlspecialchars($langText['no_projects_allocated'] ?? 'Nenhum projeto alocado.', ENT_QUOTES); ?>
             </p>
           </div>
-        <?php else: 
+        <?php else:
           foreach ($projects as $p):
             switch ($p['status']) {
               case 'in_progress':
-                $tagClass = 'bg-blue-500';   $tagText = $langText['active']    ?? 'Em Andamento'; break;
+                $tagClass = 'bg-blue-500'; $tagText = $langText['active'] ?? 'Em Andamento'; break;
               case 'pending':
-                $tagClass = 'bg-yellow-500'; $tagText = $langText['pending']   ?? 'Pendente';     break;
+                $tagClass = 'bg-yellow-500'; $tagText = $langText['pending'] ?? 'Pendente'; break;
               default:
-                $tagClass = 'bg-green-500';  $tagText = $langText['completed'] ?? 'Concluído';    break;
+                $tagClass = 'bg-green-500'; $tagText = $langText['completed'] ?? 'Concluído'; break;
             }
         ?>
           <div
             class="project-item bg-white p-4 sm:p-6 rounded-xl border hover:shadow-md transition cursor-pointer flex flex-col justify-between"
-            data-project-id="<?= (int)$p['id'] ?>"
+            data-project-id="<?= (int) $p['id']; ?>"
           >
             <div>
               <div class="flex justify-between items-start mb-3">
-                <h4 class="text-xl font-bold flex-1"><?= htmlspecialchars($p['name'], ENT_QUOTES) ?></h4>
-                <span class="<?= $tagClass ?> inline-block text-white text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full font-semibold ml-4">
-                  <?= htmlspecialchars($tagText, ENT_QUOTES) ?>
+                <h4 class="text-xl font-bold flex-1"><?= htmlspecialchars($p['name'], ENT_QUOTES); ?></h4>
+                <span class="<?= $tagClass; ?> inline-block text-white text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-full font-semibold ml-4">
+                  <?= htmlspecialchars($tagText, ENT_QUOTES); ?>
                 </span>
               </div>
               <p class="text-sm text-gray-600 mb-1">
-                <strong><?= htmlspecialchars($langText['client'] ?? 'Cliente', ENT_QUOTES) ?>:</strong>
-                <?= htmlspecialchars($p['client_name'] ?? '—', ENT_QUOTES) ?>
+                <strong><?= htmlspecialchars($langText['client'] ?? 'Cliente', ENT_QUOTES); ?>:</strong>
+                <?= htmlspecialchars($p['client_name'] ?? '—', ENT_QUOTES); ?>
               </p>
               <?php if (!empty($p['location'])): ?>
               <p class="text-sm text-gray-600 mb-1">
-                <strong><?= htmlspecialchars($langText['location'] ?? 'Local', ENT_QUOTES) ?>:</strong>
-                <?= htmlspecialchars($p['location'], ENT_QUOTES) ?>
+                <strong><?= htmlspecialchars($langText['location'] ?? 'Local', ENT_QUOTES); ?>:</strong>
+                <?= htmlspecialchars($p['location'], ENT_QUOTES); ?>
               </p>
               <?php endif; ?>
               <p class="text-sm text-gray-600 mb-3">
-                <strong><?= htmlspecialchars($langText['budget'] ?? 'Orçamento', ENT_QUOTES) ?>:</strong>
-                <?= number_format($p['budget'], 2, ',', '.') ?>
+                <strong><?= htmlspecialchars($langText['budget'] ?? 'Orçamento', ENT_QUOTES); ?>:</strong>
+                <?= number_format($p['budget'], 2, ',', '.'); ?>
               </p>
             </div>
           </div>
-        <?php endforeach; 
+        <?php endforeach;
         endif; ?>
       </div>
     </div>
@@ -169,7 +169,7 @@ if (!isset($projects) || empty($projects)) {
     >&times;</button>
 
     <h3 class="text-xl font-bold mb-4">
-      <?= htmlspecialchars($langText['project_details'] ?? 'Detalhes do Projeto', ENT_QUOTES) ?>
+      <?= htmlspecialchars($langText['project_details'] ?? 'Detalhes do Projeto', ENT_QUOTES); ?>
     </h3>
 
     <!-- Abas de Visualização -->
@@ -178,25 +178,25 @@ if (!isset($projects) || empty($projects)) {
         <li>
           <button data-tab="geral"
                   class="tab-btn pb-2 font-medium text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
-            <?= htmlspecialchars($langText['general'] ?? 'Geral', ENT_QUOTES) ?>
+            <?= htmlspecialchars($langText['general'] ?? 'Geral', ENT_QUOTES); ?>
           </button>
         </li>
         <li>
           <button data-tab="tarefas"
                   class="tab-btn pb-2 font-medium text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
-            <?= htmlspecialchars($langText['tasks'] ?? 'Tarefas', ENT_QUOTES) ?>
+            <?= htmlspecialchars($langText['tasks'] ?? 'Tarefas', ENT_QUOTES); ?>
           </button>
         </li>
         <li>
           <button data-tab="funcionarios"
                   class="tab-btn pb-2 font-medium text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
-            <?= htmlspecialchars($langText['employees'] ?? 'Funcionários', ENT_QUOTES) ?>
+            <?= htmlspecialchars($langText['employees'] ?? 'Funcionários', ENT_QUOTES); ?>
           </button>
         </li>
         <li>
           <button data-tab="inventario"
                   class="tab-btn pb-2 font-medium text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
-            <?= htmlspecialchars($langText['inventory'] ?? 'Inventário', ENT_QUOTES) ?>
+            <?= htmlspecialchars($langText['inventory'] ?? 'Inventário', ENT_QUOTES); ?>
           </button>
         </li>
         <!-- CORREÇÃO: Sistema de ponto só aparece se tiver projetos -->
@@ -204,7 +204,7 @@ if (!isset($projects) || empty($projects)) {
         <li>
           <button data-tab="pontos" type="button"
                   class="tab-btn pb-2 font-medium text-gray-600 hover:text-gray-800 border-b-2 border-transparent">
-            <?= htmlspecialchars($langText['time_tracking'] ?? 'Ponto', ENT_QUOTES) ?>
+            <?= htmlspecialchars($langText['time_tracking'] ?? 'Ponto', ENT_QUOTES); ?>
           </button>
         </li>
         <?php endif; ?>
@@ -213,11 +213,11 @@ if (!isset($projects) || empty($projects)) {
 
     <!-- Conteúdo das Abas -->
     <div id="tab-geral" class="tab-panel">
-      <p><strong><?= htmlspecialchars($langText['name'] ?? 'Nome', ENT_QUOTES) ?>:</strong> <span id="roName"></span></p>
-      <p><strong><?= htmlspecialchars($langText['client'] ?? 'Cliente', ENT_QUOTES) ?>:</strong> <span id="roClient"></span></p>
-      <p><strong><?= htmlspecialchars($langText['location'] ?? 'Local', ENT_QUOTES) ?>:</strong> <span id="roLocation"></span></p>
-      <p><strong><?= htmlspecialchars($langText['start_date'] ?? 'Início', ENT_QUOTES) ?>:</strong> <span id="roStart"></span></p>
-      <p><strong><?= htmlspecialchars($langText['end_date'] ?? 'Término', ENT_QUOTES) ?>:</strong> <span id="roEnd"></span></p>
+      <p><strong><?= htmlspecialchars($langText['name'] ?? 'Nome', ENT_QUOTES); ?>:</strong> <span id="roName"></span></p>
+      <p><strong><?= htmlspecialchars($langText['client'] ?? 'Cliente', ENT_QUOTES); ?>:</strong> <span id="roClient"></span></p>
+      <p><strong><?= htmlspecialchars($langText['location'] ?? 'Local', ENT_QUOTES); ?>:</strong> <span id="roLocation"></span></p>
+      <p><strong><?= htmlspecialchars($langText['start_date'] ?? 'Início', ENT_QUOTES); ?>:</strong> <span id="roStart"></span></p>
+      <p><strong><?= htmlspecialchars($langText['end_date'] ?? 'Término', ENT_QUOTES); ?>:</strong> <span id="roEnd"></span></p>
     </div>
 
     <div id="tab-tarefas" class="tab-panel hidden">
@@ -237,7 +237,7 @@ if (!isset($projects) || empty($projects)) {
     <div id="tab-pontos" class="tab-panel hidden">
       <div class="mb-4">
         <h4 class="font-semibold text-gray-600">
-          <?= htmlspecialchars($langText['total_hours_registered'] ?? 'Total Horas', ENT_QUOTES) ?>:
+          <?= htmlspecialchars($langText['total_hours_registered'] ?? 'Total Horas', ENT_QUOTES); ?>:
           <span id="workLogTotal">0</span>h
         </h4>
       </div>
@@ -245,43 +245,43 @@ if (!isset($projects) || empty($projects)) {
       <!-- Formulário de Registro de Ponto -->
       <form id="timeTrackingForm"
             method="POST"
-            action="<?= BASE_URL ?>/work_logs/store_time_entry"
+            action="<?= BASE_URL; ?>/work_logs/store_time_entry"
             class="mb-6 bg-gray-50 p-4 rounded-lg"
       >
         <input type="hidden" name="project_id" id="timeTrackingProjectId">
         
-        <h5 class="font-medium mb-3"><?= htmlspecialchars($langText['register_time_entry'] ?? 'Registrar Ponto', ENT_QUOTES) ?></h5>
+        <h5 class="font-medium mb-3"><?= htmlspecialchars($langText['register_time_entry'] ?? 'Registrar Ponto', ENT_QUOTES); ?></h5>
         
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div>
             <label class="block text-gray-700 mb-1">
-              <?= htmlspecialchars($langText['input_date_label'] ?? 'Data', ENT_QUOTES) ?>
+              <?= htmlspecialchars($langText['input_date_label'] ?? 'Data', ENT_QUOTES); ?>
             </label>
             <input type="date" 
                    name="date" 
                    id="entryDate"
-                   value="<?= date('Y-m-d') ?>"
+                   value="<?= date('Y-m-d'); ?>"
                    class="w-full p-2 border rounded" 
                    required>
           </div>
           
           <div>
             <label class="block text-gray-700 mb-1">
-              <?= htmlspecialchars($langText['entry_type'] ?? 'Tipo', ENT_QUOTES) ?>
+              <?= htmlspecialchars($langText['entry_type'] ?? 'Tipo', ENT_QUOTES); ?>
             </label>
             <select name="entry_type" class="w-full p-2 border rounded" required>
-              <option value="entry"><?= htmlspecialchars($langText['entry'] ?? 'Entrada', ENT_QUOTES) ?></option>
-              <option value="exit"><?= htmlspecialchars($langText['exit'] ?? 'Saída', ENT_QUOTES) ?></option>
+              <option value="entry"><?= htmlspecialchars($langText['entry'] ?? 'Entrada', ENT_QUOTES); ?></option>
+              <option value="exit"><?= htmlspecialchars($langText['exit'] ?? 'Saída', ENT_QUOTES); ?></option>
             </select>
           </div>
           
           <div>
             <label class="block text-gray-700 mb-1">
-              <?= htmlspecialchars($langText['input_time_label'] ?? 'Horário', ENT_QUOTES) ?>
+              <?= htmlspecialchars($langText['input_time_label'] ?? 'Horário', ENT_QUOTES); ?>
             </label>
             <input type="time" 
                    name="time" 
-                   value="<?= date('H:i') ?>"
+                   value="<?= date('H:i'); ?>"
                    class="w-full p-2 border rounded" 
                    required>
           </div>
@@ -289,7 +289,7 @@ if (!isset($projects) || empty($projects)) {
           <div class="flex items-end">
             <button type="submit"
                     class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
-              <?= htmlspecialchars($langText['button_register_entry'] ?? 'Registrar', ENT_QUOTES) ?>
+              <?= htmlspecialchars($langText['button_register_entry'] ?? 'Registrar', ENT_QUOTES); ?>
             </button>
           </div>
         </div>
@@ -298,7 +298,7 @@ if (!isset($projects) || empty($projects)) {
       <!-- Lista de Registros Agrupados por Data -->
       <div id="timeEntriesList" class="space-y-4">
         <div class="text-gray-500 text-center py-4">
-          <?= htmlspecialchars($langText['no_time_entries'] ?? 'Nenhum registro de ponto', ENT_QUOTES) ?>
+          <?= htmlspecialchars($langText['no_time_entries'] ?? 'Nenhum registro de ponto', ENT_QUOTES); ?>
         </div>
       </div>
     </div>
@@ -528,5 +528,5 @@ if (!isset($projects) || empty($projects)) {
   <?php endif; ?>
 </script>
 
-<script src="<?= BASE_URL ?>/public/js/employee-projects.js?v=<?= time() ?>" defer></script>
-<script defer src="<?= asset('js/header.js') ?>"></script>
+<script src="<?= BASE_URL; ?>/public/js/employee-projects.js?v=<?= time(); ?>" defer></script>
+<script defer src="<?= asset('js/header.js'); ?>"></script>

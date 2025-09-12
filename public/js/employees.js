@@ -1,135 +1,118 @@
-// public/js/employees.js - CORRIGIDO BASEADO NO HTML REAL
+// public/js/employees.js - ARQUIVO COMPLETO CORRIGIDO
 
-console.log('🔧 employees.js carregado');
+console.log('employees.js carregado');
 
 // ========== VARIÁVEIS GLOBAIS ==========
 const baseUrl = window.baseUrl || '';
 let currentEmployeeId = null;
 
-// ========== ELEMENTOS DO DOM (BASEADO NO HTML REAL) ==========
-const employeeModal = document.getElementById('employeeModal'); // Modal de criação
-const employeeDetailsModal = document.getElementById('employeeDetailsModal'); // Modal de detalhes
+// ========== ELEMENTOS DO DOM ==========
+const employeeModal = document.getElementById('employeeModal');
+const employeeDetailsModal = document.getElementById('employeeDetailsModal');
 const addEmployeeBtn = document.getElementById('addEmployeeBtn');
-
-// Botões de fechar (HTML real)
 const closeEmployeeModal = document.getElementById('closeEmployeeModal');
 const cancelEmployeeModal = document.getElementById('cancelEmployeeModal');
 const closeEmployeeDetailsButtons = document.querySelectorAll('.closeEmployeeDetailsModal');
-
-// Cards dos funcionários com data-id
 const employeeCards = document.querySelectorAll('.employee-card[data-id]');
-
-// Formulários
 const employeeCreateForm = document.querySelector('#employeeModal form');
 const employeeDetailsForm = document.getElementById('employeeDetailsForm');
-
-// Botão de deletar
 const deleteEmployeeBtn = document.getElementById('deleteEmployeeBtn');
+const saveEmployeeBtn = document.getElementById('saveEmployee');
 
 // ========== INICIALIZAÇÃO ==========
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 Inicializando sistema de funcionários');
-  console.log(`📊 Modal criação encontrado: ${!!employeeModal}`);
-  console.log(`📊 Modal detalhes encontrado: ${!!employeeDetailsModal}`);
-  console.log(`📊 Botão adicionar encontrado: ${!!addEmployeeBtn}`);
-  console.log(`📊 Encontrados ${employeeCards.length} cards de funcionários`);
+  console.log('Inicializando sistema de funcionários');
+  console.log(`Modal criação: ${!!employeeModal}`);
+  console.log(`Modal detalhes: ${!!employeeDetailsModal}`);
+  console.log(`Cards funcionários: ${employeeCards.length}`);
   
   setupEventListeners();
 });
 
-// ========== CONFIGURAR EVENT LISTENERS ==========
+// ========== EVENT LISTENERS ==========
 function setupEventListeners() {
-  console.log('🔗 Configurando event listeners...');
+  console.log('Configurando event listeners...');
 
-  // ========== BOTÃO ADICIONAR FUNCIONÁRIO ==========
+  // Botão adicionar funcionário
   if (addEmployeeBtn) {
-    console.log('✅ Configurando botão adicionar funcionário');
     addEmployeeBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      console.log('➕ Clique no botão adicionar - abrindo modal de criação');
       openCreateModal();
     });
-  } else {
-    console.error('❌ Botão addEmployeeBtn não encontrado no DOM');
+    console.log('Botão adicionar configurado');
   }
 
-  // ========== CARDS DE FUNCIONÁRIOS ==========
-  if (employeeCards.length > 0) {
-    console.log(`✅ Configurando ${employeeCards.length} cards de funcionários`);
-    employeeCards.forEach((card, index) => {
-      card.addEventListener('click', (e) => {
-        e.preventDefault();
-        const empId = card.getAttribute('data-id');
-        console.log(`👤 Card ${index + 1} clicado, ID: ${empId}`);
-        
-        if (empId) {
-          currentEmployeeId = empId;
-          openDetailsModal(empId);
-        } else {
-          console.error('❌ ID do funcionário não encontrado no card');
-        }
-      });
+  // Cards de funcionários
+  employeeCards.forEach((card, index) => {
+    card.addEventListener('click', (e) => {
+      e.preventDefault();
+      const empId = card.getAttribute('data-id');
+      console.log(`Card ${index + 1} clicado, ID: ${empId}`);
+      
+      if (empId) {
+        currentEmployeeId = empId;
+        openDetailsModal(empId);
+      }
     });
-  } else {
-    console.warn('⚠️ Nenhum card de funcionário encontrado');
-  }
+  });
+  console.log(`${employeeCards.length} cards configurados`);
 
-  // ========== FECHAR MODAL DE CRIAÇÃO ==========
+  // Fechar modais
   if (closeEmployeeModal) {
     closeEmployeeModal.addEventListener('click', closeCreateModal);
-    console.log('✅ Botão fechar modal criação configurado');
   }
-
   if (cancelEmployeeModal) {
     cancelEmployeeModal.addEventListener('click', closeCreateModal);
-    console.log('✅ Botão cancelar modal criação configurado');
   }
+  
+  closeEmployeeDetailsButtons.forEach(btn => {
+    btn.addEventListener('click', closeDetailsModal);
+  });
 
+  // Clique fora do modal
   if (employeeModal) {
     employeeModal.addEventListener('click', (e) => {
-      if (e.target === employeeModal) {
-        closeCreateModal();
-      }
+      if (e.target === employeeModal) closeCreateModal();
     });
   }
-
-  // ========== FECHAR MODAL DE DETALHES ==========
-  if (closeEmployeeDetailsButtons.length > 0) {
-    console.log(`✅ Configurando ${closeEmployeeDetailsButtons.length} botões fechar detalhes`);
-    closeEmployeeDetailsButtons.forEach(btn => {
-      btn.addEventListener('click', closeDetailsModal);
-    });
-  }
-
+  
   if (employeeDetailsModal) {
     employeeDetailsModal.addEventListener('click', (e) => {
-      if (e.target === employeeDetailsModal) {
-        closeDetailsModal();
-      }
+      if (e.target === employeeDetailsModal) closeDetailsModal();
     });
   }
 
-  // ========== FORMULÁRIOS ==========
+  // Formulários
   if (employeeCreateForm) {
-    console.log('✅ Configurando formulário de criação');
     employeeCreateForm.addEventListener('submit', handleCreateEmployee);
   }
-
+  
   if (employeeDetailsForm) {
-    console.log('✅ Configurando formulário de detalhes');
     employeeDetailsForm.addEventListener('submit', handleUpdateEmployee);
   }
 
-  // ========== BOTÃO DELETAR ==========
+  // Botões de ação
   if (deleteEmployeeBtn) {
-    console.log('✅ Configurando botão deletar');
     deleteEmployeeBtn.addEventListener('click', handleDeleteEmployee);
   }
+  
+  // CORREÇÃO: Botão salvar
+  if (saveEmployeeBtn) {
+    saveEmployeeBtn.addEventListener('click', handleUpdateEmployee);
+    console.log('Botão salvar configurado');
+  }
 
-  // ========== TABS ==========
+  // Tabs
   setupTabs();
+  
+  // Formulário de ponto
+  const timeTrackingForm = document.getElementById('timeTrackingForm');
+  if (timeTrackingForm) {
+    timeTrackingForm.addEventListener('submit', handleTimeTrackingSubmit);
+    console.log('Form de ponto configurado');
+  }
 
-  // ========== TECLA ESC ==========
+  // ESC para fechar modais
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeCreateModal();
@@ -140,108 +123,103 @@ function setupEventListeners() {
 
 // ========== MODAL DE CRIAÇÃO ==========
 function openCreateModal() {
-  console.log('🆕 Abrindo modal de criação...');
+  console.log('Abrindo modal de criação...');
   
-  if (!employeeModal) {
-    console.error('❌ Modal de criação não encontrado');
-    return;
-  }
+  if (!employeeModal) return;
 
-  // Limpar formulário
   if (employeeCreateForm) {
     employeeCreateForm.reset();
   }
 
-  // Mostrar modal
   employeeModal.classList.remove('hidden');
   employeeModal.classList.add('flex');
   document.body.style.overflow = 'hidden';
   
-  console.log('✅ Modal de criação aberto');
+  console.log('Modal de criação aberto');
 }
 
 function closeCreateModal() {
-  console.log('❌ Fechando modal de criação...');
-  
   if (employeeModal) {
     employeeModal.classList.add('hidden');
     employeeModal.classList.remove('flex');
     document.body.style.overflow = '';
-    console.log('✅ Modal de criação fechado');
+    console.log('Modal de criação fechado');
   }
 }
 
 // ========== MODAL DE DETALHES ==========
 async function openDetailsModal(employeeId) {
-  console.log(`📝 Abrindo modal de detalhes para funcionário ID: ${employeeId}`);
+  console.log(`Abrindo modal de detalhes para funcionário ID: ${employeeId}`);
   
-  if (!employeeDetailsModal) {
-    console.error('❌ Modal de detalhes não encontrado');
-    return;
-  }
+  if (!employeeDetailsModal) return;
 
-  // Mostrar modal
   employeeDetailsModal.classList.remove('hidden');
   employeeDetailsModal.classList.add('flex');
   document.body.style.overflow = 'hidden';
 
-  // Carregar dados do funcionário
   await loadEmployeeDetails(employeeId);
-  
-  // Ativar primeira aba
   switchToTab('general-details');
   
-  console.log('✅ Modal de detalhes aberto');
+  console.log('Modal de detalhes aberto');
 }
 
 function closeDetailsModal() {
-  console.log('❌ Fechando modal de detalhes...');
-  
   if (employeeDetailsModal) {
     employeeDetailsModal.classList.add('hidden');
     employeeDetailsModal.classList.remove('flex');
     document.body.style.overflow = '';
     currentEmployeeId = null;
-    console.log('✅ Modal de detalhes fechado');
+    console.log('Modal de detalhes fechado');
   }
 }
 
-// ========== CARREGAR DETALHES DO FUNCIONÁRIO ==========
+// ========== CARREGAR DADOS DO FUNCIONÁRIO ==========
 async function loadEmployeeDetails(employeeId) {
   try {
-    console.log(`🔍 Carregando detalhes do funcionário ID: ${employeeId}`);
+    console.log(`Carregando detalhes do funcionário ID: ${employeeId}`);
     
-    const response = await fetch(`${baseUrl}/api/employees/${employeeId}/details`);
+    const response = await fetch(`${baseUrl}/employees/get?id=${employeeId}`);
     
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(`HTTP ${response.status}`);
     }
     
     const result = await response.json();
-    console.log('📄 Dados recebidos:', result);
+    console.log('Dados recebidos:', result);
+    
+    // CORREÇÃO: Aceita diferentes estruturas de resposta
+    let employee = null;
     
     if (result.success && result.employee) {
-      populateEmployeeForm(result.employee);
-      console.log('✅ Formulário preenchido com sucesso');
+      employee = result.employee;
+    } else if (result.success && result.data) {
+      employee = result.data;
+    } else if (result.id) {
+      employee = result;
+    }
+    
+    if (employee && employee.id) {
+      populateEmployeeForm(employee);
+      console.log('Formulário preenchido com sucesso');
     } else {
-      throw new Error(result.message || 'Dados do funcionário não encontrados');
+      throw new Error('Dados do funcionário não encontrados');
     }
     
   } catch (error) {
-    console.error('❌ Erro ao carregar detalhes:', error);
+    console.error('Erro ao carregar detalhes:', error);
     showNotification(`Erro ao carregar funcionário: ${error.message}`, 'error');
   }
 }
 
 // ========== PREENCHER FORMULÁRIO ==========
 function populateEmployeeForm(employee) {
-  console.log('📝 Preenchendo formulário com dados:', employee);
+  console.log('Preenchendo formulário com dados:', employee);
   
-  // Campos ocultos
+  // CORREÇÃO: Usar os IDs corretos que estão no HTML
   setFieldValue('detailsEmployeeId', employee.id);
   setFieldValue('detailsLoginUserId', employee.user_id);
   
-  // Dados pessoais
+  // Dados pessoais - IDs corretos do HTML corrigido
   setFieldValue('detailsEmployeeName', employee.name);
   setFieldValue('detailsEmployeeLastName', employee.last_name);
   setFieldValue('detailsEmployeeFunction', employee.function);
@@ -258,75 +236,212 @@ function populateEmployeeForm(employee) {
   setFieldValue('detailsEmployeeMaritalStatus', employee.marital_status || 'single');
   setFieldValue('detailsEmployeeStartDate', employee.start_date);
   setFieldValue('detailsEmployeeAbout', employee.about);
-  
-  // Dados de login
   setFieldValue('detailsLoginEmail', employee.email);
+  setFieldValue('detailsEmployeeRoleId', employee.role || 'employee');
   
-  // Role
-  setFieldValue('detailsEmployeeRoleId', employee.role_id);
+  // Campo para registro de ponto
+  setFieldValue('timeTrackingEmployeeId', employee.id);
+  
+  console.log('Todos os campos preenchidos');
 }
 
 function setFieldValue(fieldId, value) {
   const field = document.getElementById(fieldId);
   if (field) {
     field.value = value || '';
-    console.log(`📝 Campo ${fieldId} = "${value}"`);
+    console.log(`Campo ${fieldId} = "${value}"`);
   } else {
-    console.warn(`⚠️ Campo ${fieldId} não encontrado`);
+    console.warn(`Campo ${fieldId} não encontrado`);
   }
 }
 
-// ========== SISTEMA DE ABAS ==========
+// ========== SISTEMA DE TABS ==========
 function setupTabs() {
-  const tabButtons = document.querySelectorAll('.tab-btn[data-tab]');
-  console.log(`📑 Configurando ${tabButtons.length} abas`);
-  
-  tabButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tabName = btn.getAttribute('data-tab');
-      console.log(`🔄 Mudando para aba: ${tabName}`);
+  document.querySelectorAll('[data-tab]').forEach(tab => {
+    tab.addEventListener('click', (e) => {
+      e.preventDefault();
+      const tabName = tab.getAttribute('data-tab');
       switchToTab(tabName);
     });
   });
+  console.log('Tabs configuradas');
 }
 
 function switchToTab(tabName) {
-  console.log(`🎯 Ativando aba: ${tabName}`);
+  console.log(`Mudando para aba: ${tabName}`);
   
-  // Remover active de todas as abas
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.classList.remove('border-blue-600', 'text-blue-600', 'border-b-2');
-    btn.classList.add('text-gray-600');
+  // Remove active de todas as tabs
+  document.querySelectorAll('[data-tab]').forEach(tab => {
+    tab.classList.remove('border-blue-600', 'text-blue-600');
+    tab.classList.add('border-transparent', 'text-gray-500');
   });
   
-  // Ativar aba selecionada
-  const activeTab = document.querySelector(`[data-tab="${tabName}"]`);
-  if (activeTab) {
-    activeTab.classList.add('border-blue-600', 'text-blue-600', 'border-b-2');
-    activeTab.classList.remove('text-gray-600');
-  }
-  
-  // Esconder todos os painéis
+  // Esconde todos os painéis
   document.querySelectorAll('.tab-panel').forEach(panel => {
     panel.classList.add('hidden');
   });
   
-  // Mostrar painel selecionado
-  const activePanel = document.getElementById(`panel-${tabName}`);
+  // Ativa tab selecionada
+  const activeTab = document.querySelector(`[data-tab="${tabName}"]`);
+  const activePanel = document.getElementById(`tab-${tabName}`);
+  
+  if (activeTab) {
+    activeTab.classList.add('border-blue-600', 'text-blue-600');
+    activeTab.classList.remove('border-transparent', 'text-gray-500');
+  }
+  
   if (activePanel) {
     activePanel.classList.remove('hidden');
-    console.log(`✅ Painel ${tabName} ativado`);
-  } else {
-    console.warn(`⚠️ Painel panel-${tabName} não encontrado`);
+  }
+  
+  // Se for aba de horas, carrega projetos e dados
+  if (tabName === 'work-hours' && currentEmployeeId) {
+    loadProjectsForTimeTracking();
+    loadEmployeeTimeEntries(currentEmployeeId);
   }
 }
 
-// ========== CRIAR FUNCIONÁRIO ==========
+// ========== CARREGAR PROJETOS PARA PONTO ==========
+async function loadProjectsForTimeTracking() {
+  console.log('Carregando projetos para registro de ponto...');
+  
+  const projectSelect = document.getElementById('timeTrackingProject');
+  if (!projectSelect) {
+    console.warn('Select de projetos não encontrado');
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${baseUrl}/api/projects/active`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const projects = await response.json();
+    console.log('Projetos recebidos:', projects);
+    
+    // Limpa e popula o select
+    projectSelect.innerHTML = '<option value="">Selecione um projeto...</option>';
+    
+    projects.forEach(project => {
+      const option = document.createElement('option');
+      option.value = project.id;
+      option.textContent = project.name;
+      projectSelect.appendChild(option);
+    });
+    
+    console.log('Projetos carregados no select');
+    
+  } catch (error) {
+    console.error('Erro ao carregar projetos:', error);
+    projectSelect.innerHTML = '<option value="">Erro ao carregar projetos</option>';
+  }
+}
+
+// ========== CARREGAR REGISTROS DE HORAS ==========
+async function loadEmployeeTimeEntries(employeeId) {
+  console.log(`Carregando registros de horas do funcionário ${employeeId}`);
+  
+  const hoursList = document.getElementById('employeeHoursList');
+  if (!hoursList) return;
+  
+  try {
+    hoursList.innerHTML = '<div class="p-4 text-center text-gray-500">Carregando registros...</div>';
+    
+    // CORREÇÃO: Usar a rota correta que existe
+    const response = await fetch(`${baseUrl}/api/employees/${employeeId}/hours`);
+    const result = await response.json();
+    
+    if (result.entries && result.entries.length > 0) {
+      hoursList.innerHTML = result.entries.map(entry => `
+        <div class="p-4 border-b border-gray-200">
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="font-medium">${formatDate(entry.date)}</div>
+              <div class="text-sm text-gray-600">${entry.project_name || 'Projeto não definido'}</div>
+            </div>
+            <div class="font-medium">${parseFloat(entry.total_hours || 0).toFixed(1)}h</div>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      hoursList.innerHTML = '<div class="p-4 text-center text-gray-500">Nenhum registro encontrado</div>';
+    }
+  } catch (error) {
+    console.error('Erro ao carregar horas:', error);
+    hoursList.innerHTML = '<div class="p-4 text-center text-red-500">Erro ao carregar registros</div>';
+  }
+}
+
+// ========== FORMULÁRIO DE PONTO ==========
+async function handleTimeTrackingSubmit(e) {
+  e.preventDefault();
+  console.log('Submetendo registro de ponto...');
+  
+  const formData = new FormData(e.target);
+  const data = {
+    employee_id: formData.get('employee_id'),
+    project_id: formData.get('project_id'),
+    date: formData.get('date'),
+    time: formData.get('time'),
+    entry_type: formData.get('entry_type')
+  };
+  
+  console.log('Dados do ponto:', data);
+  
+  // Validações
+  if (!data.employee_id) {
+    showNotification('ID do funcionário não encontrado', 'error');
+    return;
+  }
+  
+  if (!data.project_id) {
+    showNotification('Por favor, selecione um projeto', 'error');
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${baseUrl}/api/work_logs/admin_time_entry`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams(data)
+    });
+    
+    const result = await response.json();
+    console.log('Resposta do servidor:', result);
+    
+    if (result.success) {
+      showNotification('Ponto registrado com sucesso!', 'success');
+      
+      // Limpa apenas o horário
+      const timeField = document.getElementById('timeTrackingTime');
+      if (timeField) {
+        const now = new Date();
+        timeField.value = now.toTimeString().substring(0, 5);
+      }
+      
+      // Recarrega registros
+      if (currentEmployeeId) {
+        loadEmployeeTimeEntries(currentEmployeeId);
+      }
+    } else {
+      showNotification(result.message || 'Erro ao registrar ponto', 'error');
+    }
+  } catch (error) {
+    console.error('Erro ao registrar ponto:', error);
+    showNotification('Erro interno do servidor', 'error');
+  }
+}
+
+// ========== CRUD FUNCIONÁRIOS ==========
 async function handleCreateEmployee(e) {
   e.preventDefault();
-  console.log('➕ Criando novo funcionário...');
+  console.log('Criando funcionário...');
   
-  const formData = new FormData(employeeCreateForm);
+  const formData = new FormData(e.target);
   
   try {
     const response = await fetch(`${baseUrl}/employees/store`, {
@@ -335,7 +450,6 @@ async function handleCreateEmployee(e) {
     });
     
     const result = await response.json();
-    console.log('📤 Resposta do servidor:', result);
     
     if (result.success) {
       showNotification('Funcionário criado com sucesso!', 'success');
@@ -344,25 +458,24 @@ async function handleCreateEmployee(e) {
     } else {
       showNotification(result.message || 'Erro ao criar funcionário', 'error');
     }
-    
   } catch (error) {
-    console.error('❌ Erro ao criar funcionário:', error);
-    showNotification('Erro ao criar funcionário', 'error');
+    console.error('Erro ao criar:', error);
+    showNotification('Erro de conexão', 'error');
   }
 }
 
-// ========== ATUALIZAR FUNCIONÁRIO ==========
 async function handleUpdateEmployee(e) {
   e.preventDefault();
-  console.log(`💾 Atualizando funcionário ID: ${currentEmployeeId}`);
+  console.log('Atualizando funcionário...');
   
-  if (!currentEmployeeId) {
-    showNotification('ID do funcionário não encontrado', 'error');
+  // CORREÇÃO: Usar o formulário correto
+  const form = document.getElementById('employeeDetailsForm');
+  if (!form) {
+    showNotification('Formulário não encontrado', 'error');
     return;
   }
   
-  const formData = new FormData(employeeDetailsForm);
-  formData.append('employee_id', currentEmployeeId);
+  const formData = new FormData(form);
   
   try {
     const response = await fetch(`${baseUrl}/employees/update`, {
@@ -371,7 +484,6 @@ async function handleUpdateEmployee(e) {
     });
     
     const result = await response.json();
-    console.log('📤 Resposta do servidor:', result);
     
     if (result.success) {
       showNotification('Funcionário atualizado com sucesso!', 'success');
@@ -380,17 +492,15 @@ async function handleUpdateEmployee(e) {
     } else {
       showNotification(result.message || 'Erro ao atualizar funcionário', 'error');
     }
-    
   } catch (error) {
-    console.error('❌ Erro ao atualizar funcionário:', error);
+    console.error('Erro ao atualizar:', error);
     showNotification('Erro ao salvar alterações', 'error');
   }
 }
 
-// ========== DELETAR FUNCIONÁRIO ==========
 async function handleDeleteEmployee(e) {
   e.preventDefault();
-  console.log(`🗑️ Tentativa de deletar funcionário ID: ${currentEmployeeId}`);
+  console.log(`Tentativa de deletar funcionário ID: ${currentEmployeeId}`);
   
   if (!currentEmployeeId) {
     showNotification('ID do funcionário não encontrado', 'error');
@@ -398,21 +508,19 @@ async function handleDeleteEmployee(e) {
   }
   
   if (!confirm('Tem certeza que deseja excluir este funcionário? Esta ação não pode ser desfeita.')) {
-    console.log('❌ Usuário cancelou a exclusão');
     return;
   }
-  
-  const formData = new FormData();
-  formData.append('employee_id', currentEmployeeId);
   
   try {
     const response = await fetch(`${baseUrl}/employees/delete`, {
       method: 'POST',
-      body: formData
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({ employee_id: currentEmployeeId })
     });
     
     const result = await response.json();
-    console.log('📤 Resposta do servidor:', result);
     
     if (result.success) {
       showNotification('Funcionário excluído com sucesso!', 'success');
@@ -421,21 +529,35 @@ async function handleDeleteEmployee(e) {
     } else {
       showNotification(result.message || 'Erro ao excluir funcionário', 'error');
     }
-    
   } catch (error) {
-    console.error('❌ Erro ao excluir funcionário:', error);
+    console.error('Erro ao excluir:', error);
     showNotification('Erro ao excluir funcionário', 'error');
   }
 }
 
-// ========== NOTIFICAÇÕES ==========
-function showNotification(message, type = 'info') {
-  console.log(`📢 Notificação (${type}): ${message}`);
+// ========== UTILITÁRIOS ==========
+function formatDate(dateString) {
+  if (!dateString) return 'Data inválida';
   
-  // Remover notificações existentes
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  } catch {
+    return dateString;
+  }
+}
+
+function showNotification(message, type = 'info') {
+  console.log(`Notificação (${type}): ${message}`);
+  
+  // Remove notificações existentes
   document.querySelectorAll('.notification').forEach(n => n.remove());
   
-  // Criar nova notificação
+  // Cria nova notificação
   const notification = document.createElement('div');
   notification.className = `notification fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm transition-all duration-300 ${
     type === 'success' ? 'bg-green-500 text-white' :
@@ -446,24 +568,22 @@ function showNotification(message, type = 'info') {
   
   document.body.appendChild(notification);
   
-  // Auto-remover após 4 segundos
+  // Remove após 4 segundos
   setTimeout(() => {
     notification.style.opacity = '0';
     setTimeout(() => notification.remove(), 300);
   }, 4000);
 }
 
-// ========== LOGS DE DEBUG ==========
-console.log('🎯 JavaScript employees.js carregado e configurado');
-console.log('📋 Elementos disponíveis:', {
+// ========== LOG FINAL ==========
+console.log('employees.js carregado e configurado completamente');
+console.log('Elementos encontrados:', {
   employeeModal: !!employeeModal,
   employeeDetailsModal: !!employeeDetailsModal,
   addEmployeeBtn: !!addEmployeeBtn,
-  closeEmployeeModal: !!closeEmployeeModal,
-  cancelEmployeeModal: !!cancelEmployeeModal,
-  closeEmployeeDetailsButtons: closeEmployeeDetailsButtons.length,
   employeeCards: employeeCards.length,
   employeeCreateForm: !!employeeCreateForm,
   employeeDetailsForm: !!employeeDetailsForm,
-  deleteEmployeeBtn: !!deleteEmployeeBtn
+  deleteEmployeeBtn: !!deleteEmployeeBtn,
+  saveEmployeeBtn: !!saveEmployeeBtn
 });

@@ -151,29 +151,46 @@ switch (true) {
         $employeeController->profile();
         break;
 
-    // ===== DEBUG TEMPORÁRIO =====
-    case $route === '/debug':
-        ?>
-        <!DOCTYPE html>
-        <html><head><title>Debug</title></head><body>
-        <h1>Debug Info</h1>
-        <h2>Session:</h2><pre><?= print_r($_SESSION, true) ?></pre>
-        <h2>Route:</h2><p><?= $route ?></p>
-        <h2>Functions:</h2>
-        <ul>
-            <li>isLoggedIn(): <?= isLoggedIn() ? 'true' : 'false' ?></li>
-            <li>isEmployee(): <?= isEmployee() ? 'true' : 'false' ?></li>
-            <li>isFinance(): <?= isFinance() ? 'true' : 'false' ?></li>
-            <li>isAdmin(): <?= isAdmin() ? 'true' : 'false' ?></li>
-        </ul>
-        <h2>Links:</h2>
-        <ul>
-            <li><a href="<?= BASE_URL ?>/employees/dashboard">Dashboard Funcionário</a></li>
-            <li><a href="<?= BASE_URL ?>/employees/profile">Perfil Funcionário</a></li>
-            <li><a href="<?= BASE_URL ?>/dashboard">Dashboard Admin</a></li>
-        </ul>
-        </body></html>
-        <?php
+   // ===== PROJETOS =====
+    case $route === '/projects':
+        $projectController->index();
+        break;
+
+    // PÁGINA HTML para visualizar projeto específico (para navegação direta)
+    case $route === '/projects/show':
+        $projectController->show();
+        break;
+
+    // API JSON para obter dados do projeto (usado por AJAX) - NOVA ROTA
+    case $route === '/projects/data':
+        $projectController->getProjectData();
+        break;
+
+    case $route === '/projects/store':
+        $projectController->store();
+        break;
+        
+    case $route === '/projects/update':
+        $projectController->update();
+        break;
+        
+    case $route === '/projects/delete':
+        $projectController->delete();
+        break;
+        
+    case $route === '/projects/get':
+        $projectController->get();
+        break;
+
+    // ===== WORK LOGS =====
+    case $route === '/work_logs':
+        $workLogController->index();
+        break;
+    case $route === '/work_logs/store':
+        $workLogController->store();
+        break;
+    case $route === '/work_logs/store_time_entry':
+        $workLogController->storeTimeEntry();
         break;
 
     // ===== API PROJETOS =====
@@ -183,16 +200,109 @@ switch (true) {
     case $route === '/api/projects/active':
         $projectController->getActiveProjects();
         break;
+    case preg_match('/^\/api\/projects\/by-employee\/(\d+)$/', $route, $matches):
+        $projectController->getProjectsByEmployee((int) $matches[1]);
+        break;
     case preg_match('/^\/api\/projects\/(\d+)$/', $route, $matches):
         $projectController->getProjectDetails((int) $matches[1]);
         break;
 
-    // ===== API ADMIN TIME TRACKING =====
+    // ===== API WORK LOGS =====
     case $route === '/api/work_logs/admin_time_entry':
         $workLogController->adminCreateTimeEntry();
         break;
-    case $route === '/api/employee-hours':
+    case $route === '/api/employees/hours-summary':
         $workLogController->getEmployeeHours();
+        break;
+    case preg_match('/^\/api\/employees\/(\d+)\/hours$/', $route, $matches):
+        $employeeController->getEmployeeHours((int) $matches[1]);
+        break;
+    case preg_match('/^\/api\/work_logs\/time_entries\/(\d+)$/', $route, $matches):
+        $workLogController->getTimeEntriesByProject((int) $matches[1]);
+        break;
+    case preg_match('/^\/api\/employees\/monthly-hours\/(\d+)$/', $route, $matches):
+        // Nova rota para horas mensais por funcionário
+        header('Content-Type: application/json; charset=UTF-8');
+        try {
+            require_once __DIR__ . '/../app/models/TimeEntryModel.php';
+            $timeEntryModel = new TimeEntryModel();
+            $hours = $timeEntryModel->getMonthlyHoursByEmployee((int) $matches[1]);
+            echo json_encode(['hours' => number_format($hours, 2)]);
+        } catch (Exception $e) {
+            echo json_encode(['hours' => '0.00']);
+        }
+        exit;
+        break;
+    case preg_match('/^\/api\/employees\/hours\/(\d+)$/', $route, $matches):
+        // Nova rota para horas detalhadas por funcionário
+        header('Content-Type: application/json; charset=UTF-8');
+        try {
+            require_once __DIR__ . '/../app/models/TimeEntryModel.php';
+            $timeEntryModel = new TimeEntryModel();
+            $employeeId = (int) $matches[1];
+            $filter = $_GET['filter'] ?? 'all';
+            
+            global $pdo;
+            
+            // Constrói a query baseada no filtro
+            $whereClause = "WHERE employee_id = ?";
+            $params = [$employeeId];
+            
+            switch ($filter) {
+                case 'today':
+                    $whereClause .= " AND date = CURDATE()";
+                    break;
+                case 'week':
+                    $whereClause .= " AND WEEK(date) = WEEK(CURDATE()) AND YEAR(date) = YEAR(CURDATE())";
+                    break;
+                case 'month':
+                    $whereClause .= " AND MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())";
+                    break;
+            }
+            
+            $stmt = $pdo->prepare("
+                SELECT 
+                    te.id, te.date, te.time_records, te.total_hours,
+                    p.name as project_name
+                FROM time_entries te
+                LEFT JOIN projects p ON te.project_id = p.id
+                $whereClause
+                ORDER BY te.date DESC, te.id DESC
+            ");
+            $stmt->execute($params);
+            $timeEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $entries = [];
+            $totalHours = 0;
+            
+            foreach ($timeEntries as $timeEntry) {
+                $entryRecords = json_decode($timeEntry['time_records'], true);
+                $entryRecords = $entryRecords['entries'] ?? [];
+                
+                foreach ($entryRecords as $record) {
+                    $entries[] = [
+                        'id' => $timeEntry['id'] . '_' . $record['time'],
+                        'date' => $timeEntry['date'],
+                        'time' => $record['time'],
+                        'entry_type' => $record['type'],
+                        'project_name' => $timeEntry['project_name'],
+                        'calculated_hours' => round(floatval($timeEntry['total_hours']) / count($entryRecords), 2)
+                    ];
+                }
+                
+                $totalHours += floatval($timeEntry['total_hours']);
+            }
+            
+            echo json_encode([
+                'entries' => $entries,
+                'total_hours' => round($totalHours, 2)
+            ]);
+            
+        } catch (Exception $e) {
+            error_log("API employees hours error: " . $e->getMessage());
+            echo json_encode(['entries' => [], 'total_hours' => 0]);
+        }
+        exit;
         break;
 
     // ===== FUNCIONÁRIOS - CRUD =====
@@ -210,40 +320,6 @@ switch (true) {
         break;
     case $route === '/employees/get':
         $employeeController->get();
-        break;
-
-    // ===== API FUNCIONÁRIOS - HORAS =====
-    case $route === '/api/employees/hours-summary':
-        $employeeController->hours_summary();
-        break;
-    case preg_match('/^\/api\/employees\/hours\/(\d+)$/', $route, $matches):
-        $employeeController->getEmployeeHours((int) $matches[1]);
-        break;
-    case $route === '/api/employees/ranking':
-        $employeeController->getRanking();
-        break;
-    case preg_match('/^\/api\/employees\/(\d+)\/details$/', $route, $matches):
-        $_GET['id'] = $matches[1];
-        $employeeController->getEmployeeDetails();
-        break;
-    case preg_match('/^\/api\/employees\/(\d+)\/hours-summary$/', $route, $matches):
-        $_GET['id'] = $matches[1];
-        $employeeController->getEmployeeHoursSummary();
-        break;
-    case preg_match('/^\/api\/employees\/(\d+)\/hours$/', $route, $matches):
-        $_GET['id'] = $matches[1];
-        $employeeController->getEmployeeHours();
-        break;
-    case preg_match('/^\/api\/employees\/(\d+)\/update$/', $route, $matches):
-        $_POST['employee_id'] = $matches[1];
-        $employeeController->updateEmployee();
-        break;
-    case preg_match('/^\/api\/employees\/(\d+)\/delete$/', $route, $matches):
-        $_POST['employee_id'] = $matches[1];
-        $employeeController->deleteEmployee();
-        break;
-    case $route === '/api/employees/create':
-        $employeeController->createEmployee();
         break;
 
     // ===== CLIENTES =====
@@ -276,9 +352,6 @@ switch (true) {
     case $route === '/inventory/delete':
         $inventoryController->delete();
         break;
-    case $route === '/inventory/get':
-        $inventoryController->get();
-        break;
 
     // ===== FINANCEIRO =====
     case $route === '/finance':
@@ -292,34 +365,6 @@ switch (true) {
         break;
     case $route === '/finance/delete':
         $financialController->delete();
-        break;
-
-    // ===== PROJETOS =====
-    case $route === '/projects':
-        $projectController->index();
-        break;
-    case $route === '/projects/store':
-        $projectController->store();
-        break;
-    case $route === '/projects/update':
-        $projectController->update();
-        break;
-    case $route === '/projects/delete':
-        $projectController->delete();
-        break;
-    case $route === '/projects/get':
-        $projectController->get();
-        break;
-
-    // ===== WORK LOGS =====
-    case $route === '/work_logs':
-        $workLogController->index();
-        break;
-    case $route === '/work_logs/store':
-        $workLogController->store();
-        break;
-    case $route === '/work_logs/store_time_entry':
-        $workLogController->storeTimeEntry();
         break;
 
     // ===== CARROS =====
@@ -349,9 +394,29 @@ switch (true) {
         $analyticsController->stats();
         break;
 
-    // ===== API WORK LOGS =====
-    case preg_match('/^\/api\/work_logs\/time_entries\/(\d+)$/', $route, $matches):
-        $workLogController->getTimeEntriesByProject((int) $matches[1]);
+    // ===== DEBUG (REMOVER EM PRODUÇÃO) =====
+    case $route === '/debug':
+        ?>
+        <!DOCTYPE html>
+        <html><head><title>Debug</title></head><body>
+        <h1>Debug Info</h1>
+        <h2>Session:</h2><pre><?= print_r($_SESSION, true) ?></pre>
+        <h2>Route:</h2><p><?= $route ?></p>
+        <h2>Functions:</h2>
+        <ul>
+            <li>isLoggedIn(): <?= isLoggedIn() ? 'true' : 'false' ?></li>
+            <li>isEmployee(): <?= isEmployee() ? 'true' : 'false' ?></li>
+            <li>isFinance(): <?= isFinance() ? 'true' : 'false' ?></li>
+            <li>isAdmin(): <?= isAdmin() ? 'true' : 'false' ?></li>
+        </ul>
+        <h2>Links:</h2>
+        <ul>
+            <li><a href="<?= BASE_URL ?>/employees/dashboard">Dashboard Funcionário</a></li>
+            <li><a href="<?= BASE_URL ?>/employees/profile">Perfil Funcionário</a></li>
+            <li><a href="<?= BASE_URL ?>/dashboard">Dashboard Admin</a></li>
+        </ul>
+        </body></html>
+        <?php
         break;
 
     // ===== ROTA PADRÃO =====

@@ -262,6 +262,85 @@ class WorkLogController
         }
     }
 
+    public function getTimeEntriesByProject($projectId)
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        
+        try {
+            global $pdo;
+            
+            $stmt = $pdo->prepare("
+                SELECT 
+                    te.date,
+                    te.time_records,
+                    te.total_hours,
+                    e.name as employee_name,
+                    p.name as project_name
+                FROM time_entries te
+                LEFT JOIN employees e ON te.employee_id = e.id
+                LEFT JOIN projects p ON te.project_id = p.id
+                WHERE te.project_id = ?
+                ORDER BY te.date DESC
+            ");
+            $stmt->execute([$projectId]);
+            $timeEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $allEntries = [];
+            $totalHours = 0;
+
+            foreach ($timeEntries as $entry) {
+                $records = json_decode($entry['time_records'], true);
+                $entries = $records['entries'] ?? [];
+                
+                if (empty($entries)) continue;
+                
+                // Cria formato de display
+                $entradas = [];
+                $saidas = [];
+                
+                foreach ($entries as $record) {
+                    if ($record['type'] === 'entry') {
+                        $entradas[] = $record['time'];
+                    } elseif ($record['type'] === 'exit') {
+                        $saidas[] = $record['time'];
+                    }
+                }
+                
+                $displayPairs = [];
+                $maxPairs = max(count($entradas), count($saidas));
+                
+                for ($i = 0; $i < $maxPairs; $i++) {
+                    $entTime = isset($entradas[$i]) ? $entradas[$i] : '?';
+                    $saiTime = isset($saidas[$i]) ? $saidas[$i] : '?';
+                    $displayPairs[] = "entrada {$entTime} saída {$saiTime}";
+                }
+                
+                $allEntries[] = [
+                    'date' => $entry['date'],
+                    'employee_name' => $entry['employee_name'],
+                    'project_name' => $entry['project_name'],
+                    'total_hours' => (float)($entry['total_hours'] ?? 0),
+                    'formatted_display' => implode(' - ', $displayPairs)
+                ];
+                
+                $totalHours += (float)($entry['total_hours'] ?? 0);
+            }
+
+            echo json_encode([
+                'entries' => $allEntries,
+                'total_hours' => number_format($totalHours, 2, '.', '')
+            ]);
+
+        } catch (Exception $e) {
+            error_log("WorkLogController::getTimeEntriesByProject error: " . $e->getMessage());
+            echo json_encode([
+                'entries' => [],
+                'total_hours' => '0.00'
+            ]);
+        }
+        exit;
+    }
+
     public function getTimeEntriesByDay()
     {
         header('Content-Type: application/json; charset=UTF-8');

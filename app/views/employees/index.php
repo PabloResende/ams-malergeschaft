@@ -481,7 +481,146 @@ $baseUrl = BASE_URL;
       <!-- DOCUMENTS TAB -->
       <div id="tab-documents-details" class="tab-panel hidden">
         <div class="p-6">
-          <p class="text-gray-600">Documentos do funcionário...</p>
+          <h3 class="text-lg font-semibold mb-4">Documentos do Funcionário</h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Passaporte -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <?= htmlspecialchars($langText['passport'] ?? 'Passaporte', ENT_QUOTES); ?>
+              </label>
+              <input type="file" 
+                    name="passport" 
+                    id="detailsEmployeePassport"
+                    accept="image/*,.pdf"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2">
+              <div id="viewPassport" class="mt-2 hidden">
+                <img id="imgPassport" class="max-w-xs rounded" alt="Passaporte">
+                <a id="linkPassport" class="block text-blue-600 text-sm mt-1" target="_blank">Ver documento</a>
+              </div>
+            </div>
+
+            <!-- Permissão Frente -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <?= htmlspecialchars($langText['permission_photo_front'] ?? 'Permissão (Frente)', ENT_QUOTES); ?>
+              </label>
+              <input type="file" 
+                    name="permission_photo_front" 
+                    id="detailsEmployeePermissionFront"
+                    accept="image/*,.pdf"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2">
+              <div id="viewPermissionPhotoFront" class="mt-2 hidden">
+                <img id="imgPermissionPhotoFront" class="max-w-xs rounded" alt="Permissão Frente">
+                <a id="linkPermissionPhotoFront" class="block text-blue-600 text-sm mt-1" target="_blank">Ver documento</a>
+              </div>
+            </div>
+
+            <!-- Permissão Verso -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <?= htmlspecialchars($langText['permission_photo_back'] ?? 'Permissão (Verso)', ENT_QUOTES); ?>
+              </label>
+              <input type="file" 
+                    name="permission_photo_back" 
+                    id="detailsEmployeePermissionBack"
+                    accept="image/*,.pdf"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2">
+              <div id="viewPermissionPhotoBack" class="mt-2 hidden">
+                <img id="imgPermissionPhotoBack" class="max-w-xs rounded" alt="Permissão Verso">
+                <a id="linkPermissionPhotoBack" class="block text-blue-600 text-sm mt-1" target="_blank">Ver documento</a>
+              </div>
+            </div>
+
+            <!-- Cartão de Saúde Frente -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <?= htmlspecialchars($langText['health_card_front'] ?? 'Cartão de Saúde (Frente)', ENT_QUOTES); ?>
+              </label>
+              <input type="file" 
+                    name="health_card_front" 
+                    id="detailsEmployeeHealthCardFront"
+                    accept="image/*,.pdf"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2">
+              <div id="viewHealthCardFront" class="mt-2 hidden">
+                <img id="imgHealthCardFront" class="max-w-xs rounded" alt="Cartão Saúde Frente">
+                <a id="linkHealthCardFront" class="block text-blue-600 text-sm mt-1" target="_blank">Ver documento</a>
+              </div>
+            </div>
+
+            <!-- Cartão de Saúde Verso -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <?= htmlspecialchars($langText['health_card_back'] ?? 'Cartão de Saúde (Verso)', ENT_QUOTES); ?>
+              </label>
+              <input type="file" 
+                    name="health_card_back" 
+                    id="detailsEmployeeHealthCardBack"
+                    accept="image/*,.pdf"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2">
+              <div id="viewHealthCardBack" class="mt-2 hidden">
+                <img id="imgHealthCardBack" class="max-w-xs rounded" alt="Cartão Saúde Verso">
+                <a id="linkHealthCardBack" class="block text-blue-600 text-sm mt-1" target="_blank">Ver documento</a>
+              </div>
+            </div>
+
+            <!-- Cartão Bancário Frente -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <?= htmlspecialchars($langText['bank_card_front'] ?? 'Cartão Bancário (Frente)', ENT_QUOTES); ?>
+              </label>
+              <input type="file" 
+                    name="bank_card_front" 
+                    id="detailsEmployeeBankCardFront"
+                    accept="image/*,.pdf"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2">
+              <div id="viewBankCardFront" class="mt-2 hidden">
+                <img id="imgBankCardFront" class="max-w-xs rounded" alt="Cartão Bancário Frente">
+                <a id="linkBankCardFront" class="block text-blue-600 text-sm mt-1" target="_blank">Ver documento</a>
+              </div>
+            </div>
+
+            <!-- Cartão Bancário Verso -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <?= htmlspecialchars($langText['bank_card_back'] ?? 'Cartão Bancário (Verso)', ENT_QUOTES); ?>
+              </label>
+              <input type="file" 
+                    name="bank_card_back" 
+                    id="detailsEmployeeBankCardBack"
+                    accept="image/*,.pdf"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2">
+              <div id="viewBankCardBack" class="mt-2 hidden">
+                <img id="imgBankCardBack" class="max-w-xs rounded" alt="Cartão Bancário Verso">
+                <a id="linkBankCardBack" class="block text-blue-600 text-sm mt-1" target="_blank">Ver documento</a>
+              </div>
+            </div>
+
+            <!-- Certidão de Casamento -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                <?= htmlspecialchars($langText['marriage_certificate'] ?? 'Certidão de Casamento', ENT_QUOTES); ?>
+              </label>
+              <input type="file" 
+                    name="marriage_certificate" 
+                    id="detailsEmployeeMarriageCertificate"
+                    accept="image/*,.pdf"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2">
+              <div id="viewMarriageCertificate" class="mt-2 hidden">
+                <img id="imgMarriageCertificate" class="max-w-xs rounded" alt="Certidão Casamento">
+                <a id="linkMarriageCertificate" class="block text-blue-600 text-sm mt-1" target="_blank">Ver documento</a>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="mt-6 p-4 bg-yellow-50 rounded-lg">
+            <p class="text-sm text-yellow-800">
+              <strong>Nota:</strong> Os documentos são salvos automaticamente quando você clica em "Salvar Alterações". 
+              Formatos aceitos: JPG, PNG, PDF (máximo 5MB por arquivo).
+            </p>
+          </div>
         </div>
       </div>
 

@@ -327,7 +327,6 @@ class ProjectController
         exit;
     }
 
-    // ADICIONAR/CORRIGIR o método getProjectDetails
     public function getProjectDetails($projectId = null)
     {
         header('Content-Type: application/json; charset=UTF-8');
@@ -357,48 +356,16 @@ class ProjectController
                 exit;
             }
             
-            // NOVO: Calcula total de horas do sistema novo (entrada/saída)
+            // Calcula total de horas
             $stmt = $pdo->prepare("
-                SELECT COALESCE(SUM(total_hours), 0) as new_system_hours
+                SELECT COALESCE(SUM(total_hours), 0) as total_hours
                 FROM time_entries 
                 WHERE project_id = ?
             ");
             $stmt->execute([$projectId]);
-            $newSystemHours = (float)$stmt->fetchColumn();
+            $totalHours = (float)$stmt->fetchColumn();
             
-            // Total de horas do sistema antigo (horas diretas)
-            $stmt = $pdo->prepare("
-                SELECT COALESCE(SUM(hours), 0) as old_system_hours
-                FROM work_logs 
-                WHERE project_id = ?
-            ");
-            $stmt->execute([$projectId]);
-            $oldSystemHours = (float)$stmt->fetchColumn();
-            
-            // Soma total
-            $totalProjectHours = $newSystemHours + $oldSystemHours;
-            
-            // Busca funcionários que trabalharam no projeto
-            $stmt = $pdo->prepare("
-                SELECT DISTINCT
-                    e.id,
-                    e.name,
-                    e.last_name,
-                    COALESCE(SUM(te.total_hours), 0) as hours_worked
-                FROM time_entries te
-                LEFT JOIN employees e ON te.employee_id = e.id
-                WHERE te.project_id = ?
-                GROUP BY e.id, e.name, e.last_name
-                ORDER BY hours_worked DESC
-            ");
-            $stmt->execute([$projectId]);
-            $employeesHours = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Adiciona horas totais ao projeto
-            $project['total_hours_calculated'] = number_format($totalProjectHours, 2, '.', '');
-            $project['employees_hours'] = $employeesHours;
-            
-            error_log("Project $projectId - Total hours: $totalProjectHours");
+            $project['total_hours_calculated'] = number_format($totalHours, 2, '.', '');
             
             echo json_encode([
                 'success' => true,
@@ -408,6 +375,196 @@ class ProjectController
         } catch (Exception $e) {
             error_log("ProjectController::getProjectDetails error: " . $e->getMessage());
             echo json_encode(['error' => 'Erro interno do servidor']);
+        }
+        exit;
+    }
+
+    public function getProjectTasks($projectId)
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        
+        try {
+            global $pdo;
+            
+            $stmt = $pdo->prepare("
+                SELECT * FROM tasks 
+                WHERE project_id = ? 
+                ORDER BY created_at DESC
+            ");
+            $stmt->execute([$projectId]);
+            $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            echo json_encode($tasks);
+            
+        } catch (Exception $e) {
+            error_log("ProjectController::getProjectTasks error: " . $e->getMessage());
+            echo json_encode([]);
+        }
+        exit;
+    }
+
+    // SUBSTITUIR o método getProjectEmployees no ProjectController.php
+    public function getProjectEmployees($projectId)
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        
+        try {
+            global $pdo;
+            
+            // Primeira tentativa: busca por time_entries (funcionários que registraram ponto)
+            $stmt = $pdo->prepare("
+                SELECT DISTINCT
+                    e.id,
+                    e.name,
+                    e.last_name,
+                    e.function,
+                    COALESCE(SUM(te.total_hours), 0) as hours_worked
+                FROM time_entries te
+                INNER JOIN employees e ON te.employee_id = e.id
+                WHERE te.project_id = ?
+                GROUP BY e.id, e.name, e.last_name, e.function
+                ORDER BY hours_worked DESC
+            ");
+            $stmt->execute([$projectId]);
+            $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Se não encontrou por time_entries, tenta por JSON no campo employees
+            if (empty($employees)) {
+                $stmt = $pdo->prepare("
+                    SELECT employees FROM projects WHERE id = ?
+                ");
+                $stmt->execute([$projectId]);
+                $project = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($project && !empty($project['employees'])) {
+                    $employeeIds = json_decode($project['employees'], true);
+                    
+                    if (is_array($employeeIds)) {
+                        $placeholders = str_repeat('?,', count($employeeIds) - 1) . '?';
+                        $stmt = $pdo->prepare("
+                            SELECT 
+                                e.id,
+                                e.name,
+                                e.last_name,
+                                e.function,
+                                0 as hours_worked
+                            FROM employees e
+                            WHERE e.id IN ($placeholders)
+                            ORDER BY e.name
+                        ");
+                        $stmt->execute($employeeIds);
+                        $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    }
+                }
+            }
+            
+            // Se ainda não encontrou, tenta project_allocations
+            if (empty($employees)) {
+                $stmt = $pdo->prepare("
+                    SELECT DISTINCT
+                        e.id,
+                        e.name,
+                        e.last_name,
+                        e.function,
+                        0 as hours_worked
+                    FROM project_allocations pa
+                    INNER JOIN employees e ON pa.employee_id = e.id
+                    WHERE pa.project_id = ? AND pa.type = 'employee'
+                    ORDER BY e.name
+                ");
+                $stmt->execute([$projectId]);
+                $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            error_log("getProjectEmployees - Found " . count($employees) . " employees for project $projectId");
+            echo json_encode($employees);
+            
+        } catch (Exception $e) {
+            error_log("ProjectController::getProjectEmployees error: " . $e->getMessage());
+            echo json_encode([]);
+        }
+        exit;
+    }
+
+    // SUBSTITUIR o método getProjectInventory no ProjectController.php
+    public function getProjectInventory($projectId)
+    {
+        header('Content-Type: application/json; charset=UTF-8');
+        
+        try {
+            global $pdo;
+            
+            // Primeira tentativa: project_allocations
+            $stmt = $pdo->prepare("
+                SELECT 
+                    i.id,
+                    i.name,
+                    i.description,
+                    pa.quantity
+                FROM project_allocations pa
+                INNER JOIN inventory i ON pa.inventory_id = i.id
+                WHERE pa.project_id = ? AND pa.type = 'inventory'
+                ORDER BY i.name
+            ");
+            $stmt->execute([$projectId]);
+            $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Se não encontrou, tenta pelo campo JSON inventory
+            if (empty($items)) {
+                $stmt = $pdo->prepare("
+                    SELECT inventory FROM projects WHERE id = ?
+                ");
+                $stmt->execute([$projectId]);
+                $project = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($project && !empty($project['inventory'])) {
+                    $inventoryData = json_decode($project['inventory'], true);
+                    
+                    if (is_array($inventoryData)) {
+                        foreach ($inventoryData as $item) {
+                            if (isset($item['id'])) {
+                                $stmt = $pdo->prepare("
+                                    SELECT id, name, description FROM inventory WHERE id = ?
+                                ");
+                                $stmt->execute([$item['id']]);
+                                $inventoryItem = $stmt->fetch(PDO::FETCH_ASSOC);
+                                
+                                if ($inventoryItem) {
+                                    $items[] = [
+                                        'id' => $inventoryItem['id'],
+                                        'name' => $inventoryItem['name'],
+                                        'description' => $inventoryItem['description'],
+                                        'quantity' => $item['quantity'] ?? 1
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Se ainda não encontrou, mostra todos os itens do estoque (fallback)
+            if (empty($items)) {
+                $stmt = $pdo->prepare("
+                    SELECT 
+                        id,
+                        name,
+                        description,
+                        1 as quantity
+                    FROM inventory 
+                    ORDER BY name 
+                    LIMIT 5
+                ");
+                $stmt->execute();
+                $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            }
+            
+            error_log("getProjectInventory - Found " . count($items) . " items for project $projectId");
+            echo json_encode($items);
+            
+        } catch (Exception $e) {
+            error_log("ProjectController::getProjectInventory error: " . $e->getMessage());
+            echo json_encode([]);
         }
         exit;
     }

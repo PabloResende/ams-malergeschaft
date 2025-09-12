@@ -206,6 +206,15 @@ switch (true) {
     case preg_match('/^\/api\/projects\/(\d+)$/', $route, $matches):
         $projectController->getProjectDetails((int) $matches[1]);
         break;
+    case preg_match('/^\/api\/projects\/(\d+)\/tasks$/', $route, $matches):
+        $projectController->getProjectTasks((int) $matches[1]);
+        break;
+    case preg_match('/^\/api\/projects\/(\d+)\/employees$/', $route, $matches):
+        $projectController->getProjectEmployees((int) $matches[1]);
+        break;
+    case preg_match('/^\/api\/projects\/(\d+)\/inventory$/', $route, $matches):
+        $projectController->getProjectInventory((int) $matches[1]);
+        break;
 
     // ===== API WORK LOGS =====
     case $route === '/api/work_logs/admin_time_entry':

@@ -1,383 +1,304 @@
 <?php
-// app/views/dashboard/index.php - VERSÃO ORIGINAL COM APENAS CORREÇÕES MÍNIMAS
+// app/views/dashboard/index.php
 
-function pctChange($atual, $anterior)
-{
-    if ($anterior == 0) {
-        return 0;
+require_once __DIR__ . '/../layout/header.php';
+
+global $pdo;
+$baseUrl  = BASE_URL;
+$userName = $_SESSION['user']['name'] ?? '';
+
+// Função de cálculo de variação percentual 
+function pctChange(float $cur, float $prev): float {
+    if ($prev === 0.0) {
+        return $cur > 0.0 ? 100.0 : 0.0;
     }
-
-    return round((($atual - $anterior) / $anterior) * 100, 1);
+    return round((($cur - $prev) / $prev) * 100, 1);
 }
 
-require_once __DIR__.'/../layout/header.php';
-
-// CORREÇÃO: Definir $userName no início
-$userName = $_SESSION['user']['name'] ?? 'Usuário';
-
-// ——— 1) Projetos ativos/concluídos ———
+// ——— 1) Projetos ———
+// Métricas atuais de projetos (somente mês corrente)
 $stmt = $pdo->query("
-    SELECT COUNT(*) AS cur_active 
-    FROM projects 
-    WHERE status = 'active' OR status = 'in_progress'
+  SELECT
+    SUM(status = 'in_progress') AS active,
+    SUM(status = 'completed')   AS completed
+  FROM projects
+  WHERE MONTH(created_at) = MONTH(CURRENT_DATE())
+    AND YEAR(created_at)  = YEAR(CURRENT_DATE())
 ");
-$P1 = $stmt->fetch(PDO::FETCH_ASSOC);
-$curActive = (int) ($P1['cur_active'] ?? 0);
+$M = $stmt->fetch(PDO::FETCH_ASSOC);
+$curActive    = (int)($M['active']    ?? 0);
+$curCompleted = (int)($M['completed'] ?? 0);
 
+// Métricas mês anterior de projetos
 $stmt = $pdo->query("
-    SELECT COUNT(*) AS prev_active 
-    FROM projects 
-    WHERE (status = 'active' OR status = 'in_progress')
-      AND MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
-      AND YEAR(created_at) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
+  SELECT
+    SUM(status = 'in_progress') AS active,
+    SUM(status = 'completed')   AS completed
+  FROM projects
+  WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
+    AND YEAR(created_at)  = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
 ");
-$P2 = $stmt->fetch(PDO::FETCH_ASSOC);
-$prevActive = (int) ($P2['prev_active'] ?? 0);
-$pctActive = pctChange($curActive, $prevActive);
+$L = $stmt->fetch(PDO::FETCH_ASSOC);
+$prevActive    = (int)($L['active']    ?? 0);
+$prevCompleted = (int)($L['completed'] ?? 0);
 
+// Horas registradas no MÊS ATUAL
 $stmt = $pdo->query("
-    SELECT COUNT(*) AS cur_completed 
-    FROM projects 
-    WHERE status = 'completed'
+  SELECT COALESCE(SUM(hours),0) AS hours
+    FROM project_work_logs
+   WHERE MONTH(date) = MONTH(CURRENT_DATE())
+     AND YEAR(date)  = YEAR(CURRENT_DATE())
 ");
-$P3 = $stmt->fetch(PDO::FETCH_ASSOC);
-$curCompleted = (int) ($P3['cur_completed'] ?? 0);
+$H = $stmt->fetch(PDO::FETCH_ASSOC);
+$curHours = (float)($H['hours'] ?? 0.0);
 
+// Horas registradas no MÊS ANTERIOR
 $stmt = $pdo->query("
-    SELECT COUNT(*) AS prev_completed 
-    FROM projects 
-    WHERE status = 'completed'
-      AND MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
-      AND YEAR(created_at) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
+  SELECT COALESCE(SUM(hours),0) AS hours
+    FROM project_work_logs
+   WHERE MONTH(date) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
+     AND YEAR(date)  = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
 ");
-$P4 = $stmt->fetch(PDO::FETCH_ASSOC);
-$prevCompleted = (int) ($P4['prev_completed'] ?? 0);
+$Lh = $stmt->fetch(PDO::FETCH_ASSOC);
+$prevHours = (float)($Lh['hours'] ?? 0.0);
+
+// Calcula % de variação para projetos e horas
+$pctActive    = pctChange($curActive,    $prevActive);
 $pctCompleted = pctChange($curCompleted, $prevCompleted);
+$pctHours     = pctChange($curHours,     $prevHours);
 
-// ——— 2) Horas de trabalho (CORRIGIDO: usar time_entries + project_work_logs) ———
-$curHours = 0;
-$prevHours = 0;
+// Projetos ativos limitados (últimos 9) — mantém sem filtro mensal
+$stmt = $pdo->query("
+  SELECT p.*, c.name AS client_name
+  FROM projects p
+  LEFT JOIN client c ON p.client_id = c.id
+  WHERE p.status = 'in_progress'
+  ORDER BY p.created_at DESC
+  LIMIT 9
+");
+$activeProjects = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Sistema novo: time_entries
-try {
-    $stmt = $pdo->query('
-        SELECT COALESCE(SUM(total_hours), 0) AS cur_hours 
-        FROM time_entries 
-        WHERE MONTH(created_at) = MONTH(CURRENT_DATE) 
-          AND YEAR(created_at) = YEAR(CURRENT_DATE)
-    ');
-    $H1 = $stmt->fetch(PDO::FETCH_ASSOC);
-    $curHours += (float) ($H1['cur_hours'] ?? 0);
-
-    $stmt = $pdo->query('
-        SELECT COALESCE(SUM(total_hours), 0) AS prev_hours 
-        FROM time_entries 
-        WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH) 
-          AND YEAR(created_at) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
-    ');
-    $H2 = $stmt->fetch(PDO::FETCH_ASSOC);
-    $prevHours += (float) ($H2['prev_hours'] ?? 0);
-} catch (Exception $e) {
-    // Tabela time_entries pode não existir
-}
-
-// Sistema antigo: project_work_logs
-try {
-    $stmt = $pdo->query('
-        SELECT COALESCE(SUM(hours), 0) AS cur_hours 
-        FROM project_work_logs 
-        WHERE MONTH(created_at) = MONTH(CURRENT_DATE) 
-          AND YEAR(created_at) = YEAR(CURRENT_DATE)
-    ');
-    $H3 = $stmt->fetch(PDO::FETCH_ASSOC);
-    $curHours += (float) ($H3['cur_hours'] ?? 0);
-
-    $stmt = $pdo->query('
-        SELECT COALESCE(SUM(hours), 0) AS prev_hours 
-        FROM project_work_logs 
-        WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH) 
-          AND YEAR(created_at) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
-    ');
-    $H4 = $stmt->fetch(PDO::FETCH_ASSOC);
-    $prevHours += (float) ($H4['prev_hours'] ?? 0);
-} catch (Exception $e) {
-    // Tabela project_work_logs pode não existir
-}
-
-$pctHours = pctChange($curHours, $prevHours);
-
-// ——— 3) Ranking funcionários (CORRIGIDO: usar 'name' e 'last_name') ———
-$employeeHours = [];
-
-// Busca funcionários e suas horas de uma vez só
-try {
-    $sql = '
-        SELECT 
-            e.id,
-            e.name,
-            e.last_name,
-            COALESCE(
-                (SELECT SUM(total_hours) FROM time_entries te 
-                 WHERE te.employee_id = e.id 
-                   AND MONTH(te.created_at) = MONTH(CURRENT_DATE) 
-                   AND YEAR(te.created_at) = YEAR(CURRENT_DATE)
-                ), 0
-            ) + 
-            COALESCE(
-                (SELECT SUM(hours) FROM project_work_logs pwl 
-                 WHERE pwl.employee_id = e.id 
-                   AND MONTH(pwl.created_at) = MONTH(CURRENT_DATE) 
-                   AND YEAR(pwl.created_at) = YEAR(CURRENT_DATE)
-                ), 0
-            ) AS total_hours
-        FROM employees e
-        WHERE e.active = 1
-        HAVING total_hours > 0
-        ORDER BY total_hours DESC
-        LIMIT 10
-    ';
-
-    $stmt = $pdo->query($sql);
-    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    foreach ($results as $emp) {
-        $employeeHours[] = [
-            'id' => $emp['id'],
-            'name' => trim(($emp['name'] ?? '').' '.($emp['last_name'] ?? '')),
-            'total_hours' => (float) ($emp['total_hours'] ?? 0),
-        ];
-    }
-} catch (Exception $e) {
-    // Se der erro na query complexa, usa método simples
-    error_log('Erro no ranking de funcionários: '.$e->getMessage());
-    $employeeHours = [];
-}
-
-// ——— 4) Outros dados do dashboard (CORRIGIDO: usar 'client' não 'clients') ———
-// Removido: consulta de projetos ativos (não precisa mais)
-
-// Clientes (CORRIGIDO: usar tabela 'client')
-$stmt = $pdo->query('SELECT SUM(active = 1) AS cur_clients FROM client');
+// ——— 2) Clientes ———
+// Não filtrar por mês (permanece total)
+$stmt = $pdo->query("
+  SELECT
+    SUM(active = 1)     AS cur_clients,
+    SUM(loyalty_points) AS cur_points
+  FROM client
+");
 $C1 = $stmt->fetch(PDO::FETCH_ASSOC);
-$curClients = (int) ($C1['cur_clients'] ?? 0);
 
-$stmt = $pdo->query('
-  SELECT SUM(active = 1) AS prev_clients FROM client
+// Para cálculo de variação, mantém como estava (mês anterior)
+$stmt = $pdo->query("
+  SELECT
+    SUM(active = 1)     AS prev_clients,
+    SUM(loyalty_points) AS prev_points
+  FROM client
   WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
-    AND YEAR(created_at) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
-');
+    AND YEAR(created_at)  = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
+");
 $C2 = $stmt->fetch(PDO::FETCH_ASSOC);
-$prevClients = (int) ($C2['prev_clients'] ?? 0);
-$pctClients = pctChange($curClients, $prevClients);
 
-// Inventário
-$stmt = $pdo->query('SELECT COUNT(*) AS cur_skus FROM inventory');
+$curClients  = (int)($C1['cur_clients']  ?? 0);
+$prevClients = (int)($C2['prev_clients'] ?? 0);
+$pctClients  = pctChange($curClients, $prevClients);
+
+// ——— 3) Inventário ———
+// Mantém contabilização total (sem filtro mensal)
+$stmt = $pdo->query("
+  SELECT
+    COUNT(*)       AS cur_skus,
+    SUM(quantity) AS cur_stock
+  FROM inventory
+");
 $I1 = $stmt->fetch(PDO::FETCH_ASSOC);
-$curSKUs = (int) ($I1['cur_skus'] ?? 0);
 
-$stmt = $pdo->query('
-  SELECT COUNT(*) AS prev_skus FROM inventory
+$stmt = $pdo->query("
+  SELECT
+    COUNT(*)       AS prev_skus,
+    SUM(quantity) AS prev_stock
+  FROM inventory
   WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
-    AND YEAR(created_at) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
-');
+    AND YEAR(created_at)  = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
+");
 $I2 = $stmt->fetch(PDO::FETCH_ASSOC);
-$prevSKUs = (int) ($I2['prev_skus'] ?? 0);
-$pctSKUs = pctChange($curSKUs, $prevSKUs);
 
-// Tarefas pendentes
-$stmt = $pdo->query('SELECT SUM(completed = 0) AS cur_pending FROM tasks');
+$curSKUs  = (int)($I1['cur_skus']  ?? 0);
+$prevSKUs = (int)($I2['prev_skus'] ?? 0);
+$pctSKUs  = pctChange($curSKUs, $prevSKUs);
+
+// ——— 4) Tarefas pendentes ———
+// Mantém contabilização total de pendentes
+$stmt = $pdo->query("
+  SELECT SUM(completed = 0) AS cur_pending
+  FROM tasks
+");
 $T1 = $stmt->fetch(PDO::FETCH_ASSOC);
-$curPending = (int) ($T1['cur_pending'] ?? 0);
 
-$stmt = $pdo->query('
-  SELECT SUM(completed = 0) AS prev_pending FROM tasks
+$stmt = $pdo->query("
+  SELECT SUM(completed = 0) AS prev_pending
+  FROM tasks
   WHERE MONTH(created_at) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
-    AND YEAR(created_at) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
-');
+    AND YEAR(created_at)  = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
+");
 $T2 = $stmt->fetch(PDO::FETCH_ASSOC);
-$prevPending = (int) ($T2['prev_pending'] ?? 0);
-$pctPending = pctChange($curPending, $prevPending);
 
-// Lembretes
-try {
-    require_once __DIR__.'/../../models/Calendar.php';
-    $calModel = new CalendarModel();
-    $today = date('Y-m-d');
-    $farFuture = '9999-12-31';
-    $events = $calModel->getEventsInRange($today, $farFuture);
-    $upcoming = is_array($events) ? count($events) : 0;
-} catch (Exception $e) {
-    $upcoming = 0;
-}
+$curPending  = (int)($T1['cur_pending']  ?? 0);
+$prevPending = (int)($T2['prev_pending'] ?? 0);
+$pctPending  = pctChange($curPending, $prevPending);
 
-// Membros de equipe
-$teamCount = (int) $pdo->query('SELECT COUNT(*) FROM employees WHERE active=1')->fetchColumn();
+// ——— 5) Lembretes futuros (usando CalendarModel) ———
+// Corrigido o caminho para Calendar.php
+require_once __DIR__ . '/../../models/Calendar.php';
+$calModel  = new CalendarModel();
+
+// Pega todos os eventos a partir de hoje (start = hoje, end = fim de prazo longo)
+$today     = date('Y-m-d');
+$farFuture = '9999-12-31';
+$events    = $calModel->getEventsInRange($today, $farFuture);
+
+// Conta quantos eventos ainda estão por vir
+$upcoming = is_array($events) ? count($events) : 0;
 ?>
 
 <div class="pt-20 px-4 py-6 sm:px-8 sm:py-8 ml-0 lg:ml-56">
   <h1 class="text-3xl font-bold mb-6 max-w-full break-words">
-    <?= htmlspecialchars($langText['welcome'] ?? 'Bem-vindo', ENT_QUOTES); ?>,
-    <?= htmlspecialchars($userName, ENT_QUOTES); ?>!
+    <?= htmlspecialchars($langText['welcome'] ?? 'Bem-vindo', ENT_QUOTES) ?>,
+    <?= htmlspecialchars($userName, ENT_QUOTES) ?>!
   </h1>
 
-  <!-- === Cards Principais === -->
+  <!-- === Cards Principais (Somente mês corrente, exceto Team Members) === -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
     <div class="bg-white p-4 rounded-lg shadow flex flex-col items-center">
       <h3 class="text-lg font-semibold mb-2 text-center">
-        <?= htmlspecialchars($langText['active_projects'] ?? 'Projetos Ativos', ENT_QUOTES); ?>
+        <?= htmlspecialchars($langText['active_projects'] ?? 'Active Projects', ENT_QUOTES) ?>
       </h3>
-      <p class="text-3xl font-bold"><?= $curActive; ?></p>
-      <p class="mt-1 text-sm <?= $pctActive >= 0 ? 'text-green-500' : 'text-red-500'; ?> text-center">
-        <?= ($pctActive >= 0 ? '+' : '').$pctActive; ?>%
-        <?= htmlspecialchars($langText['vs_last_month'] ?? 'vs mês anterior', ENT_QUOTES); ?>
+      <p class="text-3xl font-bold"><?= $curActive ?></p>
+      <p class="mt-1 text-sm <?= $pctActive >= 0 ? 'text-green-500' : 'text-red-500' ?> text-center">
+        <?= ($pctActive >= 0 ? '+' : '') . $pctActive ?>%
+        <?= htmlspecialchars($langText['vs_last_month'] ?? 'vs last month', ENT_QUOTES) ?>
       </p>
     </div>
 
     <div class="bg-white p-4 rounded-lg shadow flex flex-col items-center">
       <h3 class="text-lg font-semibold mb-2 text-center">
-        <?= htmlspecialchars($langText['total_hours_month'] ?? 'Total de Horas no Mês', ENT_QUOTES); ?>
+        <?= htmlspecialchars($langText['total_hours_month'] ?? 'Horas este Mês', ENT_QUOTES) ?>
       </h3>
-      <p class="text-3xl font-bold"><?= number_format($curHours, 1, ',', '.'); ?>h</p>
-      <p class="mt-1 text-sm <?= $pctHours >= 0 ? 'text-green-500' : 'text-red-500'; ?> text-center">
-        <?= ($pctHours >= 0 ? '+' : '').$pctHours; ?>%
-        <?= htmlspecialchars($langText['vs_last_month'] ?? 'vs mês anterior', ENT_QUOTES); ?>
+      <p class="text-3xl font-bold"><?= number_format($curHours, 2, ',', '.') ?>h</p>
+      <p class="mt-1 text-sm <?= $pctHours >= 0 ? 'text-green-500' : 'text-red-500' ?> text-center">
+        <?= ($pctHours >= 0 ? '+' : '') . $pctHours ?>%
+        <?= htmlspecialchars($langText['vs_last_month'] ?? 'vs last month', ENT_QUOTES) ?>
       </p>
     </div>
 
     <div class="bg-white p-4 rounded-lg shadow flex flex-col items-center">
       <h3 class="text-lg font-semibold mb-2 text-center">
-        <?= htmlspecialchars($langText['team_members'] ?? 'Funcionários', ENT_QUOTES); ?>
+        <?= htmlspecialchars($langText['team_members'] ?? 'Team Members', ENT_QUOTES) ?>
       </h3>
-      <p class="text-3xl font-bold"><?= $teamCount; ?></p>
+      <?php 
+        // Membros de equipe não filtrados por mês
+        $teamCount = (int)$pdo->query("SELECT COUNT(*) FROM employees WHERE active=1")->fetchColumn();
+      ?>
+      <p class="text-3xl font-bold"><?= $teamCount ?></p>
       <p class="mt-1 text-sm text-gray-500 text-center">
-        <?= htmlspecialchars($langText['total'] ?? 'Total', ENT_QUOTES); ?>
+        <?= htmlspecialchars($langText['total'] ?? 'Total', ENT_QUOTES) ?>
       </p>
     </div>
 
     <div class="bg-white p-4 rounded-lg shadow flex flex-col items-center">
       <h3 class="text-lg font-semibold mb-2 text-center">
-        <?= htmlspecialchars($langText['completed_projects'] ?? 'Projetos Concluídos', ENT_QUOTES); ?>
+        <?= htmlspecialchars($langText['completed_projects'] ?? 'Completed Projects', ENT_QUOTES) ?>
       </h3>
-      <p class="text-3xl font-bold"><?= $curCompleted; ?></p>
-      <p class="mt-1 text-sm <?= $pctCompleted >= 0 ? 'text-green-500' : 'text-red-500'; ?> text-center">
-        <?= ($pctCompleted >= 0 ? '+' : '').$pctCompleted; ?>%
-        <?= htmlspecialchars($langText['vs_last_month'] ?? 'vs mês anterior', ENT_QUOTES); ?>
+      <p class="text-3xl font-bold"><?= $curCompleted ?></p>
+      <p class="mt-1 text-sm <?= $pctCompleted >= 0 ? 'text-green-500' : 'text-red-500' ?> text-center">
+        <?= ($pctCompleted >= 0 ? '+' : '') . $pctCompleted ?>%
+        <?= htmlspecialchars($langText['vs_last_month'] ?? 'vs last month', ENT_QUOTES) ?>
       </p>
     </div>
   </div>
 
-  <!-- === Cards Extras === -->
+  <!-- === Cards Extras (mantidos sem filtro de mês, exceto Active Clients) === -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
     <div class="bg-white p-4 rounded-lg shadow">
-      <h3 class="font-semibold mb-2 text-center">
-        <?= htmlspecialchars($langText['active_clients'] ?? 'Clientes Ativos', ENT_QUOTES); ?>
-      </h3>
-      <p class="text-2xl font-bold text-center"><?= $curClients; ?></p>
-      <p class="text-sm <?= $pctClients >= 0 ? 'text-green-500' : 'text-red-500'; ?> text-center">
-        <?= ($pctClients >= 0 ? '+' : '').$pctClients; ?>%
-        <?= htmlspecialchars($langText['vs_last_month'] ?? 'vs mês anterior', ENT_QUOTES); ?>
+      <h3 class="font-semibold mb-2 text-center"><?= htmlspecialchars($langText['active_clients'] ?? 'Active Clients', ENT_QUOTES) ?></h3>
+      <p class="text-2xl font-bold text-center"><?= $curClients ?></p>
+      <p class="text-sm <?= $pctClients >= 0 ? 'text-green-500' : 'text-red-500' ?> text-center">
+        <?= ($pctClients >= 0 ? '+' : '') . $pctClients ?>%
+        <?= htmlspecialchars($langText['vs_last_month'] ?? 'vs last month', ENT_QUOTES) ?>
       </p>
     </div>
 
     <div class="bg-white p-4 rounded-lg shadow">
-      <h3 class="font-semibold mb-2 text-center">
-        <?= htmlspecialchars($langText['inventory_items'] ?? 'Itens Inventário', ENT_QUOTES); ?>
-      </h3>
-      <p class="text-2xl font-bold text-center"><?= $curSKUs; ?></p>
-      <p class="text-sm <?= $pctSKUs >= 0 ? 'text-green-500' : 'text-red-500'; ?> text-center">
-        <?= ($pctSKUs >= 0 ? '+' : '').$pctSKUs; ?>%
-        <?= htmlspecialchars($langText['vs_last_month'] ?? 'vs mês anterior', ENT_QUOTES); ?>
+      <h3 class="font-semibold mb-2 text-center"><?= htmlspecialchars($langText['inventory_items'] ?? 'Inventory SKUs', ENT_QUOTES) ?></h3>
+      <p class="text-2xl font-bold text-center"><?= $curSKUs ?></p>
+      <p class="text-sm <?= $pctSKUs >= 0 ? 'text-green-500' : 'text-red-500' ?> text-center">
+        <?= ($pctSKUs >= 0 ? '+' : '') . $pctSKUs ?>%
+        <?= htmlspecialchars($langText['vs_last_month'] ?? 'vs last month', ENT_QUOTES) ?>
       </p>
     </div>
 
     <div class="bg-white p-4 rounded-lg shadow">
-      <h3 class="font-semibold mb-2 text-center">
-        <?= htmlspecialchars($langText['pending_tasks'] ?? 'Tarefas Pendentes', ENT_QUOTES); ?>
-      </h3>
-      <p class="text-2xl font-bold text-center"><?= $curPending; ?></p>
-      <p class="text-sm <?= $pctPending >= 0 ? 'text-green-500' : 'text-red-500'; ?> text-center">
-        <?= ($pctPending >= 0 ? '+' : '').$pctPending; ?>%
-        <?= htmlspecialchars($langText['vs_last_month'] ?? 'vs mês anterior', ENT_QUOTES); ?>
+      <h3 class="font-semibold mb-2 text-center"><?= htmlspecialchars($langText['pending_tasks'] ?? 'Pending Tasks', ENT_QUOTES) ?></h3>
+      <p class="text-2xl font-bold text-center"><?= $curPending ?></p>
+      <p class="text-sm <?= $pctPending >= 0 ? 'text-green-500' : 'text-red-500' ?> text-center">
+        <?= ($pctPending >= 0 ? '+' : '') . $pctPending ?>%
+        <?= htmlspecialchars($langText['vs_last_month'] ?? 'vs last month', ENT_QUOTES) ?>
       </p>
     </div>
 
     <div class="bg-white p-4 rounded-lg shadow">
-      <h3 class="font-semibold mb-2 text-center">
-        <?= htmlspecialchars($langText['upcoming_reminders'] ?? 'Próximos Lembretes', ENT_QUOTES); ?>
-      </h3>
-      <p class="text-2xl font-bold text-center"><?= $upcoming; ?></p>
-      <p class="text-sm text-gray-500 text-center">
-        <?= htmlspecialchars($langText['total'] ?? 'Total', ENT_QUOTES); ?>
-      </p>
+      <h3 class="font-semibold mb-2 text-center"><?= htmlspecialchars($langText['upcoming_reminders'] ?? 'Upcoming Reminders', ENT_QUOTES) ?></h3>
+      <p class="text-2xl font-bold text-center"><?= $upcoming ?></p>
     </div>
   </div>
 
-  <!-- === Ranking de Funcionários === -->
-  <?php if (!empty($employeeHours)): ?>
-  <div class="mb-12">
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-      <div class="px-6 py-4 border-b border-gray-200">
-        <h3 class="text-lg font-semibold">
-          <?= htmlspecialchars($langText['employee_ranking'] ?? 'Ranking de Funcionários (Horas no Mês)', ENT_QUOTES); ?>
-        </h3>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <?= htmlspecialchars($langText['position'] ?? 'Posição', ENT_QUOTES); ?>
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <?= htmlspecialchars($langText['employee'] ?? 'Funcionário', ENT_QUOTES); ?>
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <?= htmlspecialchars($langText['total_hours'] ?? 'Total de Horas', ENT_QUOTES); ?>
-              </th>
-              <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <?= htmlspecialchars($langText['actions'] ?? 'Ações', ENT_QUOTES); ?>
-              </th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            <?php foreach ($employeeHours as $index => $emp): ?>
-            <tr class="hover:bg-gray-50">
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                  <span class="inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium
-                              <?= $index < 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'; ?>">
-                    <?= $index + 1; ?>
-                  </span>
-                </div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900"><?= htmlspecialchars($emp['name'], ENT_QUOTES); ?></div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900">
-                <span class="font-semibold"><?= number_format($emp['total_hours'], 1, ',', '.'); ?>h</span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-center text-sm">
-                <a href="<?= BASE_URL; ?>/employees#emp-<?= $emp['id']; ?>" 
-                   class="text-blue-600 hover:text-blue-800 font-medium">
-                  <?= htmlspecialchars($langText['view_details'] ?? 'Ver Detalhes', ENT_QUOTES); ?>
-                </a>
-              </td>
-            </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
+  <!-- === Projetos Ativos === -->
+  <div class="mt-12">
+    <h3 class="text-xl font-semibold mb-6"><?= htmlspecialchars($langText['active_projects'] ?? 'Active Projects', ENT_QUOTES) ?></h3>
+    <div id="projectsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <?php if (empty($activeProjects)): ?>
+        <p class="text-gray-600"><?= htmlspecialchars($langText['no_projects_available'] ?? 'No active projects.', ENT_QUOTES) ?></p>
+      <?php else: foreach ($activeProjects as $project):
+          switch ($project['status']) {
+            case 'in_progress': $badgeClass = 'bg-blue-500';  $badgeText = $langText['active']    ?? 'Active';   break;
+            case 'pending':     $badgeClass = 'bg-yellow-500';$badgeText = $langText['pending']   ?? 'Pending';  break;
+            default:            $badgeClass = 'bg-green-500'; $badgeText = $langText['completed'] ?? 'Completed';break;
+          }
+          $tStmt = $pdo->prepare("SELECT completed FROM tasks WHERE project_id = ?");
+          $tStmt->execute([$project['id']]);
+          $done = array_sum(array_column($tStmt->fetchAll(), 'completed'));
+          $totalTasks = $tStmt->rowCount();
+          $pr = $totalTasks ? round($done / $totalTasks * 100) : 0;
+      ?>
+        <div
+          class="project-item bg-white p-6 rounded-xl shadow hover:shadow-md transition-all cursor-pointer"
+          onclick="location.href='<?= $baseUrl ?>/projects';"
+        >
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+            <h4 class="text-xl font-bold"><?= htmlspecialchars($project['name'], ENT_QUOTES) ?></h4>
+            <span class="<?= $badgeClass ?> text-white px-3 py-1 rounded-full text-[12px] font-semibold mt-2 sm:mt-0">
+              <?= htmlspecialchars($badgeText, ENT_QUOTES) ?>
+            </span>
+          </div>
+          <p class="text-sm text-gray-600 mb-1">
+            <strong><?= htmlspecialchars($langText['client'] ?? 'Client', ENT_QUOTES) ?>:</strong>
+            <?= htmlspecialchars($project['client_name'] ?? '—', ENT_QUOTES) ?>
+          </p>
+          <p class="text-sm text-gray-600 mb-2">
+            <strong><?= htmlspecialchars($langText['budget'] ?? 'Budget', ENT_QUOTES) ?>:</strong>
+            <?= number_format($project['budget'], 2, ',', '.') ?>
+          </p>
+          <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
+            <div class="bg-blue-500 h-2 rounded-full" style="width:<?= $pr ?>%;"></div>
+          </div>
+          <p class="text-sm text-gray-600">
+            <?= htmlspecialchars($langText['employees'] ?? 'Employees', ENT_QUOTES) ?>: <?= $project['employee_count'] ?> |
+            <?= htmlspecialchars($langText['progress'] ?? 'Progress', ENT_QUOTES) ?>: <?= $pr ?>%
+          </p>
+        </div>
+      <?php endforeach; endif; ?>
     </div>
   </div>
-  <?php endif; ?>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Dashboard carregado com sucesso');
-    console.log('Total de horas:', <?= $curHours; ?>);
-    console.log('Funcionários no ranking:', <?= count($employeeHours); ?>);
-});
-</script>
-
-<?php require_once __DIR__.'/../layout/footer.php'; ?>
+<?php require __DIR__ . '/../layout/footer.php'; ?>

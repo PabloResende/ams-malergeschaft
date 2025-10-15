@@ -1,5 +1,5 @@
 <?php
-// system/public/index.php — Front controller CORRIGIDO COMPLETO
+// system/public/index.php — Front controller
 
 // 1) Inicia sessão
 if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -7,25 +7,25 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 
 // 2) Carrega env (opcional)
-if (file_exists(__DIR__.'/../config/env.php')) {
-    $env = require __DIR__.'/../config/env.php';
+if (file_exists(__DIR__ . '/../config/env.php')) {
+    $env = require __DIR__ . '/../config/env.php';
 }
 
 // 3) Conexão com o banco
-require_once __DIR__.'/../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 // 4) Helpers (url(), asset(), isLoggedIn(), isEmployee(), isAdminOrFinance()…)
-require_once __DIR__.'/../app/helpers.php';
+require_once __DIR__ . '/../app/helpers.php';
 
 // 5) Idioma e traduções
 $lang = $_GET['lang'] ?? $_SESSION['lang'] ?? 'pt';
 $_SESSION['lang'] = $lang;
-$langFile = __DIR__."/../app/lang/{$lang}.php";
+$langFile = __DIR__ . "/../app/lang/{$lang}.php";
 $langText = file_exists($langFile) ? require $langFile : [];
 
 // 6) BASE_URL
-if (!defined('BASE_URL')) {
-    if (!empty($env['base_url'])) {
+if (! defined('BASE_URL')) {
+    if (! empty($env['base_url'])) {
         define('BASE_URL', rtrim($env['base_url'], '/'));
     } else {
         define('BASE_URL', 'https://ams.swiss/system');
@@ -33,54 +33,36 @@ if (!defined('BASE_URL')) {
 }
 
 // 7) Carrega controllers
-require_once __DIR__.'/../app/controllers/UserController.php';
-require_once __DIR__.'/../app/controllers/ProjectController.php';
-require_once __DIR__.'/../app/controllers/InventoryController.php';
-require_once __DIR__.'/../app/controllers/EmployeeController.php';
-require_once __DIR__.'/../app/controllers/ClientsController.php';
-require_once __DIR__.'/../app/controllers/CalendarController.php';
-require_once __DIR__.'/../app/controllers/AnalyticsController.php';
-require_once __DIR__.'/../app/controllers/FinancialController.php';
-require_once __DIR__.'/../app/controllers/WorkLogController.php';
-require_once __DIR__.'/../app/controllers/CarController.php';
+require_once __DIR__ . '/../app/controllers/UserController.php';
+require_once __DIR__ . '/../app/controllers/ProjectController.php';
+require_once __DIR__ . '/../app/controllers/InventoryController.php';
+require_once __DIR__ . '/../app/controllers/EmployeeController.php';
+require_once __DIR__ . '/../app/controllers/ClientsController.php';
+require_once __DIR__ . '/../app/controllers/CalendarController.php';
+require_once __DIR__ . '/../app/controllers/AnalyticsController.php';
+require_once __DIR__ . '/../app/controllers/FinancialController.php';
+require_once __DIR__ . '/../app/controllers/WorkLogController.php';
+require_once __DIR__ . '/../app/controllers/CarController.php'; 
 
 // 8) Resolve rota
-$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$uri   = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $route = preg_replace('#^/system#', '', $uri);
 $route = rtrim($route, '/');
 if ($route === '') {
     $route = '/';
 }
 
-// DEBUG TEMPORÁRIO (remover após correção)
-error_log("DEBUG - Route: $route");
-error_log("DEBUG - User role: " . ($_SESSION['user']['role'] ?? 'not set'));
-error_log("DEBUG - Is employee: " . (isEmployee() ? 'yes' : 'no'));
-
 // Rotas públicas
 $publicRoutes = ['/', '/login', '/auth', '/register', '/store'];
+if (!in_array($route, $publicRoutes, true) && !isLoggedIn()) {
+    redirect('/login');
+}
 
-// CORREÇÃO CRÍTICA: Roteamento baseado em roles
-if (!isLoggedIn()) {
-    // Se não está logado, só pode acessar rotas públicas
-    if (!in_array($route, $publicRoutes, true)) {
-        redirect('/login');
-    }
-} else {
-    // Se está logado, aplicar lógica de redirecionamento por role
-    $userRole = $_SESSION['user']['role'] ?? '';
-    
-    // Se funcionário tenta acessar dashboard geral, redirecionar para dashboard de funcionário
-    if ($route === '/dashboard' && $userRole === 'employee') {
-        redirect('/employees/dashboard');
-        exit;
-    }
-    
-    // Se admin/finance tenta acessar área de funcionário sem permissão
-    if (in_array($route, ['/employees/dashboard', '/employees/profile'], true) && !isEmployee() && !isFinance()) {
-        redirect('/dashboard');
-        exit;
-    }
+// Só employee e finance acessa seu dashboard e profile
+if (in_array($route, ['/employees/dashboard', '/employees/profile'], true)
+    && !isEmployee() && !isFinance()
+) {
+    redirect('/dashboard');
 }
 
 // ─── AUTORIZAÇÃO PARA CRUD DE FUNCIONÁRIOS ───────────────────────────────
@@ -88,11 +70,11 @@ $employeeCrudNoUpdate = [
     '/employees',
     '/employees/store',
     '/employees/delete',
-    '/employees/get',
+    '/employees/get'
 ];
 
 if ($route === '/employees/update') {
-    if (!(isAdminOrFinance() || isEmployee())) {
+    if (! (isAdminOrFinance() || isEmployee())) {
         redirect('/');
     }
 } elseif (in_array($route, $employeeCrudNoUpdate, true)) {
@@ -102,7 +84,7 @@ if ($route === '/employees/update') {
 }
 
 // Finance só acessa aba financeira e análises
-$financeOnly = ['/finance', '/analytics', '/analytics/stats'];
+$financeOnly = ['/finance','/analytics','/analytics/stats'];
 if (in_array($route, $financeOnly, true) && !isFinance() && !isAdmin()) {
     redirect('/');
 }
@@ -110,329 +92,233 @@ if (in_array($route, $financeOnly, true) && !isFinance() && !isAdmin()) {
 /* ===== FIM DO BLOCO DE VALIDAÇÃO POR ROLES ===== */
 
 // 10) Instancia controllers
-$userController = new UserController();
-$projectController = new ProjectController();
+$userController      = new UserController();
+$projectController   = new ProjectController();
 $inventoryController = new InventoryController();
-$employeeController = new EmployeeController();
-$clientsController = new ClientsController();
-$calendarController = new CalendarController();
+$employeeController  = new EmployeeController();
+$clientsController   = new ClientsController();
+$calendarController  = new CalendarController();
 $analyticsController = new AnalyticsController();
 $financialController = new FinancialController();
-$workLogController = new WorkLogController();
-$carController = new CarController();
+$workLogController   = new WorkLogController();
+$carController       = new CarController(); // <--- Adicionado
 
-// 11) Dispatcher de rotas - SWITCH COMPLETO CORRIGIDO
-switch (true) {
-    // ===== USUÁRIO =====
-    case $route === '/' || $route === '/login':
+// 11) Dispatcher de rotas
+switch ($route) {
+    // USUÁRIO
+    case '/':
+    case '/login':
         $userController->login();
         break;
-    case $route === '/auth':
+    case '/auth':
         $userController->authenticate();
         break;
-    case $route === '/register':
+    case '/register':
         $userController->register();
         break;
-    case $route === '/store':
+    case '/store':
         $userController->store();
         break;
-    case $route === '/dashboard':
+    case '/dashboard':
         $userController->dashboard();
         break;
-    case $route === '/logout':
+    case '/employees/dashboard':
+        $userController->employeeDashboard();
+        break;
+    case '/employees/profile':
+        $employeeController->profile();
+        break;
+    case '/logout':
         $userController->logout();
         break;
 
-    // ===== FUNCIONÁRIOS - DASHBOARDS =====
-    case $route === '/employees/dashboard':
-        $employeeController->dashboard_employee();
-        break;
-    case $route === '/employees/profile':
-        $employeeController->profile();
-        break;
-
-   // ===== PROJETOS =====
-    case $route === '/projects':
+    // PROJETOS
+    case '/projects':
         $projectController->index();
         break;
-
-    // PÁGINA HTML para visualizar projeto específico (para navegação direta)
-    case $route === '/projects/show':
-        $projectController->show();
-        break;
-
-    // API JSON para obter dados do projeto (usado por AJAX) - NOVA ROTA
-    case $route === '/projects/data':
-        $projectController->getProjectData();
-        break;
-
-    case $route === '/projects/store':
+    case '/projects/store':
         $projectController->store();
         break;
-        
-    case $route === '/projects/update':
+    case '/projects/update':
         $projectController->update();
         break;
-        
-    case $route === '/projects/delete':
+    case '/projects/delete':
         $projectController->delete();
         break;
-        
-    case $route === '/projects/get':
-        $projectController->get();
+    case '/projects/show':
+        $projectController->show();
+        break;
+    case '/projects/checkEmployee':
+        $projectController->checkEmployee();
+        break;
+    case '/projects/transactions':
+        $projectController->transactions();
         break;
 
-    // ===== WORK LOGS =====
-    case $route === '/work_logs':
+    // WORK LOGS
+    case '/work_logs/index':
         $workLogController->index();
         break;
-    case $route === '/work_logs/store':
+    case '/work_logs/store':
         $workLogController->store();
         break;
-    case $route === '/work_logs/store_time_entry':
-        $workLogController->storeTimeEntry();
+    case '/work_logs/project_totals':
+        $workLogController->project_totals();
         break;
 
-    // ===== API PROJETOS =====
-    case $route === '/api/projects/list':
-        $workLogController->getProjectsList();
-        break;
-    case $route === '/api/projects/active':
-        $projectController->getActiveProjects();
-        break;
-    case preg_match('/^\/api\/projects\/by-employee\/(\d+)$/', $route, $matches):
-        $projectController->getProjectsByEmployee((int) $matches[1]);
-        break;
-    case preg_match('/^\/api\/projects\/(\d+)$/', $route, $matches):
-        $projectController->getProjectDetails((int) $matches[1]);
-        break;
-    case preg_match('/^\/api\/projects\/(\d+)\/tasks$/', $route, $matches):
-        $projectController->getProjectTasks((int) $matches[1]);
-        break;
-    case preg_match('/^\/api\/projects\/(\d+)\/employees$/', $route, $matches):
-        $projectController->getProjectEmployees((int) $matches[1]);
-        break;
-    case preg_match('/^\/api\/projects\/(\d+)\/inventory$/', $route, $matches):
-        $projectController->getProjectInventory((int) $matches[1]);
-        break;
-
-    // ===== API WORK LOGS =====
-    case $route === '/api/work_logs/admin_time_entry':
-        $workLogController->adminCreateTimeEntry();
-        break;
-    case $route === '/api/employees/hours-summary':
-        $workLogController->getEmployeeHours();
-        break;
-    case preg_match('/^\/api\/employees\/(\d+)\/hours$/', $route, $matches):
-        $employeeController->getEmployeeHours((int) $matches[1]);
-        break;
-    case preg_match('/^\/api\/work_logs\/time_entries\/(\d+)$/', $route, $matches):
-        $workLogController->getTimeEntriesByProject((int) $matches[1]);
-        break;
-    case preg_match('/^\/api\/employees\/monthly-hours\/(\d+)$/', $route, $matches):
-        // Nova rota para horas mensais por funcionário
-        header('Content-Type: application/json; charset=UTF-8');
-        try {
-            require_once __DIR__ . '/../app/models/TimeEntryModel.php';
-            $timeEntryModel = new TimeEntryModel();
-            $hours = $timeEntryModel->getMonthlyHoursByEmployee((int) $matches[1]);
-            echo json_encode(['hours' => number_format($hours, 2)]);
-        } catch (Exception $e) {
-            echo json_encode(['hours' => '0.00']);
-        }
-        exit;
-        break;
-    case preg_match('/^\/api\/employees\/hours\/(\d+)$/', $route, $matches):
-        // Nova rota para horas detalhadas por funcionário
-        header('Content-Type: application/json; charset=UTF-8');
-        try {
-            require_once __DIR__ . '/../app/models/TimeEntryModel.php';
-            $timeEntryModel = new TimeEntryModel();
-            $employeeId = (int) $matches[1];
-            $filter = $_GET['filter'] ?? 'all';
-            
-            global $pdo;
-            
-            // Constrói a query baseada no filtro
-            $whereClause = "WHERE employee_id = ?";
-            $params = [$employeeId];
-            
-            switch ($filter) {
-                case 'today':
-                    $whereClause .= " AND date = CURDATE()";
-                    break;
-                case 'week':
-                    $whereClause .= " AND WEEK(date) = WEEK(CURDATE()) AND YEAR(date) = YEAR(CURDATE())";
-                    break;
-                case 'month':
-                    $whereClause .= " AND MONTH(date) = MONTH(CURDATE()) AND YEAR(date) = YEAR(CURDATE())";
-                    break;
-            }
-            
-            $stmt = $pdo->prepare("
-                SELECT 
-                    te.id, te.date, te.time_records, te.total_hours,
-                    p.name as project_name
-                FROM time_entries te
-                LEFT JOIN projects p ON te.project_id = p.id
-                $whereClause
-                ORDER BY te.date DESC, te.id DESC
-            ");
-            $stmt->execute($params);
-            $timeEntries = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            $entries = [];
-            $totalHours = 0;
-            
-            foreach ($timeEntries as $timeEntry) {
-                $entryRecords = json_decode($timeEntry['time_records'], true);
-                $entryRecords = $entryRecords['entries'] ?? [];
-                
-                foreach ($entryRecords as $record) {
-                    $entries[] = [
-                        'id' => $timeEntry['id'] . '_' . $record['time'],
-                        'date' => $timeEntry['date'],
-                        'time' => $record['time'],
-                        'entry_type' => $record['type'],
-                        'project_name' => $timeEntry['project_name'],
-                        'calculated_hours' => round(floatval($timeEntry['total_hours']) / count($entryRecords), 2)
-                    ];
-                }
-                
-                $totalHours += floatval($timeEntry['total_hours']);
-            }
-            
-            echo json_encode([
-                'entries' => $entries,
-                'total_hours' => round($totalHours, 2)
-            ]);
-            
-        } catch (Exception $e) {
-            error_log("API employees hours error: " . $e->getMessage());
-            echo json_encode(['entries' => [], 'total_hours' => 0]);
-        }
-        exit;
-        break;
-
-    // ===== FUNCIONÁRIOS - CRUD =====
-    case $route === '/employees':
+    // FUNCIONÁRIOS CRUD
+    case '/employees':
         $employeeController->list();
         break;
-    case $route === '/employees/store':
+    case '/employees/store':
         $employeeController->store();
         break;
-    case $route === '/employees/update':
-        $employeeController->updateEmployee();
+    case '/employees/update':
+        $employeeController->update();
         break;
-    case $route === '/employees/delete':
+    case '/employees/delete':
         $employeeController->delete();
         break;
-    case $route === '/employees/get':
+    case '/employees/get':
         $employeeController->get();
         break;
 
-    // ===== CLIENTES =====
-    case $route === '/clients':
-        $clientsController->index();
+    // CLIENTES
+    case '/clients':
+        $clientsController->list();
         break;
-    case $route === '/clients/store':
-        $clientsController->store();
+    case '/clients/create':
+        $clientsController->create();
         break;
-    case $route === '/clients/update':
-        $clientsController->update();
+    case '/clients/show':
+        $clientsController->show();
         break;
-    case $route === '/clients/delete':
+    case '/clients/edit':
+        $clientsController->edit();
+        break;
+    case '/clients/save':
+        $clientsController->save();
+        break;
+    case '/clients/delete':
         $clientsController->delete();
         break;
-    case $route === '/clients/get':
-        $clientsController->get();
-        break;
 
-    // ===== INVENTÁRIO =====
-    case $route === '/inventory':
+    // INVENTÁRIO
+    case '/inventory':
         $inventoryController->index();
         break;
-    case $route === '/inventory/store':
+    case '/inventory/create':
+        $inventoryController->create();
+        break;
+    case '/inventory/store':
         $inventoryController->store();
         break;
-    case $route === '/inventory/update':
+    case '/inventory/edit':
+        $inventoryController->edit();
+        break;
+    case '/inventory/update':
         $inventoryController->update();
         break;
-    case $route === '/inventory/delete':
+    case '/inventory/delete':
         $inventoryController->delete();
         break;
-
-    // ===== FINANCEIRO =====
-    case $route === '/finance':
-        $financialController->index();
+    case '/inventory/control/store':
+        $inventoryController->storeControl();
         break;
-    case $route === '/finance/store':
-        $financialController->store();
+    case '/inventory/history':
+        $inventoryController->history();
         break;
-    case $route === '/finance/update':
-        $financialController->update();
-        break;
-    case $route === '/finance/delete':
-        $financialController->delete();
+    case '/inventory/history/details':
+        $inventoryController->historyDetails();
         break;
 
-    // ===== CARROS =====
-    case $route === '/cars':
+    // INVENTÁRIO AJAX (Novas rotas)
+    case '/inventory/add-quantity-ajax':
+        $inventoryController->addQuantityAjax();
+        break;
+    case '/inventory/delete-ajax':
+        $inventoryController->deleteAjax();
+        break;
+    case '/inventory/update-description-ajax':
+        $inventoryController->updateDescriptionAjax();
+        break;
+
+     // CARROS
+    case '/cars':
         $carController->index();
         break;
-    case $route === '/cars/store':
+    case '/cars/store':
         $carController->store();
         break;
-    case $route === '/cars/update':
+    case '/cars/get':
+        $carController->get();
+        break;
+    case '/cars/update':
         $carController->update();
         break;
-    case $route === '/cars/delete':
+    case '/cars/delete':
         $carController->delete();
         break;
+    case '/cars/usage/store':     
+        $carController->storeUsage();
+        break;
 
-    // ===== CALENDÁRIO =====
-    case $route === '/calendar':
+    // CALENDÁRIO
+    case '/calendar':
         $calendarController->index();
         break;
+    case '/calendar/store':
+        $calendarController->store();
+        break;
+    case '/calendar/fetch':
+        $calendarController->fetch();
+        break;
 
-    // ===== ANALYTICS =====
-    case $route === '/analytics':
+    // ANALYTICS
+    case '/analytics':
         $analyticsController->index();
         break;
-    case $route === '/analytics/stats':
+    case '/analytics/stats':
         $analyticsController->stats();
         break;
-
-    // ===== DEBUG (REMOVER EM PRODUÇÃO) =====
-    case $route === '/debug':
-        ?>
-        <!DOCTYPE html>
-        <html><head><title>Debug</title></head><body>
-        <h1>Debug Info</h1>
-        <h2>Session:</h2><pre><?= print_r($_SESSION, true) ?></pre>
-        <h2>Route:</h2><p><?= $route ?></p>
-        <h2>Functions:</h2>
-        <ul>
-            <li>isLoggedIn(): <?= isLoggedIn() ? 'true' : 'false' ?></li>
-            <li>isEmployee(): <?= isEmployee() ? 'true' : 'false' ?></li>
-            <li>isFinance(): <?= isFinance() ? 'true' : 'false' ?></li>
-            <li>isAdmin(): <?= isAdmin() ? 'true' : 'false' ?></li>
-        </ul>
-        <h2>Links:</h2>
-        <ul>
-            <li><a href="<?= BASE_URL ?>/employees/dashboard">Dashboard Funcionário</a></li>
-            <li><a href="<?= BASE_URL ?>/employees/profile">Perfil Funcionário</a></li>
-            <li><a href="<?= BASE_URL ?>/dashboard">Dashboard Admin</a></li>
-        </ul>
-        </body></html>
-        <?php
+    case '/analytics/exportPdf':
+        $analyticsController->exportPdf();
+        break;
+    case '/analytics/exportExcel':
+        $analyticsController->exportExcel();
+        break;
+    case '/analytics/sendEmail':
+        $analyticsController->sendEmail();
         break;
 
-    // ===== ROTA PADRÃO =====
+    // FINANCEIRO
+    case '/finance':
+        $financialController->index();
+        break;
+    case '/finance/create':
+        $financialController->create();
+        break;
+    case '/finance/store':
+        $financialController->store();
+        break;
+    case '/finance/edit':
+        $financialController->edit();
+        break;
+    case '/finance/update':
+        $financialController->update();
+        break;
+    case '/finance/delete':
+        $financialController->delete();
+        break;
+    case '/finance/report':
+        $financialController->report();
+        break;
+    case '/finance/attachment/download':
+        $financialController->downloadAttachment();
+        break;
+
     default:
         http_response_code(404);
-        echo '<h1>404 - Página não encontrada</h1>';
-        echo '<p>Rota: ' . htmlspecialchars($route) . '</p>';
-        echo '<p><a href="' . BASE_URL . '">Voltar ao início</a></p>';
+        echo "404 - Página não encontrada.";
         break;
 }
